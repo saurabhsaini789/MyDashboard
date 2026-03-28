@@ -2,19 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 
-type Project = {
-  id: string;
-  bucketId: string;
-  title: string;
-  dueDate: string; // YYYY-MM-DD
-  isImportant: boolean;
-  isCompleted?: boolean;
-};
+import { ProjectModal, type Project } from "./ProjectModal";
 
 export function TasksCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   
   const todayDate = new Date();
   const [selectedDay, setSelectedDay] = useState<number | null>(todayDate.getDate());
@@ -23,15 +17,44 @@ export function TasksCalendar() {
   const currentMonth = currentDate.getMonth();
 
   useEffect(() => {
-    const saved = localStorage.getItem('goals_projects');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setProjects(parsed || []);
-      } catch (e) { }
-    }
+    const loadProjects = () => {
+      const saved = localStorage.getItem('goals_projects');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setProjects(parsed || []);
+        } catch (e) { }
+      }
+    };
+    
+    loadProjects();
     setIsLoaded(true);
+
+    // Sync with other widgets
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'goals_projects') {
+        loadProjects();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
+
+  const handleUpdateProject = (updatedProject: Project) => {
+    const newProjects = projects.map(p => p.id === updatedProject.id ? updatedProject : p);
+    setProjects(newProjects);
+    localStorage.setItem('goals_projects', JSON.stringify(newProjects));
+    // Trigger storage event for same window (other components)
+    window.dispatchEvent(new StorageEvent('storage', { key: 'goals_projects' }));
+  };
+
+  const handleDeleteProject = (projectId: string) => {
+    const newProjects = projects.filter(p => p.id !== projectId);
+    setProjects(newProjects);
+    localStorage.setItem('goals_projects', JSON.stringify(newProjects));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'goals_projects' }));
+    setSelectedProject(null);
+  };
 
   if (!isLoaded) return <div className="animate-pulse h-40 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800/50"></div>;
 
@@ -187,7 +210,11 @@ export function TasksCalendar() {
                 selectedDayProjects.map(p => {
                   const priority = getPriorityInfo(p);
                   return (
-                    <div key={p.id} className="flex flex-col gap-1 p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800 transition-colors hover:border-zinc-200 dark:hover:border-zinc-700">
+                    <div 
+                      key={p.id} 
+                      onClick={() => setSelectedProject(p)}
+                      className="flex flex-col gap-1 p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800 transition-colors hover:border-zinc-200 dark:hover:border-zinc-700 cursor-pointer group"
+                    >
                       <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">
                         {p.title}
                       </span>
@@ -235,7 +262,11 @@ export function TasksCalendar() {
             nextTasks.map(p => {
               const priority = getPriorityInfo(p);
               return (
-                <div key={p.id} className="flex flex-col gap-1 p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800 transition-colors hover:border-zinc-200 dark:hover:border-zinc-700">
+                <div 
+                  key={p.id} 
+                  onClick={() => setSelectedProject(p)}
+                  className="flex flex-col gap-1 p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800 transition-colors hover:border-zinc-200 dark:hover:border-zinc-700 cursor-pointer group"
+                >
                   <div className="flex justify-between items-start gap-2">
                     <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">
                       {p.title}
@@ -260,6 +291,15 @@ export function TasksCalendar() {
           )}
         </div>
       </div>
+
+      {selectedProject && (
+        <ProjectModal
+          project={selectedProject}
+          onClose={() => setSelectedProject(null)}
+          onUpdateProject={handleUpdateProject}
+          onDeleteProject={handleDeleteProject}
+        />
+      )}
     </div>
   );
 }
