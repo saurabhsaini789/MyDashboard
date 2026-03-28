@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { setSyncedItem } from "@/lib/storage";
 import type { Project, Task } from "./widgets/ProjectModal";
 
 /**
@@ -55,14 +56,9 @@ export function DataLoader() {
         { id: crypto.randomUUID(), bucketId: 'Mental', title: 'Forgive Others', dueDate: '', isImportant: false, isCompleted: false, tasks: [{ id: crypto.randomUUID(), title: 'Understand this properly - Forgive your parents...', isCompleted: false }] },
         { id: crypto.randomUUID(), bucketId: 'Mental', title: 'My Habits', dueDate: '', isImportant: false, isCompleted: false, tasks: [{ id: crypto.randomUUID(), title: 'Culmination of parents habits and values.', isCompleted: false }] }
       ];
-      localStorage.setItem('goals_projects', JSON.stringify(SEED_PROJECTS));
-      localStorage.setItem('goals_seeded_v2', 'true');
-      localStorage.setItem('goals_seeded_v3', 'true');
-      
-      // Notify other components in the same window
-      window.dispatchEvent(new CustomEvent('local-storage-change', { detail: { key: 'goals_projects' } }));
-      // Also dispatch standard storage event for cross-tab sync
-      window.dispatchEvent(new StorageEvent('storage', { key: 'goals_projects' }));
+      setSyncedItem('goals_projects', JSON.stringify(SEED_PROJECTS));
+      setSyncedItem('goals_seeded_v2', 'true');
+      setSyncedItem('goals_seeded_v3', 'true');
     }
 
     // --- Habit Seeding ---
@@ -73,9 +69,7 @@ export function DataLoader() {
         { id: crypto.randomUUID(), name: 'Read 30 mins', period: 'daily', records: {} },
         { id: crypto.randomUUID(), name: 'Deep Work', period: 'daily', records: {} }
       ];
-      localStorage.setItem('os_habits', JSON.stringify(SEED_HABITS));
-      window.dispatchEvent(new CustomEvent('local-storage-change', { detail: { key: 'os_habits' } }));
-      window.dispatchEvent(new StorageEvent('storage', { key: 'os_habits' }));
+      setSyncedItem('os_habits', JSON.stringify(SEED_HABITS));
     }
   }, []);
 

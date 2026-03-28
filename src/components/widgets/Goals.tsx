@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { setSyncedItem } from '@/lib/storage';
 
 import { ProjectModal, type Project, type Task } from './ProjectModal';
 
@@ -39,7 +40,7 @@ export function Goals() {
 
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem('goals_projects', JSON.stringify(projects));
+      setSyncedItem('goals_projects', JSON.stringify(projects));
 
       if (selectedProject) {
         const updated = projects.find(p => p.id === selectedProject.id);

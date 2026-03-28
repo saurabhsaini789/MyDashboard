@@ -12,12 +12,15 @@ export function useSync() {
 
   // --- 1. Push Local Changes to Supabase ---
   const pushToSupabase = useCallback(async (key: string, value: string | null) => {
+    // If we are currently setting this from a remote update, don't push it back!
     if (isSyncingFromRemote.current) return;
     
     if (!value) return;
 
     try {
       const parsedValue = JSON.parse(value);
+      console.log(`[Sync] Pushing ${key} to Supabase...`);
+      
       const { error } = await supabase
         .from('dashboard_data')
         .upsert({ 
@@ -27,15 +30,17 @@ export function useSync() {
         }, { onConflict: 'key' });
 
       if (error) console.error(`[Sync] Error pushing ${key}:`, error);
+      else console.log(`[Sync] Successfully pushed ${key}`);
     } catch (e) {
       console.error(`[Sync] Failed to parse ${key} for push:`, e);
     }
   }, []);
 
-  // --- 2. Pull Initial Data from Supabase ---
+  // --- 2. Pull Initial Data from Supabase & Initial Push ---
   useEffect(() => {
     const initSync = async () => {
-      const { data, error } = await supabase
+      console.log('[Sync] Initializing sync...');
+      const { data: remoteData, error } = await supabase
         .from('dashboard_data')
         .select('*');
 
@@ -45,31 +50,50 @@ export function useSync() {
         return;
       }
 
-      if (data) {
+      const remoteKeys = new Set(remoteData?.map(r => r.key) || []);
+
+      // a) Load remote data into local storage
+      if (remoteData && remoteData.length > 0) {
         isSyncingFromRemote.current = true;
-        data.forEach((row) => {
+        remoteData.forEach((row) => {
           if (SYNC_KEYS.includes(row.key)) {
             localStorage.setItem(row.key, JSON.stringify(row.value));
-            // Notify components in same window
+            // Notify components
             window.dispatchEvent(new CustomEvent('local-storage-change', { detail: { key: row.key } }));
           }
         });
         isSyncingFromRemote.current = false;
+        console.log(`[Sync] Loaded ${remoteData.length} records from Supabase.`);
       }
+
+      // b) Push local data that isn't on remote yet (Migration)
+      for (const key of SYNC_KEYS) {
+        if (!remoteKeys.has(key)) {
+          const localVal = localStorage.getItem(key);
+          if (localVal) {
+            console.log(`[Sync] Migrating ${key} to cloud for the first time...`);
+            await pushToSupabase(key, localVal);
+          }
+        }
+      }
+
       setIsReady(true);
+      console.log('[Sync] Initialization complete.');
     };
 
     initSync();
-  }, []);
+  }, [pushToSupabase]);
 
   // --- 3. Listen for Local Storage Changes ---
   useEffect(() => {
+    // Other tabs
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key && SYNC_KEYS.includes(e.key)) {
         pushToSupabase(e.key, e.newValue);
       }
     };
 
+    // Current tab (via setSyncedItem)
     const handleLocalUpdate = (e: any) => {
       if (e.detail && SYNC_KEYS.includes(e.detail.key)) {
         const val = localStorage.getItem(e.detail.key);
@@ -92,26 +116,15 @@ export function useSync() {
       .channel('dashboard-changes')
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'dashboard_data' },
+        { event: '*', schema: 'public', table: 'dashboard_data' },
         (payload) => {
-          const { key, value } = payload.new;
-          if (SYNC_KEYS.includes(key)) {
+          // payload.new for INSERT/UPDATE
+          const newRow = payload.new as any;
+          if (newRow && SYNC_KEYS.includes(newRow.key)) {
+            console.log(`[Sync] Remote update received for ${newRow.key}`);
             isSyncingFromRemote.current = true;
-            localStorage.setItem(key, JSON.stringify(value));
-            window.dispatchEvent(new CustomEvent('local-storage-change', { detail: { key } }));
-            isSyncingFromRemote.current = false;
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'dashboard_data' },
-        (payload) => {
-          const { key, value } = payload.new;
-          if (SYNC_KEYS.includes(key)) {
-            isSyncingFromRemote.current = true;
-            localStorage.setItem(key, JSON.stringify(value));
-            window.dispatchEvent(new CustomEvent('local-storage-change', { detail: { key } }));
+            localStorage.setItem(newRow.key, JSON.stringify(newRow.value));
+            window.dispatchEvent(new CustomEvent('local-storage-change', { detail: { key: newRow.key } }));
             isSyncingFromRemote.current = false;
           }
         }

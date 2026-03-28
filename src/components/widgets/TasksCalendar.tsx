@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { setSyncedItem } from "@/lib/storage";
 
 import { ProjectModal, type Project } from "./ProjectModal";
 
@@ -55,16 +56,13 @@ export function TasksCalendar() {
   const handleUpdateProject = (updatedProject: Project) => {
     const newProjects = projects.map(p => p.id === updatedProject.id ? updatedProject : p);
     setProjects(newProjects);
-    localStorage.setItem('goals_projects', JSON.stringify(newProjects));
-    // Trigger storage event for same window (other components)
-    window.dispatchEvent(new StorageEvent('storage', { key: 'goals_projects' }));
+    setSyncedItem('goals_projects', JSON.stringify(newProjects));
   };
 
   const handleDeleteProject = (projectId: string) => {
     const newProjects = projects.filter(p => p.id !== projectId);
     setProjects(newProjects);
-    localStorage.setItem('goals_projects', JSON.stringify(newProjects));
-    window.dispatchEvent(new StorageEvent('storage', { key: 'goals_projects' }));
+    setSyncedItem('goals_projects', JSON.stringify(newProjects));
     setSelectedProject(null);
   };
 

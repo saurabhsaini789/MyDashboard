@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
+import { setSyncedItem } from '@/lib/storage';
 
 type HabitStatus = 'none' | 'done' | 'missed';
 
@@ -106,7 +107,7 @@ export function Habits() {
 
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem('os_habits', JSON.stringify(habits));
+      setSyncedItem('os_habits', JSON.stringify(habits));
     }
   }, [habits, isLoaded]);
 
