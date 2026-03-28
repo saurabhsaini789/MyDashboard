@@ -46,8 +46,18 @@ export function HabitsOverview() {
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'os_habits') loadData();
     };
+    
+    const handleLocal = (e: any) => {
+      if (e.detail && e.detail.key === 'os_habits') loadData();
+    };
+
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    window.addEventListener('local-storage-change', handleLocal);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('local-storage-change', handleLocal);
+    };
   }, [filter]);
 
   if (!isLoaded) return <div className="animate-pulse h-40 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800/50"></div>;
@@ -76,7 +86,7 @@ export function HabitsOverview() {
             <option value="6 Months">6 Months</option>
             <option value="1 Year">1 Year</option>
           </select>
-          <Link href="/my-dashboard/habits" className="px-4 py-2 text-sm font-semibold rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20 transition-colors border border-rose-200 dark:border-rose-900/50">View All</Link>
+          <Link href="/habits" className="px-4 py-2 text-sm font-semibold rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20 transition-colors border border-rose-200 dark:border-rose-900/50">View All</Link>
         </div>
       </div>
 

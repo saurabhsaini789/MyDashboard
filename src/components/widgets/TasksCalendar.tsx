@@ -36,8 +36,20 @@ export function TasksCalendar() {
         loadProjects();
       }
     };
+
+    const handleLocalUpdate = (e: any) => {
+      if (e.detail && e.detail.key === 'goals_projects') {
+        loadProjects();
+      }
+    };
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('local-storage-change', handleLocalUpdate);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('local-storage-change', handleLocalUpdate);
+    };
   }, []);
 
   const handleUpdateProject = (updatedProject: Project) => {

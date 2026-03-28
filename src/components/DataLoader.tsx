@@ -58,7 +58,10 @@ export function DataLoader() {
       localStorage.setItem('goals_projects', JSON.stringify(SEED_PROJECTS));
       localStorage.setItem('goals_seeded_v2', 'true');
       localStorage.setItem('goals_seeded_v3', 'true');
-      // Trigger event to update home widgets immediately
+      
+      // Notify other components in the same window
+      window.dispatchEvent(new CustomEvent('local-storage-change', { detail: { key: 'goals_projects' } }));
+      // Also dispatch standard storage event for cross-tab sync
       window.dispatchEvent(new StorageEvent('storage', { key: 'goals_projects' }));
     }
 
@@ -71,6 +74,7 @@ export function DataLoader() {
         { id: crypto.randomUUID(), name: 'Deep Work', period: 'daily', records: {} }
       ];
       localStorage.setItem('os_habits', JSON.stringify(SEED_HABITS));
+      window.dispatchEvent(new CustomEvent('local-storage-change', { detail: { key: 'os_habits' } }));
       window.dispatchEvent(new StorageEvent('storage', { key: 'os_habits' }));
     }
   }, []);
