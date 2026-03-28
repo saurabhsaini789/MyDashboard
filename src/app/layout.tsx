@@ -20,6 +20,8 @@ export const metadata: Metadata = {
   description: "Personal OS and Productivity Dashboard",
 };
 
+import { SyncManager } from "@/components/SyncManager";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,7 +32,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <DataLoader />
+        <SyncManager />
         <NavigationBar />
         {children}
       </body>

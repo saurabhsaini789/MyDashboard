@@ -1,0 +1,17 @@
+- [x] Setup Environment & Dependencies
+    - [x] Create `.env.local` with Supabase keys
+    - [x] Install `@supabase/supabase-js`
+- [x] Database Setup
+    - [x] User to run SQL in Supabase Dashboard
+- [x] Core Infrastructure
+    - [x] Create `src/lib/supabase.ts`
+    - [x] Create `src/hooks/useSync.ts`
+- [x] Integration
+    - [x] Add `useSync` to `src/app/layout.tsx`
+    - [x] Update `src/components/DataLoader.tsx` to handle sync initial state
+- [x] GitHub Actions Setup
+    - [x] User to add secrets to GitHub Actions
+- [x] Verification
+    - [x] Test local storage persistence to Supabase
+    - [x] Test Supabase real-time updates to local storage
+    - [x] Final build check (npm run build)
