@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { setSyncedItem } from "@/lib/storage";
+import { getPrefixedKey } from "@/lib/keys";
 
 import { ProjectModal, type Project } from "./ProjectModal";
 
@@ -19,7 +20,7 @@ export function TasksCalendar() {
 
   useEffect(() => {
     const loadProjects = () => {
-      const saved = localStorage.getItem('goals_projects');
+      const saved = localStorage.getItem(getPrefixedKey('goals_projects'));
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -33,7 +34,7 @@ export function TasksCalendar() {
 
     // Sync with other widgets
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'goals_projects') {
+      if (e.key === getPrefixedKey('goals_projects')) {
         loadProjects();
       }
     };

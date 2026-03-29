@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { getPrefixedKey } from "@/lib/keys";
 
 type TimeFilter = '1 Day' | '7 Days' | '1 Month' | '6 Months' | '1 Year';
 
@@ -13,7 +14,7 @@ export function GoalsSummary() {
 
   useEffect(() => {
     const loadData = () => {
-      const saved = localStorage.getItem('goals_projects');
+      const saved = localStorage.getItem(getPrefixedKey('goals_projects'));
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -37,7 +38,7 @@ export function GoalsSummary() {
     setIsLoaded(true);
 
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'goals_projects') loadData();
+      if (e.key === getPrefixedKey('goals_projects')) loadData();
     };
     
     const handleLocal = (e: any) => {

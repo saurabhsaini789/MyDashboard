@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { setSyncedItem } from '@/lib/storage';
+import { getPrefixedKey } from '@/lib/keys';
 
 import { ProjectModal, type Project, type Task } from './ProjectModal';
 
@@ -31,7 +32,7 @@ export function Goals() {
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
   useEffect(() => {
-    const stored = localStorage.getItem('goals_projects');
+    const stored = localStorage.getItem(getPrefixedKey('goals_projects'));
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
@@ -44,7 +45,7 @@ export function Goals() {
 
     const handleLocalUpdate = (e: any) => {
       if (e.detail && e.detail.key === 'goals_projects') {
-        const val = localStorage.getItem('goals_projects');
+        const val = localStorage.getItem(getPrefixedKey('goals_projects'));
         if (val && val !== JSON.stringify(projectsRef.current)) {
           try {
             setProjects(JSON.parse(val));
@@ -54,7 +55,7 @@ export function Goals() {
     };
 
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'goals_projects' && e.newValue && e.newValue !== JSON.stringify(projectsRef.current)) {
+      if (e.key === getPrefixedKey('goals_projects') && e.newValue && e.newValue !== JSON.stringify(projectsRef.current)) {
         try {
           setProjects(JSON.parse(e.newValue));
         } catch (e) {}

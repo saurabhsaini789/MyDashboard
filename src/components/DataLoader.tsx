@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { setSyncedItem } from "@/lib/storage";
+import { getPrefixedKey } from "@/lib/keys";
 import type { Project, Task } from "./widgets/ProjectModal";
 
 /**
@@ -11,7 +12,7 @@ import type { Project, Task } from "./widgets/ProjectModal";
 export function DataLoader() {
   useEffect(() => {
     // --- Project Seeding (from Goals.tsx v3) ---
-    if (typeof window !== 'undefined' && !localStorage.getItem('goals_projects')) {
+    if (typeof window !== 'undefined' && !localStorage.getItem(getPrefixedKey('goals_projects'))) {
       const SEED_PROJECTS: Project[] = [
         { id: crypto.randomUUID(), bucketId: 'Health', title: 'Get Family Medical Insurance', dueDate: '', isImportant: false, isCompleted: false, tasks: [{ id: crypto.randomUUID(), title: 'NEXT STEP - Gather details.', isCompleted: false }] },
         { id: crypto.randomUUID(), bucketId: 'Health', title: 'Get Term Insurance', dueDate: '', isImportant: false, isCompleted: false, tasks: [{ id: crypto.randomUUID(), title: 'NEXT STEP - Gather details.', isCompleted: false }] },
@@ -62,7 +63,7 @@ export function DataLoader() {
     }
 
     // --- Habit Seeding ---
-    if (typeof window !== 'undefined' && !localStorage.getItem('os_habits')) {
+    if (typeof window !== 'undefined' && !localStorage.getItem(getPrefixedKey('os_habits'))) {
       const SEED_HABITS = [
         { id: crypto.randomUUID(), name: 'Morning Meditation', period: 'daily', records: {} },
         { id: crypto.randomUUID(), name: 'Exercise', period: 'daily', records: {} },

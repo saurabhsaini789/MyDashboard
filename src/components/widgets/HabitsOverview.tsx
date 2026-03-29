@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { getPrefixedKey } from "@/lib/keys";
 
 type TimeFilter = '1 Day' | '7 Days' | '1 Month' | '6 Months' | '1 Year';
 
@@ -13,7 +14,7 @@ export function HabitsOverview() {
 
   useEffect(() => {
     const loadData = () => {
-      const saved = localStorage.getItem('os_habits');
+      const saved = localStorage.getItem(getPrefixedKey('os_habits'));
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -44,7 +45,7 @@ export function HabitsOverview() {
     setIsLoaded(true);
 
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'os_habits') loadData();
+      if (e.key === getPrefixedKey('os_habits')) loadData();
     };
     
     const handleLocal = (e: any) => {

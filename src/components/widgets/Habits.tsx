@@ -1,6 +1,6 @@
-"use client";
 import React, { useState, useEffect, useRef } from 'react';
 import { setSyncedItem } from '@/lib/storage';
+import { getPrefixedKey } from '@/lib/keys';
 
 type HabitStatus = 'none' | 'done' | 'missed';
 
@@ -59,7 +59,7 @@ export function Habits() {
   const todayDateIndex = realToday.getDate() - 1;
 
   useEffect(() => {
-    const saved = localStorage.getItem('os_habits');
+    const saved = localStorage.getItem(getPrefixedKey('os_habits'));
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -111,7 +111,7 @@ export function Habits() {
 
     const handleLocalUpdate = (e: any) => {
       if (e.detail && e.detail.key === 'os_habits') {
-        const val = localStorage.getItem('os_habits');
+        const val = localStorage.getItem(getPrefixedKey('os_habits'));
         if (val && val !== JSON.stringify(habitsRef.current)) {
           try {
             setHabits(JSON.parse(val));
@@ -121,7 +121,8 @@ export function Habits() {
     };
 
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'os_habits' && e.newValue && e.newValue !== JSON.stringify(habitsRef.current)) {
+      const prefixedKey = getPrefixedKey('os_habits');
+      if (e.key === prefixedKey && e.newValue && e.newValue !== JSON.stringify(habitsRef.current)) {
         try {
           setHabits(JSON.parse(e.newValue));
         } catch (e) {}
