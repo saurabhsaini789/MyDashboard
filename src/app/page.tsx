@@ -24,15 +24,15 @@ export default function Home() {
           Remember Your Why
         </h2>
 
-        {/* Top Section: Quotes and Goals Summary */}
+        {/* Top Section: Goals Summary and Quotes */}
         <section className="w-full flex flex-col lg:flex-row gap-6 fade-in">
-          <div className="w-full lg:w-2/3 flex flex-col">
-            <Quotes />
-          </div>
-          <div className="w-full lg:w-1/3 flex flex-col">
+          <div className="w-full lg:w-1/2 flex flex-col">
             <div className="h-full"> 
               <GoalsSummary />
             </div>
+          </div>
+          <div className="w-full lg:w-1/2 flex flex-col">
+            <Quotes />
           </div>
         </section>
 
