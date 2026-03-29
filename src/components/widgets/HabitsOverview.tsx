@@ -4,10 +4,12 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { getPrefixedKey } from "@/lib/keys";
 
-type TimeFilter = '1 Day' | '7 Days' | '1 Month' | '6 Months' | '1 Year';
+type TimeFilter = '1 Day' | '7 Days' | '1 Month' | '6 Months' | '1 Year' | 'Custom Month';
 
 export function HabitsOverview() {
   const [filter, setFilter] = useState<TimeFilter>('1 Month');
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [completed, setCompleted] = useState(0);
   const [missed, setMissed] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -20,18 +22,48 @@ export function HabitsOverview() {
           const parsed = JSON.parse(saved);
           let cCount = 0;
           let mCount = 0;
+          
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
           if (Array.isArray(parsed)) {
             parsed.forEach((h: any) => {
               if (h.records) {
-                Object.keys(h.records).forEach((monthKey) => {
-                  const days = h.records[monthKey];
+                if (filter === 'Custom Month') {
+                  const key = `${selectedYear}-${selectedMonth}`;
+                  const days = h.records[key];
                   if (Array.isArray(days)) {
-                    days.forEach((dayStatus: string) => {
-                      if (dayStatus === 'done') cCount++;
-                      if (dayStatus === 'missed') mCount++;
+                    days.forEach(status => {
+                      if (status === 'done') cCount++;
+                      if (status === 'missed') mCount++;
                     });
                   }
-                });
+                } else {
+                  // Preset range filtering
+                  let daysToLookBack = 30;
+                  if (filter === '1 Day') daysToLookBack = 1;
+                  if (filter === '7 Days') daysToLookBack = 7;
+                  if (filter === '1 Month') daysToLookBack = 30;
+                  if (filter === '6 Months') daysToLookBack = 180;
+                  if (filter === '1 Year') daysToLookBack = 365;
+
+                  Object.keys(h.records).forEach((monthKey) => {
+                    const [year, month] = monthKey.split('-').map(Number);
+                    const days = h.records[monthKey];
+                    if (Array.isArray(days)) {
+                      days.forEach((dayStatus, dayIndex) => {
+                        const dateOfRecord = new Date(year, month, dayIndex + 1);
+                        const diffTime = today.getTime() - dateOfRecord.getTime();
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        if (diffDays >= 0 && diffDays < daysToLookBack) {
+                          if (dayStatus === 'done') cCount++;
+                          if (dayStatus === 'missed') mCount++;
+                        }
+                      });
+                    }
+                  });
+                }
               }
             });
           }
@@ -59,7 +91,7 @@ export function HabitsOverview() {
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('local-storage-change', handleLocal);
     };
-  }, [filter]);
+  }, [filter, selectedMonth, selectedYear]);
 
   if (!isLoaded) return <div className="animate-pulse h-40 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800/50"></div>;
 
@@ -75,7 +107,31 @@ export function HabitsOverview() {
           </span>
           Habits Overview
         </h3>
-        <div className="flex gap-4 items-center">
+        <div className="flex flex-wrap gap-2 items-center">
+          {filter === 'Custom Month' && (
+            <div className="flex gap-2">
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                className="appearance-none bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-950 dark:hover:bg-zinc-800 transition-colors text-sm font-semibold text-zinc-700 dark:text-zinc-300 rounded-xl px-4 py-2 cursor-pointer outline-none border border-zinc-200 dark:border-zinc-700 focus:ring-2 focus:ring-rose-500/50 shadow-sm"
+              >
+                {Array.from({ length: 12 }, (_, i) => (
+                  <option key={i} value={i}>
+                    {new Date(2000, i, 1).toLocaleDateString('en-US', { month: 'long' })}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="appearance-none bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-950 dark:hover:bg-zinc-800 transition-colors text-sm font-semibold text-zinc-700 dark:text-zinc-300 rounded-xl px-4 py-2 cursor-pointer outline-none border border-zinc-200 dark:border-zinc-700 focus:ring-2 focus:ring-rose-500/50 shadow-sm"
+              >
+                {Array.from({ length: 5 }, (_, i) => 2026 + i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value as TimeFilter)}
@@ -86,8 +142,9 @@ export function HabitsOverview() {
             <option value="1 Month">1 Month</option>
             <option value="6 Months">6 Months</option>
             <option value="1 Year">1 Year</option>
+            <option value="Custom Month">Custom Month</option>
           </select>
-          <Link href="/habits" className="px-4 py-2 text-sm font-semibold rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20 transition-colors border border-rose-200 dark:border-rose-900/50">View All</Link>
+          <Link href="/habits" className="px-4 py-2 text-sm font-semibold rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20 transition-colors border border-rose-200 dark:border-rose-900/50 whitespace-nowrap">View All</Link>
         </div>
       </div>
 
