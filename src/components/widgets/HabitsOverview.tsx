@@ -43,22 +43,30 @@ export function HabitsOverview() {
               let hMissed = 0;
               let hRecentMisses = 0;
               
+              // 0. Check if habit is active for the current filter/selected month
+              const isHabitActive = (mKey: string) => {
+                if (!h.monthScope || h.monthScope.length === 0) return true;
+                return h.monthScope.includes(mKey);
+              };
+
               // 1. Calculate stats for the selected filter
               if (h.records) {
                 if (filter === 'Custom Month') {
                   const key = `${selectedYear}-${selectedMonth}`;
-                  const days = h.records[key];
-                  if (Array.isArray(days)) {
-                    days.forEach(status => {
-                      if (status === 'done') {
-                        cCount++;
-                        hDone++;
-                      }
-                      if (status === 'missed') {
-                        mCount++;
-                        hMissed++;
-                      }
-                    });
+                  if (isHabitActive(key)) {
+                    const days = h.records[key];
+                    if (Array.isArray(days)) {
+                      days.forEach(status => {
+                        if (status === 'done') {
+                          cCount++;
+                          hDone++;
+                        }
+                        if (status === 'missed') {
+                          mCount++;
+                          hMissed++;
+                        }
+                      });
+                    }
                   }
                 } else {
                   let daysToLookBack = 30;
@@ -69,6 +77,8 @@ export function HabitsOverview() {
                   if (filter === '1 Year') daysToLookBack = 365;
 
                   Object.keys(h.records).forEach((monthKey) => {
+                    if (!isHabitActive(monthKey)) return;
+
                     const [year, month] = monthKey.split('-').map(Number);
                     const days = h.records[monthKey];
                     if (Array.isArray(days)) {
@@ -98,18 +108,27 @@ export function HabitsOverview() {
                 }
               }
 
-              // 2. Calculate Current Streak (Longest active streak)
-              // We look at the most recent records across all months
+              // Only add to stats if it has some records OR is active in the current custom month
+              if (hDone > 0 || hMissed > 0 || hRecentMisses > 0 || (filter === 'Custom Month' && isHabitActive(`${selectedYear}-${selectedMonth}`))) {
+                habitStats.push({
+                    name: h.name,
+                    done: hDone,
+                    total: hDone + hMissed,
+                    streak: 0, // Will calculate below
+                    recentMisses: hRecentMisses
+                });
+              }
+            });
+
+            // 2. Calculate Current Streak (Longest active streak)
+            habitStats.forEach(stat => {
+              const h = parsed.find((p: any) => p.name === stat.name);
+              if (!h) return;
+
               let currentStreak = 0;
               let streakBroken = false;
-              const sortedMonthKeys = Object.keys(h.records || {}).sort((a, b) => {
-                const [y1, m1] = a.split('-').map(Number);
-                const [y2, m2] = b.split('-').map(Number);
-                return (y2 * 12 + m2) - (y1 * 12 + m1); // Newest first
-              });
-
               let streakDate = new Date(today);
-              // If today is not marked, check from yesterday
+              
               const todayKey = `${today.getFullYear()}-${today.getMonth()}`;
               const todayIndex = today.getDate() - 1;
               const todayStatus = h.records?.[todayKey]?.[todayIndex];
@@ -121,30 +140,27 @@ export function HabitsOverview() {
               while (!streakBroken) {
                 const sKey = `${streakDate.getFullYear()}-${streakDate.getMonth()}`;
                 const sIndex = streakDate.getDate() - 1;
-                const sStatus = h.records?.[sKey]?.[sIndex];
+                
+                // Check if habit was active then
+                const wasActive = !h.monthScope || h.monthScope.length === 0 || h.monthScope.includes(sKey);
+                
+                if (!wasActive) {
+                    streakBroken = true;
+                    break;
+                }
 
+                const sStatus = h.records?.[sKey]?.[sIndex];
                 if (sStatus === 'done') {
                   currentStreak++;
                   streakDate.setDate(streakDate.getDate() - 1);
                 } else if (sStatus === 'missed') {
                   streakBroken = true;
                 } else {
-                  // If we hit 'none' in the past, streak is broken
-                  // Unless it's today (handled above)
                   streakBroken = true;
                 }
-                
-                // Safety break
                 if (currentStreak > 1000) break;
               }
-
-              habitStats.push({
-                name: h.name,
-                done: hDone,
-                total: hDone + hMissed,
-                streak: currentStreak,
-                recentMisses: hRecentMisses
-              });
+              stat.streak = currentStreak;
             });
 
             // Derive Top/Bottom Insights

@@ -7,11 +7,11 @@ type HabitStatus = 'none' | 'done' | 'missed';
 interface Habit {
   id: string;
   name: string;
-  days?: HabitStatus[]; // legacy
   records: Record<string, HabitStatus[]>;
+  monthScope?: string[]; // Array of 'YYYY-M' keys where this habit is active. If undefined/empty, active globally.
 }
 
-const initialHabits: Habit[] = [
+const defaultInitialHabits: Habit[] = [
   { id: '1', name: 'No Phone AM', records: {} },
   { id: '2', name: 'No Fap', records: {} },
   { id: '3', name: 'Brush AM', records: {} },
@@ -38,9 +38,14 @@ const initialHabits: Habit[] = [
 ];
 
 export function Habits() {
-  const [habits, setHabits] = useState<Habit[]>(initialHabits);
+  const [habits, setHabits] = useState<Habit[]>([]); // Start empty
   const [isLoaded, setIsLoaded] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [isAddingHabit, setIsAddingHabit] = useState(false);
+  const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
+  const [newHabitName, setNewHabitName] = useState('');
+  const [selectedScope, setSelectedScope] = useState<'this-month' | 'next-1' | 'next-2' | 'next-3' | 'next-6' | 'this-year' | 'all'>('this-month');
+  
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const habitsRef = useRef(habits);
 
@@ -64,17 +69,8 @@ export function Habits() {
       try {
         const parsed = JSON.parse(saved);
         
-        // Sync hardcoded config with local storage
-        const mergedWithInitial = initialHabits.map(defaultHabit => {
-          const existing = parsed.find((h: any) => h.name === defaultHabit.name);
-          if (existing) {
-            return { ...defaultHabit, records: existing.records || {}, days: existing.days };
-          }
-          return defaultHabit;
-        });
-
         // Migrate legacy boolean arrays
-        const migrated = mergedWithInitial.map((h: any) => ({
+        const migrated = (Array.isArray(parsed) ? parsed : []).map((h: any) => ({
           ...h,
           days: h.days ? h.days.map((d: any) => {
             if (d === true) return 'done';
@@ -104,17 +100,24 @@ export function Habits() {
           return { ...h, records };
         });
         
-        setHabits(finalHabits);
-      } catch (e) {}
+        setHabits(finalHabits.length > 0 ? finalHabits : defaultInitialHabits);
+      } catch (e) {
+        setHabits(defaultInitialHabits);
+      }
+    } else {
+      setHabits(defaultInitialHabits);
     }
     setIsLoaded(true);
 
     const handleLocalUpdate = (e: any) => {
       if (e.detail && e.detail.key === 'os_habits') {
         const val = localStorage.getItem(getPrefixedKey('os_habits'));
-        if (val && val !== JSON.stringify(habitsRef.current)) {
+        if (val) {
           try {
-            setHabits(JSON.parse(val));
+            const newVal = JSON.parse(val);
+            if (JSON.stringify(newVal) !== JSON.stringify(habitsRef.current)) {
+              setHabits(newVal);
+            }
           } catch (e) {}
         }
       }
@@ -122,9 +125,12 @@ export function Habits() {
 
     const handleStorageChange = (e: StorageEvent) => {
       const prefixedKey = getPrefixedKey('os_habits');
-      if (e.key === prefixedKey && e.newValue && e.newValue !== JSON.stringify(habitsRef.current)) {
+      if (e.key === prefixedKey && e.newValue) {
         try {
-          setHabits(JSON.parse(e.newValue));
+          const newVal = JSON.parse(e.newValue);
+          if (JSON.stringify(newVal) !== JSON.stringify(habitsRef.current)) {
+            setHabits(newVal);
+          }
         } catch (e) {}
       }
     };
@@ -142,6 +148,90 @@ export function Habits() {
       setSyncedItem('os_habits', JSON.stringify(habits));
     }
   }, [habits, isLoaded]);
+
+  const getScopeMonths = (scope: typeof selectedScope, baseDate: Date) => {
+    const year = baseDate.getFullYear();
+    const month = baseDate.getMonth();
+    const months: string[] = [];
+
+    if (scope === 'all') return undefined;
+
+    let count = 0;
+    if (scope === 'this-month') count = 1;
+    else if (scope === 'next-1') count = 2;
+    else if (scope === 'next-2') count = 3;
+    else if (scope === 'next-3') count = 4;
+    else if (scope === 'next-6') count = 7;
+    else if (scope === 'this-year') count = 12 - month;
+
+    for (let i = 0; i < count; i++) {
+        const d = new Date(year, month + i, 1);
+        months.push(`${d.getFullYear()}-${d.getMonth()}`);
+    }
+    return months;
+  };
+
+  const handleAddHabit = () => {
+    if (!newHabitName.trim()) return;
+    
+    const scope = getScopeMonths(selectedScope, currentDate);
+    const newHabit: Habit = {
+      id: Math.random().toString(36).substr(2, 9),
+      name: newHabitName.trim(),
+      records: {},
+      monthScope: scope
+    };
+
+    setHabits(prev => [...prev, newHabit]);
+    setNewHabitName('');
+    setIsAddingHabit(false);
+  };
+
+  const handleDeleteHabit = () => {
+    if (!habitToDelete) return;
+
+    if (selectedScope === 'all') {
+      setHabits(prev => prev.filter(h => h.id !== habitToDelete.id));
+    } else {
+      const monthsToRemove = getScopeMonths(selectedScope, currentDate) || [];
+      setHabits(prev => prev.map(h => {
+        if (h.id === habitToDelete.id) {
+          const currentScope = h.monthScope;
+          if (!currentScope) {
+            // If it was global, and we delete "this month", it now has a scope of "everything except this month"
+            // But for simplicity, we'll just remove it from all future if 'this-year' or similar.
+            // Requirement says "delete from all months or this month...".
+            // Let's implement: if NOT 'all', we just remove those months from visibility.
+            
+            // To exclude specific months from a global habit, we'd need an 'excludedMonths' field.
+            // For now, let's just make it NOT appear in those months if it had a scope.
+            // If it didn't have a scope, we'll give it one that excludes the deleted months.
+            
+            // Actually, let's just filter it out from the global list if the user wants to delete it.
+            // If they say "This month only", we just remove this month from its scope.
+            return {
+              ...h,
+              monthScope: [] // This is tricky for global habits. 
+            };
+          }
+          return {
+            ...h,
+            monthScope: currentScope.filter(m => !monthsToRemove.includes(m))
+          };
+        }
+        return h;
+      }).filter(h => !h.monthScope || h.monthScope.length > 0)); 
+      // Filter out habits that no longer have any active months if they had a scope.
+    }
+    
+    setHabitToDelete(null);
+  };
+
+  // Filter habits for current month display
+  const visibleHabits = habits.filter(h => {
+    if (!h.monthScope || h.monthScope.length === 0) return true;
+    return h.monthScope.includes(monthKey);
+  });
 
   const handleDayClick = (habitId: string, dayIndex: number, e: React.MouseEvent) => {
     e.preventDefault();
@@ -201,44 +291,56 @@ export function Habits() {
 
   return (
     <div className="w-full pb-12 flex flex-col gap-4">
-      <div className="flex items-center justify-center gap-3 px-4 mb-2">
-        <div className="relative">
-          <select 
-            value={currentMonth}
-            onChange={(e) => setCurrentDate(new Date(currentYear, parseInt(e.target.value), 1))}
-            className="appearance-none bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 transition-colors text-base font-medium text-zinc-900 dark:text-zinc-100 rounded-xl pl-4 pr-10 py-2 cursor-pointer outline-none border border-zinc-200 dark:border-zinc-700/50 focus:ring-4 focus:ring-zinc-100 dark:focus:ring-zinc-800/50 shadow-sm"
-          >
-            {months.map((m, i) => (
-              <option key={i} value={i} className="text-base font-normal bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
-                {m}
-              </option>
-            ))}
-          </select>
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400 dark:text-zinc-500">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-4 mb-4">
+        <div className="flex items-center gap-3">
+            <div className="relative">
+            <select 
+                value={currentMonth}
+                onChange={(e) => setCurrentDate(new Date(currentYear, parseInt(e.target.value), 1))}
+                className="appearance-none bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 transition-colors text-base font-medium text-zinc-900 dark:text-zinc-100 rounded-xl pl-4 pr-10 py-2 cursor-pointer outline-none border border-zinc-200 dark:border-zinc-700/50 focus:ring-4 focus:ring-zinc-100 dark:focus:ring-zinc-800/50 shadow-sm"
+            >
+                {months.map((m, i) => (
+                <option key={i} value={i} className="text-base font-normal bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
+                    {m}
+                </option>
+                ))}
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400 dark:text-zinc-500">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
+                </svg>
+            </div>
+            </div>
+
+            <div className="relative">
+            <select 
+                value={currentYear}
+                onChange={(e) => setCurrentDate(new Date(parseInt(e.target.value), currentMonth, 1))}
+                className="appearance-none bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 transition-colors text-base font-medium text-zinc-900 dark:text-zinc-100 rounded-xl pl-4 pr-10 py-2 cursor-pointer outline-none border border-zinc-200 dark:border-zinc-700/50 focus:ring-4 focus:ring-zinc-100 dark:focus:ring-zinc-800/50 shadow-sm"
+            >
+                {years.map(y => (
+                <option key={y} value={y} className="text-base font-normal bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
+                    {y}
+                </option>
+                ))}
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400 dark:text-zinc-500">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
+                </svg>
+            </div>
+            </div>
         </div>
 
-        <div className="relative">
-          <select 
-            value={currentYear}
-            onChange={(e) => setCurrentDate(new Date(parseInt(e.target.value), currentMonth, 1))}
-            className="appearance-none bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 transition-colors text-base font-medium text-zinc-900 dark:text-zinc-100 rounded-xl pl-4 pr-10 py-2 cursor-pointer outline-none border border-zinc-200 dark:border-zinc-700/50 focus:ring-4 focus:ring-zinc-100 dark:focus:ring-zinc-800/50 shadow-sm"
-          >
-            {years.map(y => (
-              <option key={y} value={y} className="text-base font-normal bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
-                {y}
-              </option>
-            ))}
-          </select>
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400 dark:text-zinc-500">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </div>
+        <button 
+          onClick={() => setIsAddingHabit(true)}
+          className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg shadow-teal-500/20 active:scale-95 whitespace-nowrap"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+          </svg>
+          Add Habit
+        </button>
       </div>
 
       {isBeforeBirth ? (
@@ -278,7 +380,7 @@ export function Habits() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                {habits.map((habit) => {
+                {visibleHabits.map((habit) => {
                   const rawDays = habit.records?.[monthKey] || [];
                   const currentMonthDays = [...rawDays];
                   
@@ -307,7 +409,18 @@ export function Habits() {
                   return (
                     <tr key={habit.id} className="group hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors">
                       <td className="py-4 px-6 font-semibold text-zinc-900 dark:text-zinc-100 text-sm md:text-base sticky left-0 z-10 bg-white dark:bg-[#18181b] group-hover:bg-zinc-50 dark:group-hover:bg-[#202024] transition-colors shadow-[1px_0_0_0_#e4e4e7] dark:shadow-[1px_0_0_0_#27272a]">
-                        {habit.name}
+                        <div className="flex items-center justify-between gap-3">
+                            <span className="truncate">{habit.name}</span>
+                            <button 
+                                onClick={() => setHabitToDelete(habit)}
+                                className="opacity-0 group-hover:opacity-100 p-1.5 text-zinc-400 hover:text-red-500 transition-all rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 flex-shrink-0"
+                                title="Delete habit"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
                       </td>
                       {currentMonthDays.map((status, index) => {
                         const isToday = isCurrentViewRealTodayMonth && index === todayDateIndex;
@@ -337,6 +450,131 @@ export function Habits() {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Add Habit Modal */}
+      {isAddingHabit && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl w-full max-w-md shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden scale-in">
+            <div className="p-8">
+              <h3 className="text-2xl font-bold text-zinc-900 dark:text-white mb-6">Create New Habit</h3>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2">Habit Name</label>
+                  <input 
+                    type="text" 
+                    value={newHabitName}
+                    onChange={(e) => setNewHabitName(e.target.value)}
+                    placeholder="E.g. Morning Yoga"
+                    className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 rounded-2xl px-5 py-4 text-lg font-medium outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2">Active For</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'this-month', label: 'This Month' },
+                      { id: 'next-1', label: 'Next 1 Month' },
+                      { id: 'next-2', label: 'Next 2 Months' },
+                      { id: 'next-3', label: 'Next 3 Months' },
+                      { id: 'next-6', label: 'Next 6 Months' },
+                      { id: 'this-year', label: 'This Year' },
+                      { id: 'all', label: 'All Time' },
+                    ].map((scope) => (
+                      <button
+                        key={scope.id}
+                        onClick={() => setSelectedScope(scope.id as any)}
+                        className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all border-2 
+                          ${selectedScope === scope.id 
+                            ? 'bg-teal-50 border-teal-500 text-teal-700 dark:bg-teal-500/10 dark:text-teal-400' 
+                            : 'bg-transparent border-zinc-100 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-200 dark:hover:border-zinc-700'}`}
+                      >
+                        {scope.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-10">
+                <button 
+                  onClick={() => setIsAddingHabit(false)}
+                  className="flex-1 px-6 py-4 rounded-2xl font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleAddHabit}
+                  disabled={!newHabitName.trim()}
+                  className="flex-1 px-6 py-4 rounded-2xl font-bold bg-teal-500 text-white hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-teal-500/20"
+                >
+                  Create Habit
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Habit Modal */}
+      {habitToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl w-full max-w-md shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden scale-in">
+            <div className="p-8">
+              <div className="w-16 h-16 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center mb-6">
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-zinc-900 dark:text-white mb-2">Delete Habit?</h3>
+              <p className="text-zinc-500 dark:text-zinc-400 mb-8 font-medium">
+                Are you sure you want to delete <span className="text-zinc-900 dark:text-zinc-100 font-bold">"{habitToDelete.name}"</span>?
+              </p>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2">Delete From</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'this-month', label: 'This Month' },
+                      { id: 'this-year', label: 'Rest of This Year' },
+                      { id: 'all', label: 'Delete Completely' },
+                    ].map((scope) => (
+                      <button
+                        key={scope.id}
+                        onClick={() => setSelectedScope(scope.id as any)}
+                        className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all border-2 
+                          ${selectedScope === scope.id 
+                            ? 'bg-red-50 border-red-500 text-red-700 dark:bg-red-500/10 dark:text-red-400' 
+                            : 'bg-transparent border-zinc-100 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-200 dark:hover:border-zinc-700'}`}
+                      >
+                        {scope.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-10">
+                <button 
+                  onClick={() => setHabitToDelete(null)}
+                  className="flex-1 px-6 py-4 rounded-2xl font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleDeleteHabit}
+                  className="flex-1 px-6 py-4 rounded-2xl font-bold bg-red-500 text-white hover:bg-red-600 transition-all shadow-lg shadow-red-500/20"
+                >
+                  Confirm Delete
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
