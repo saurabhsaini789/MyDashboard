@@ -104,12 +104,12 @@ export function Quotes() {
   return (
     <div className="w-full flex flex-col items-center">
 
-      <div className="w-full relative">
-        <div className="flex overflow-x-auto gap-4 pb-4 px-1 custom-scrollbar snap-x snap-mandatory">
+      <div className="w-full relative h-[450px]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 overflow-y-auto gap-4 p-1 h-full custom-scrollbar snap-y snap-mandatory pr-2">
           {quotes.map((quote) => (
             <div 
               key={quote.id} 
-              className="snap-start shrink-0 w-[300px] sm:w-[350px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 flex flex-col justify-between shadow-sm relative group overflow-hidden transition-all hover:shadow-md h-[120px]"
+              className="snap-start w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 flex flex-col justify-between shadow-sm relative group overflow-hidden transition-all hover:shadow-md min-h-[120px]"
             >
               <div className="absolute top-0 left-0 w-1 h-full bg-teal-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <p className="text-zinc-800 dark:text-zinc-200 font-medium text-lg leading-snug italic line-clamp-3">"{quote.text}"</p>
@@ -129,7 +129,7 @@ export function Quotes() {
           ))}
 
           {/* Add New Card */}
-          <div className="snap-start shrink-0 w-[300px] sm:w-[350px] bg-zinc-50/50 dark:bg-zinc-900/50 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl p-4 flex flex-col justify-center items-center h-[120px] transition-all hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50 group">
+          <div className="snap-start w-full bg-zinc-50/50 dark:bg-zinc-900/50 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl p-4 flex flex-col justify-center items-center min-h-[120px] transition-all hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50 group">
             {!isAdding ? (
               <button 
                 onClick={() => setIsAdding(true)}
