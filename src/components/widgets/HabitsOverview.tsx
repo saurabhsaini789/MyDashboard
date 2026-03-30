@@ -286,7 +286,7 @@ export function HabitsOverview() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
           <div className="bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-100/50 dark:border-emerald-500/10 rounded-2xl p-5 flex flex-col justify-center items-center text-center">
             <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-1">{completed}</span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700/60 dark:text-emerald-500/60">Completed</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700/60 dark:text-emerald-500/70">Completed</span>
           </div>
 
           <div className="bg-zinc-50 dark:bg-white/5 border border-zinc-100 dark:border-white/10 rounded-2xl p-5 flex flex-col justify-center items-center text-center relative overflow-hidden group">
@@ -297,7 +297,7 @@ export function HabitsOverview() {
 
           <div className="bg-rose-50 dark:bg-rose-500/5 border border-rose-100/50 dark:border-rose-500/10 rounded-2xl p-5 flex flex-col justify-center items-center text-center">
             <span className="text-3xl font-bold text-rose-600 dark:text-rose-400 mb-1">{missed}</span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700/60 dark:text-rose-500/60">Missed</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700/60 dark:text-rose-500/70">Missed</span>
           </div>
         </div>
 

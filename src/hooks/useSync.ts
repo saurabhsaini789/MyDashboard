@@ -7,35 +7,80 @@ import { ALL_SYNC_KEYS, LEGACY_KEY_MIGRATION } from '@/lib/sync-keys';
 
 export function useSync() {
   const [isReady, setIsReady] = useState(false);
+  const [session, setSession] = useState<any>(null);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error' | 'unauthenticated'>('idle');
   const isSyncingFromRemote = useRef(false);
+
+  // --- 0. Session Management ---
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (!session) setSyncStatus('unauthenticated');
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setSyncStatus(session ? 'idle' : 'unauthenticated');
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // --- 1. Push Local Changes to Supabase ---
   const pushToSupabase = useCallback(async (key: string, value: string | null) => {
-    // If we are currently setting this from a remote update, don't push it back!
     if (isSyncingFromRemote.current) return;
-    
     if (!value) return;
+    if (!session) {
+      setSyncStatus('unauthenticated');
+      return;
+    }
 
     const prefixedKey = getPrefixedKey(key);
 
-    try {
-      const parsedValue = JSON.parse(value);
-      console.log(`[Sync] Pushing ${prefixedKey} to Supabase...`);
-      
-      const { error } = await supabase
-        .from('dashboard_data')
-        .upsert({ 
-          key: prefixedKey, 
-          value: parsedValue, 
-          updated_at: new Date().toISOString() 
-        }, { onConflict: 'key' });
+    const performPush = async (attempt = 0): Promise<boolean> => {
+      try {
+        const parsedValue = JSON.parse(value);
+        setSyncStatus('syncing');
+        
+        const { error } = await supabase
+          .from('dashboard_data')
+          .upsert({ 
+            key: prefixedKey, 
+            value: parsedValue, 
+            updated_at: new Date().toISOString() 
+          }, { onConflict: 'key' });
 
-      if (error) console.error(`[Sync] Error pushing ${prefixedKey}:`, error);
-      else console.log(`[Sync] Successfully pushed ${prefixedKey}`);
-    } catch (e) {
-      console.error(`[Sync] Failed to parse ${prefixedKey} for push:`, e);
-    }
-  }, []);
+        if (error) {
+          // If it's a network/transient error and we have retries left
+          if (attempt < 2 && !['401', '403', '409'].includes(error.code)) {
+            const delay = Math.pow(2, attempt) * 1000;
+            console.warn(`[Sync] Push failed for ${prefixedKey}, retrying in ${delay}ms...`, error.message);
+            await new Promise(r => setTimeout(r, delay));
+            return performPush(attempt + 1);
+          }
+          
+          // Final failure or non-retryable error
+          if (error.code === '401' || error.code === '403') {
+            setSyncStatus('unauthenticated');
+          } else {
+            console.error(`[Sync] Error pushing ${prefixedKey}:`, error.message || error);
+            setSyncStatus('error');
+          }
+          return false;
+        }
+
+        setSyncStatus('idle');
+        console.log(`[Sync] Successfully pushed ${prefixedKey}`);
+        return true;
+      } catch (e: any) {
+        console.error(`[Sync] Failed to parse ${prefixedKey} for push:`, e.message || e);
+        setSyncStatus('error');
+        return false;
+      }
+    };
+
+    await performPush();
+  }, [session]);
 
   // --- 2. Pull Initial Data from Supabase & Initial Push ---
   useEffect(() => {
@@ -55,12 +100,13 @@ export function useSync() {
         }
       }
       
-      const { data: remoteData, error } = await supabase
-        .from('dashboard_data')
-        .select('*');
+      const { data: remoteData, error } = session 
+        ? await supabase.from('dashboard_data').select('*')
+        : { data: null, error: null };
 
       if (error) {
-        console.error('[Sync] Error loading initial data:', error);
+        console.error('[Sync] Error loading initial data:', error.message || error);
+        setSyncStatus('error');
         setIsReady(true);
         return;
       }
@@ -103,11 +149,14 @@ export function useSync() {
       }
 
       setIsReady(true);
+      if (session) setSyncStatus('idle');
       console.log('[Sync] Initialization complete.');
     };
 
-    initSync();
-  }, [pushToSupabase]);
+    if (session !== undefined) {
+      initSync();
+    }
+  }, [pushToSupabase, session]);
 
   // --- 3. Listen for Local Storage Changes ---
   useEffect(() => {
@@ -141,6 +190,8 @@ export function useSync() {
 
   // --- 4. Listen for Remote Changes (Realtime) ---
   useEffect(() => {
+    if (!session) return;
+
     const channel = supabase
       .channel('dashboard-changes')
       .on(
@@ -176,7 +227,7 @@ export function useSync() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [session]);
 
-  return { isReady };
+  return { isReady, syncStatus };
 }

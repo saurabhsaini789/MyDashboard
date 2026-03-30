@@ -43,7 +43,7 @@ function MetricCard({ label, value, subValue, icon, color, customBg }: MetricPro
         </div>
         {subValue && (
             <div className="flex flex-col items-end">
-                <span className="text-xs uppercase tracking-widest text-zinc-600 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-1.5 rounded-xl text-right">
+                <span className="text-xs uppercase tracking-widest text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-1.5 rounded-xl text-right">
                     {subValue}
                 </span>
             </div>
@@ -51,7 +51,7 @@ function MetricCard({ label, value, subValue, icon, color, customBg }: MetricPro
       </div>
       
       <div className="flex flex-col">
-        <span className="text-xs uppercase tracking-[0.2em] text-zinc-600 mb-2">
+        <span className="text-xs uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-400 mb-2">
           {label}
         </span>
         <span className={`text-2xl tracking-tight text-zinc-900 dark:text-zinc-100 leading-none`}>
@@ -76,8 +76,8 @@ export function FinanceOverview() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Filter states
-  const [selectedMonths, setSelectedMonths] = useState<number[]>([new Date().getMonth()]);
-  const [selectedYears, setSelectedYears] = useState<number[]>([new Date().getFullYear()]);
+  const [selectedMonths, setSelectedMonths] = useState<number[]>([]); // Initialize empty for SSR
+  const [selectedYears, setSelectedYears] = useState<number[]>([]);
 
   const calculateFinance = () => {
     const exchangeRate = getExchangeRate();
@@ -148,9 +148,16 @@ export function FinanceOverview() {
   };
 
   useEffect(() => {
-    calculateFinance();
+    setSelectedMonths([new Date().getMonth()]);
+    setSelectedYears([new Date().getFullYear()]);
     setIsLoaded(true);
+  }, []);
 
+  useEffect(() => {
+    if (isLoaded) {
+      calculateFinance();
+    }
+    
     const handleLocal = (e: any) => {
       if (e.detail && [
         SYNC_KEYS.FINANCES_INCOME, 
@@ -166,8 +173,10 @@ export function FinanceOverview() {
 
     window.addEventListener('local-storage-change', handleLocal);
     return () => window.removeEventListener('local-storage-change', handleLocal);
-  }, [selectedMonths, selectedYears]);
+  }, [selectedMonths, selectedYears, isLoaded]);
 
+
+  if (!isLoaded) return null;
 
   const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0;
 

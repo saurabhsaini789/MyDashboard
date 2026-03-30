@@ -84,7 +84,7 @@ export function LiabilitiesSection() {
         // Calculate average monthly income (simple sum for current month for now)
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
-        const monthlyTotal = records
+        const monthlyTotal = (records || [])
           .filter((r: any) => {
             const d = new Date(r.date);
             return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
@@ -252,7 +252,7 @@ export function LiabilitiesSection() {
   };
 
   const totalDebt = liabilities.reduce((sum, l) => sum + calculateLiabilityBalance(l), 0);
-  const totalEMI = liabilities.reduce((sum, l) => sum + calculateLiabilityBalance({ ...l, remainingBalance: l.emi, remainingBalanceCurrency: l.emiCurrency }), 0);
+  const totalEMI = liabilities.reduce((sum, l) => sum + calculateLiabilityBalance({ ...l, remainingBalance: l.emi, remainingBalanceCurrency: l.emiCurrency || 'INR' } as any), 0);
   const dti = monthlyIncome > 0 ? (totalEMI / monthlyIncome) * 100 : 0;
 
   if (!isLoaded) return null;
@@ -276,7 +276,7 @@ export function LiabilitiesSection() {
         {/* Global Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div className="bg-rose-50/20 dark:bg-rose-500/5 border border-rose-100 dark:border-rose-900/30 rounded-3xl p-6 flex flex-col gap-1 hover:shadow-xl transition-all group overflow-hidden relative">
-                <span className="text-xs text-zinc-600 uppercase tracking-[0.2em]">Total Outstanding Debt</span>
+                <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-[0.2em]">Total Outstanding Debt</span>
                 <span className="text-2xl text-zinc-900 dark:text-zinc-100 tracking-tight">
                     ₹{totalDebt.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                 </span>
@@ -286,7 +286,7 @@ export function LiabilitiesSection() {
             </div>
 
             <div className="bg-rose-50/20 dark:bg-rose-500/5 border border-rose-100 dark:border-rose-900/30 rounded-3xl p-6 flex flex-col gap-1 hover:shadow-xl transition-all group overflow-hidden relative">
-                <span className="text-xs text-zinc-600 uppercase tracking-[0.2em]">Monthly EMI Burden</span>
+                <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-[0.2em]">Monthly EMI Burden</span>
                 <span className="text-2xl text-zinc-900 dark:text-zinc-100 tracking-tight">
                     ₹{totalEMI.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                 </span>
@@ -296,7 +296,7 @@ export function LiabilitiesSection() {
             </div>
 
             <div className="bg-rose-50/20 dark:bg-rose-500/5 border border-rose-100 dark:border-rose-900/30 rounded-3xl p-6 flex flex-col gap-1 hover:shadow-xl transition-all group overflow-hidden relative">
-                <span className="text-xs text-zinc-600 uppercase tracking-[0.2em]">Debt-to-Income Ratio (DTI)</span>
+                <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-[0.2em]">Debt-to-Income Ratio (DTI)</span>
                 <div className="flex items-baseline gap-2">
                     <span className={`text-2xl tracking-tight ${dti > 40 ? 'text-rose-500' : dti > 25 ? 'text-amber-500' : 'text-emerald-500'}`}>
                         {dti.toFixed(1)}%
@@ -350,7 +350,7 @@ export function LiabilitiesSection() {
 
               {/* Progress Bar */}
               <div className="flex flex-col gap-2">
-                <div className="flex justify-between text-xs text-zinc-600 uppercase tracking-widest">
+                <div className="flex justify-between text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">
                     <span>Payoff Progress</span>
                     <span>{payoffProgress.toFixed(0)}%</span>
                 </div>
@@ -365,13 +365,13 @@ export function LiabilitiesSection() {
               {/* Loan Details */}
                <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-0.5">
-                       <span className="text-xs text-zinc-600 uppercase tracking-widest">Remaining</span>
+                       <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">Remaining</span>
                       <span className="text-lg text-zinc-900 dark:text-zinc-100 tracking-tight">
                           ₹{calculateLiabilityBalance(liability).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                       </span>
                   </div>
                   <div className="flex flex-col gap-0.5 text-right">
-                       <span className="text-xs text-zinc-600 uppercase tracking-widest">Interest Rate</span>
+                       <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">Interest Rate</span>
                       <span className={`text-lg tracking-tight ${isHighInterest ? 'text-rose-500' : liability.interestRate < 5 ? 'text-emerald-500' : 'text-zinc-900 dark:text-zinc-100'}`}>
                           {liability.interestRate}%
                       </span>
@@ -404,12 +404,12 @@ export function LiabilitiesSection() {
 
               {/* Footer Meta */}
               <div className="flex flex-col gap-1.5 mt-auto border-t border-zinc-50 dark:border-zinc-800/50 pt-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-zinc-500 uppercase tracking-widest">Tenure Left</span>
-                    <span className="text-xs text-zinc-600">
-                        {liability.tenureRemaining} Months
-                    </span>
-                  </div>
+                   <div className="flex items-center justify-between">
+                     <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Tenure Left</span>
+                     <span className="text-xs text-zinc-600 dark:text-zinc-300">
+                         {liability.tenureRemaining} Months
+                     </span>
+                   </div>
               </div>
             </div>
           );

@@ -138,7 +138,7 @@ export function Quotes() {
                 <div className="w-10 h-10 rounded-full bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center border border-zinc-200 dark:border-zinc-700 group-hover:border-teal-200 dark:group-hover:border-teal-900/50 group-hover:bg-teal-50 dark:group-hover:bg-teal-500/10">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                 </div>
-                <span className="font-semibold text-sm">Add New Statement</span>
+                <span className="font-semibold text-sm text-zinc-500 dark:text-zinc-400">Add New Statement</span>
               </button>
             ) : (
               <form onSubmit={handleAddQuote} className="w-full h-full flex flex-col gap-2">
@@ -159,7 +159,7 @@ export function Quotes() {
                   className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-teal-500/50"
                 />
                 <div className="flex gap-2 justify-end mt-auto">
-                  <button type="button" onClick={() => setIsAdding(false)} className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white px-2 py-1">Cancel</button>
+                  <button type="button" onClick={() => setIsAdding(false)} className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white px-2 py-1">Cancel</button>
                   <button type="submit" disabled={!newQuoteText.trim()} className="text-xs font-semibold bg-zinc-900 dark:bg-white text-white dark:text-black rounded px-3 py-1 disabled:opacity-50">Save</button>
                 </div>
               </form>

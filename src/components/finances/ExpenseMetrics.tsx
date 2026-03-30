@@ -36,7 +36,7 @@ function MetricCard({ label, value, subValue, icon, color }: MetricProps) {
         </div>
         {subValue && (
             <div className="flex flex-col items-end text-right">
-                <span className="text-xs uppercase tracking-widest text-zinc-600 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-1.5 rounded-xl">
+                <span className="text-xs uppercase tracking-widest text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-1.5 rounded-xl">
                     {subValue}
                 </span>
             </div>
@@ -44,7 +44,7 @@ function MetricCard({ label, value, subValue, icon, color }: MetricProps) {
       </div>
       
       <div className="flex flex-col">
-        <span className="text-xs uppercase tracking-[0.2em] text-zinc-600 mb-2">
+        <span className="text-xs uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 mb-2">
           {label}
         </span>
         <span className="text-2xl tracking-tight text-zinc-900 dark:text-zinc-100 leading-none">

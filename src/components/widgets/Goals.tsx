@@ -232,7 +232,7 @@ export function Goals() {
               {/* Bucket Content */}
               <div className="flex-1 flex flex-col gap-3 overflow-y-auto pr-1 custom-scrollbar">
                 {bucketProjects.length === 0 && creatingForBucket !== bucket && (
-                  <p className="text-sm text-zinc-400 dark:text-zinc-500 italic mt-auto mb-auto text-center">No projects yet</p>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400 italic mt-auto mb-auto text-center">No projects yet</p>
                 )}
 
                 {bucketProjects.map(project => {
@@ -291,7 +291,7 @@ export function Goals() {
                     />
                     <div className="grid grid-cols-2 gap-2 mb-3">
                       <div className="flex flex-col gap-1">
-                        <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Due Date</label>
+                        <label className="text-[10px] uppercase font-bold text-zinc-500 dark:text-zinc-400 tracking-wider">Due Date</label>
                         <input
                           type="date"
                           value={newProjectDate}
@@ -301,7 +301,7 @@ export function Goals() {
                         />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Priority</label>
+                        <label className="text-[10px] uppercase font-bold text-zinc-500 dark:text-zinc-400 tracking-wider">Priority</label>
                         <button
                           type="button"
                           onClick={() => setNewProjectImportant(!newProjectImportant)}
@@ -355,8 +355,8 @@ export function Goals() {
                     className={`text-left p-4 rounded-xl transition-all sm:hover:-translate-y-0.5 flex-shrink-0 flex flex-col justify-between cursor-pointer shadow-sm ${priority.classes}`}
                   >
                     <div className="flex flex-col gap-1.5 w-full">
-                      <div className="flex items-start justify-between gap-2 text-[10px] uppercase font-bold tracking-wider opacity-60">
-                        <span className="mt-1">{project.bucketId}</span>
+                      <div className="flex items-start justify-between gap-2 text-[10px] uppercase font-bold tracking-wider opacity-90">
+                        <span className="mt-1 text-zinc-500 dark:text-zinc-400">{project.bucketId}</span>
                         {project.dueDate && (
                           <div className="flex items-center gap-1.5 py-0.5 px-2 rounded-md bg-white/50 dark:bg-black/20 normal-case opacity-90 font-medium shrink-0">
                             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>

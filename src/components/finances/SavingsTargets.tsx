@@ -210,7 +210,7 @@ export function SavingsTargets() {
 
   const calculateTrajectoryMetrics = (goal: SavingsGoal) => {
     const exchangeRate = getExchangeRate();
-    const totalContributed = goal.contributions.reduce((sum, c) => sum + convertToINR(c.amount, c.currency, exchangeRate), 0);
+    const totalContributed = (goal.contributions || []).reduce((sum, c) => sum + convertToINR(c.amount, c.currency, exchangeRate), 0);
     
     // Convert initial amount dynamically
     const initialInINR = convertToINR(goal.initialAmount, goal.initialCurrency || 'INR', exchangeRate);
@@ -243,7 +243,7 @@ export function SavingsTargets() {
         requiredMonthly, 
         status, 
         monthsRemaining,
-        recentContributions: goal.contributions.slice(0, 3) 
+        recentContributions: (goal.contributions || []).slice(0, 3) 
     };
   };
 
@@ -298,12 +298,12 @@ export function SavingsTargets() {
                     <div className="flex flex-col gap-2">
                         <div className="flex justify-between items-end">
                             <span className="text-3xl text-zinc-900 dark:text-zinc-100 tracking-tight">
-                                {progress.toFixed(0)}<span className="text-xl text-zinc-600 ml-1">%</span>
+                                {progress.toFixed(0)}<span className="text-xl text-zinc-600 dark:text-zinc-400 ml-1">%</span>
                             </span>
-                            <span className="text-xs text-zinc-600 uppercase tracking-widest mb-2 text-right">
-                                ₹{currentTotal.toLocaleString('en-IN')} / ₹{goal.targetAmount.toLocaleString('en-IN')}
+                            <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest mb-2 text-right">
+                                ₹{(currentTotal || 0).toLocaleString('en-IN')} / ₹{(goal.targetAmount || 0).toLocaleString('en-IN')}
                                 <br />
-                                <span className="text-zinc-500 dark:text-zinc-500">₹{remaining.toLocaleString('en-IN')} Left</span>
+                                <span className="text-zinc-500 dark:text-zinc-500">₹{(remaining || 0).toLocaleString('en-IN')} Left</span>
                             </span>
                         </div>
                         <div className="h-4 w-full bg-zinc-50 dark:bg-zinc-800/50 rounded-full overflow-hidden border border-zinc-100 dark:border-zinc-800/50 p-1">
@@ -316,21 +316,21 @@ export function SavingsTargets() {
 
                     <div className="grid grid-cols-2 gap-4 mt-2">
                         <div className="flex flex-col gap-1">
-                            <span className="text-xs text-zinc-600 uppercase tracking-widest">Start Date</span>
+                            <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">Start Date</span>
                             <span className="text-zinc-900 dark:text-zinc-100 opacity-80">
-                                {new Date(goal.startDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                                {new Date(goal.startDate).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
                             </span>
                         </div>
                         <div className="flex flex-col gap-1">
-                            <span className="text-xs text-zinc-600 uppercase tracking-widest">Target Date</span>
+                            <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">Target Date</span>
                             <span className="text-zinc-900 dark:text-zinc-100">
-                                {new Date(goal.targetDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                                {new Date(goal.targetDate).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
                             </span>
                         </div>
                         <div className="flex flex-col gap-1 col-span-2">
-                            <span className="text-xs text-zinc-600 uppercase tracking-widest leading-tight">Required Monthly Contribution</span>
+                            <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest leading-tight">Required Monthly Contribution</span>
                             <span className="text-blue-500">
-                                ₹{Math.ceil(requiredMonthly).toLocaleString('en-IN')}/mo
+                                ₹{(Math.ceil(requiredMonthly) || 0).toLocaleString('en-IN')}/mo
                             </span>
                         </div>
                     </div>
@@ -350,8 +350,8 @@ export function SavingsTargets() {
                 {/* Contribution History */}
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs text-zinc-600 uppercase tracking-widest">Recent Activity</span>
-                        {goal.contributions.length > 0 && (
+                        <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">Recent Activity</span>
+                        {(goal.contributions || []).length > 0 && (
                              <button 
                                 onClick={() => {
                                     setHistoryGoalId(goal.id);
@@ -365,13 +365,13 @@ export function SavingsTargets() {
                     </div>
                     
                     <div className="flex flex-col gap-2">
-                        {recentContributions.length > 0 ? recentContributions.map(c => (
+                        {(recentContributions || []).length > 0 ? recentContributions.map(c => (
                             <div key={c.id} className="flex justify-between items-center p-3 bg-zinc-50 dark:bg-zinc-800/30 rounded-2xl border border-zinc-100 dark:border-zinc-800/50">
                                 <div className="flex flex-col">
                                     <span className="text-xs text-zinc-900 dark:text-zinc-100">
-                                        +{c.currency === 'CAD' ? 'C$' : '₹'}{c.amount.toLocaleString('en-IN')}
+                                        +{(c.currency === 'CAD' ? 'C$' : '₹')}{(c.amount || 0).toLocaleString('en-IN')}
                                     </span>
-                                    <span className="text-xs text-zinc-500">{new Date(c.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' })}</span>
+                                    <span className="text-xs text-zinc-500 dark:text-zinc-400">{new Date(c.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: '2-digit' })}</span>
                                 </div>
                                 <div className="p-1 px-2 bg-zinc-100 dark:bg-zinc-800 rounded uppercase text-[10px] text-zinc-500">Recorded</div>
                             </div>
@@ -515,13 +515,13 @@ export function SavingsTargets() {
 
               <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
                 <div className="flex flex-col gap-3">
-                  {goals.find(g => g.id === historyGoalId)?.contributions.map(c => (
+                  {(goals.find(g => g.id === historyGoalId)?.contributions || []).map(c => (
                     <div key={c.id} className="flex justify-between items-center p-5 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-zinc-100 dark:border-zinc-800/50 group">
                       <div className="flex flex-col">
                         <span className="text-lg text-zinc-900 dark:text-zinc-100">
                             {c.currency === 'CAD' ? 'C$' : '₹'}{c.amount.toLocaleString('en-IN')}
                         </span>
-                        <span className="text-xs text-zinc-600 uppercase tracking-widest">{new Date(c.date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                        <span className="text-xs text-zinc-600 uppercase tracking-widest">{new Date(c.date).toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                       </div>
                       <button onClick={() => deleteContribution(historyGoalId, c.id)} className="p-2 text-zinc-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all">
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>

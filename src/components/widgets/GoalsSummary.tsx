@@ -180,37 +180,37 @@ export function GoalsSummary() {
         {/* Active Projects Card */}
         <div className="bg-teal-50 dark:bg-teal-500/10 border border-teal-100 dark:border-teal-900/50 rounded-2xl p-5 flex flex-col justify-center items-center text-center transition-all hover:shadow-md">
           <span className="text-3xl md:text-4xl font-extrabold text-teal-600 dark:text-teal-400 mb-1">{activeProjectsCount}</span>
-          <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-teal-700/70 dark:text-teal-500/70">Total Active Projects</span>
+          <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-teal-700/70 dark:text-teal-500/80">Total Active Projects</span>
         </div>
 
         {/* Total Tasks Card */}
         <div className="bg-zinc-50 dark:bg-zinc-500/10 border border-zinc-100 dark:border-zinc-800 rounded-2xl p-5 flex flex-col justify-center items-center text-center transition-all hover:shadow-md">
           <span className="text-3xl md:text-4xl font-extrabold text-zinc-600 dark:text-zinc-400 mb-1">{totalTasksCount}</span>
-          <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-zinc-500/70 dark:text-zinc-400/70">Total Tasks</span>
+          <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-zinc-500/70 dark:text-zinc-400/80">Total Tasks</span>
         </div>
 
         {/* Overdue Tasks Card */}
         <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-900/50 rounded-2xl p-5 flex flex-col justify-center items-center text-center transition-all hover:shadow-md">
           <span className="text-3xl md:text-4xl font-extrabold text-rose-600 dark:text-rose-400 mb-1">{overdueTasksCount}</span>
-          <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-rose-700/70 dark:text-rose-500/70">Overdue Tasks</span>
+          <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-rose-700/70 dark:text-rose-500/80">Overdue Tasks</span>
         </div>
 
         {/* Near Deadline Card */}
         <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-900/50 rounded-2xl p-5 flex flex-col justify-center items-center text-center transition-all hover:shadow-md">
           <span className="text-2xl md:text-3xl font-extrabold text-amber-600 dark:text-amber-400 mb-1">{nearDeadlineProjectsCount}</span>
-          <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-amber-700/70 dark:text-amber-500/70 leading-tight">Projects Due Next 7 Days</span>
+          <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-amber-700/70 dark:text-amber-500/80 leading-tight">Projects Due Next 7 Days</span>
         </div>
 
         {/* Projects Completed Card */}
-        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-900/50 rounded-2xl p-5 flex flex-col justify-center items-center text-center transition-all hover:shadow-md">
+        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100/50 dark:border-emerald-900/50 rounded-2xl p-5 flex flex-col justify-center items-center text-center transition-all hover:shadow-md">
           <span className="text-2xl md:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mb-1">{projectsCount}</span>
-          <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-emerald-700/70 dark:text-emerald-500/70 leading-tight">Projects Completed ({filter})</span>
+          <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-emerald-700/70 dark:text-emerald-500/80 leading-tight">Projects Completed ({filter})</span>
         </div>
         
         {/* Tasks Completed Card */}
         <div className="bg-sky-50 dark:bg-sky-500/10 border border-sky-100 dark:border-sky-900/50 rounded-2xl p-5 flex flex-col justify-center items-center text-center transition-all hover:shadow-md">
           <span className="text-2xl md:text-3xl font-extrabold text-sky-600 dark:text-sky-400 mb-1">{tasksCount}</span>
-          <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-sky-700/70 dark:text-sky-500/70 leading-tight">Tasks Completed ({filter})</span>
+          <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-sky-700/70 dark:text-sky-500/80 leading-tight">Tasks Completed ({filter})</span>
         </div>
       </div>
     </div>

@@ -34,8 +34,8 @@ export function AssetsSection() {
     type: 'Bank Balance' as AssetType,
     initialValue: '',
     initialCurrency: 'INR' as 'INR' | 'CAD',
-    startDate: new Date().toISOString().split('T')[0],
-    lastUpdated: new Date().toISOString().split('T')[0]
+    startDate: '', // Initialize empty for SSR
+    lastUpdated: ''
   });
 
   const assetsRef = useRef(assets);
@@ -68,6 +68,11 @@ export function AssetsSection() {
       ];
       setAssets(mockAssets);
     }
+    setFormData({
+      ...formData,
+      startDate: new Date().toISOString().split('T')[0],
+      lastUpdated: new Date().toISOString().split('T')[0]
+    });
     setIsLoaded(true);
 
     const handleLocal = (e: any) => {
@@ -80,7 +85,7 @@ export function AssetsSection() {
                 ...a,
                 initialValue: a.initialValue ?? a.currentValue ?? 0,
                 startDate: a.startDate ?? a.lastUpdated ?? new Date().toISOString().split('T')[0],
-                contributions: a.contributions ?? [],
+                contributions: a.contributions || [],
                 growthRate: a.growthRate ?? 0
               }));
             setAssets(migrated); 
@@ -174,7 +179,7 @@ export function AssetsSection() {
 
     setAssets(assets.map(a => 
       a.id === activeAssetId 
-        ? { ...a, contributions: [newContrib, ...a.contributions], lastUpdated: new Date().toISOString().split('T')[0] } 
+        ? { ...a, contributions: [newContrib, ...(a.contributions || [])], lastUpdated: new Date().toISOString().split('T')[0] } 
         : a
     ));
     setIsContribModalOpen(false);
@@ -218,7 +223,7 @@ export function AssetsSection() {
         {/* Total Assets Metric */}
         <div className="bg-emerald-50/20 dark:bg-emerald-500/5 border border-emerald-100 dark:border-emerald-900/30 rounded-3xl p-6 md:p-8 flex items-center justify-between hover:shadow-xl transition-all group overflow-hidden relative">
           <div className="flex flex-col gap-1 relative z-10">
-            <span className="text-xs text-zinc-600 uppercase tracking-[0.2em]">Live Portfolio Valuation (Compound Growth)</span>
+            <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-[0.2em]">Live Portfolio Valuation (Compound Growth)</span>
             <div className="flex items-baseline gap-3">
               <span className="text-2xl md:text-3xl text-zinc-900 dark:text-zinc-100 tracking-tight">
                 ₹{totalPortfolioValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
@@ -228,7 +233,7 @@ export function AssetsSection() {
           </div>
 
           <div className="flex flex-col gap-1 text-right relative z-10">
-             <span className="text-xs text-zinc-600 uppercase tracking-widest leading-none">Holdings</span>
+             <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest leading-none">Holdings</span>
              <span className="text-lg text-zinc-900 dark:text-zinc-100">{assets.length} Assets</span>
           </div>
         </div>
@@ -264,12 +269,12 @@ export function AssetsSection() {
               </div>
 
               <div className="flex flex-col gap-0.5">
-                 <span className="text-xs text-zinc-600 uppercase tracking-widest">Compounded Valuation</span>
+                 <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">Compounded Valuation</span>
                  <div className="flex items-baseline gap-2">
                     <span className="text-2xl text-zinc-900 dark:text-zinc-100 tracking-tight">
                         ₹{currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                     </span>
-                    {asset.growthRate !== 0 && (
+                    {(asset.contributions || []).length > 0 && asset.growthRate !== 0 && (
                         <span className={`text-xs ${asset.growthRate > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                             {asset.growthRate > 0 ? '↑' : '↓'}{Math.abs(asset.growthRate)}% <span className="text-[10px] opacity-60">APY</span>
                         </span>
@@ -301,14 +306,14 @@ export function AssetsSection() {
                 </button>
               </div>
 
-              <div className="flex flex-col gap-1.5 mt-auto border-t border-zinc-50 dark:border-zinc-800/50 pt-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-zinc-500 uppercase tracking-widest">Last Updated</span>
-                    <span className="text-xs text-zinc-700">
-                        {new Date(asset.lastUpdated).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </span>
-                  </div>
-              </div>
+               <div className="flex flex-col gap-1.5 mt-auto border-t border-zinc-50 dark:border-zinc-800/50 pt-4">
+                   <div className="flex items-center justify-between">
+                     <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Last Updated</span>
+                     <span className="text-xs text-zinc-700 dark:text-zinc-300">
+                         {new Date(asset.lastUpdated).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
+                     </span>
+                   </div>
+               </div>
             </div>
           );
         })}

@@ -39,8 +39,8 @@ export function ExpenseSection() {
   const [editingRecord, setEditingRecord] = useState<ExpenseRecord | null>(null);
 
   // Filter states
-  const [selectedMonths, setSelectedMonths] = useState<number[]>([new Date().getMonth()]); // 0-indexed
-  const [selectedYears, setSelectedYears] = useState<number[]>([new Date().getFullYear()]);
+  const [selectedMonths, setSelectedMonths] = useState<number[]>([]); // Initialize empty for SSR
+  const [selectedYears, setSelectedYears] = useState<number[]>([]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -48,7 +48,7 @@ export function ExpenseSection() {
     subcategory: '',
     amount: '',
     currency: 'INR' as 'INR' | 'CAD',
-    date: new Date().toISOString().split('T')[0],
+    date: '', // Initialize empty for SSR
     type: 'need' as ExpenseType,
     assetId: '',
     paidToType: 'other' as ExpenseRecord['paidToType'],
@@ -65,19 +65,24 @@ export function ExpenseSection() {
     const saved = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_EXPENSES));
     if (saved) {
       try {
-        setRecords(JSON.parse(saved));
+        recordsRef.current = JSON.parse(saved);
+        setRecords(recordsRef.current);
       } catch (e) {
         console.error("Failed to parse expense data", e);
       }
     } else {
         const mock: ExpenseRecord[] = [
-            { id: 'e1', category: 'food', subcategory: 'Groceries', amount: 150, date: new Date().toISOString().split('T')[0], type: 'need', paidToType: 'other', paidToName: 'Walmart' },
-            { id: 'e2', category: 'rent', subcategory: 'Apartment', amount: 2000, date: new Date().toISOString().split('T')[0], type: 'need', paidToType: 'other', paidToName: 'Landlord' },
-            { id: 'e3', category: 'shopping', subcategory: 'Amazon', amount: 85, date: new Date().toISOString().split('T')[0], type: 'want', paidToType: 'other', paidToName: 'Amazon' },
-            { id: 'e4', category: 'investment', subcategory: 'S&P 500', amount: 500, date: new Date().toISOString().split('T')[0], type: 'investment', paidToType: 'asset', paidToName: 'Stock Market' },
+            { id: '1', category: 'food', subcategory: 'Groceries', amount: 150, date: new Date().toISOString().split('T')[0], type: 'need', paidToType: 'other' },
+            { id: '2', category: 'travel', subcategory: 'Uber', amount: 25, date: new Date().toISOString().split('T')[0], type: 'want', paidToType: 'other' },
+            { id: '3', category: 'rent', subcategory: 'Monthly Rent', amount: 1800, date: new Date().toISOString().split('T')[0], type: 'need', paidToType: 'other' },
         ];
+        recordsRef.current = mock;
         setRecords(mock);
     }
+    
+    setSelectedMonths([new Date().getMonth()]);
+    setSelectedYears([new Date().getFullYear()]);
+    setFormData(prev => ({ ...prev, date: new Date().toISOString().split('T')[0] }));
     setIsLoaded(true);
 
     // Load assets for dropdown
@@ -85,18 +90,22 @@ export function ExpenseSection() {
     if (savedAssets) {
       try { setAssets(JSON.parse(savedAssets)); } catch (e) {}
     }
+  }, []); // Run only once
 
+  useEffect(() => {
+    if (!isLoaded) return;
+    
     const handleLocal = (e: any) => {
       if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_EXPENSES) {
         const val = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_EXPENSES));
         if (val && val !== JSON.stringify(recordsRef.current)) {
-          try { setRecords(JSON.parse(val)); } catch (err) {}
+          try { setRecords(JSON.parse(val)); } catch (e) {}
         }
       }
       if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_ASSETS) {
         const val = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_ASSETS));
         if (val) {
-          try { setAssets(JSON.parse(val)); } catch (err) {}
+          try { setAssets(JSON.parse(val)); } catch (e) {}
         }
       }
       if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_SAVINGS_TARGETS) {
@@ -369,29 +378,29 @@ export function ExpenseSection() {
           {/* Table Section */}
           <div className="bg-rose-50/20 dark:bg-rose-500/5 border border-rose-100 dark:border-rose-900/30 rounded-[40px] p-2 overflow-hidden hover:shadow-2xl transition-all flex flex-col pt-8">
               <div className="flex items-center justify-between px-8 mb-8">
-                  <span className="text-xs text-zinc-600 uppercase tracking-[0.3em]">Detailed Records</span>
+                  <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-[0.3em]">Detailed Records</span>
               </div>
 
               <div className="overflow-x-auto px-4">
                   <table className="w-full text-left border-collapse">
                       <thead>
                           <tr className="border-b border-zinc-50 dark:border-zinc-800/50">
-                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-600">Date</th>
-                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-600">Category</th>
-                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-600">Subcategory</th>
-                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-600">Type</th>
-                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-600">Paid from</th>
-                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-600">Paid to</th>
-                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-600 text-right">Amount</th>
-                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-600"></th>
+                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Date</th>
+                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Category</th>
+                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Subcategory</th>
+                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Type</th>
+                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Paid from</th>
+                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Paid to</th>
+                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400 text-right">Amount</th>
+                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400"></th>
                           </tr>
                       </thead>
                       <tbody>
                           {filteredRecords.length > 0 ? filteredRecords.map(record => (
                               <tr key={record.id} className="group hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors border-b border-zinc-50 dark:border-zinc-800/20 last:border-0">
                                   <td className="px-4 py-5">
-                                      <span className="text-xs text-zinc-600">
-                                          {new Date(record.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                      <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                                          {new Date(record.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
                                       </span>
                                   </td>
                                   <td className="px-4 py-5">
@@ -400,7 +409,7 @@ export function ExpenseSection() {
                                       </span>
                                   </td>
                                   <td className="px-4 py-5">
-                                      <span className="text-xs text-zinc-600 uppercase">
+                                      <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase">
                                           {record.subcategory || '-'}
                                       </span>
                                   </td>
@@ -410,12 +419,12 @@ export function ExpenseSection() {
                                       </span>
                                   </td>
                                   <td className="px-4 py-5">
-                                      <span className="text-xs text-zinc-500">
+                                      <span className="text-xs text-zinc-500 dark:text-zinc-400">
                                           {assets.find(a => a.id === record.assetId)?.name || '-'}
                                       </span>
                                   </td>
                                   <td className="px-4 py-5">
-                                      <span className="text-xs text-zinc-500">
+                                      <span className="text-xs text-zinc-500 dark:text-zinc-400">
                                           {record.paidToType === 'other' 
                                             ? record.paidToName || '-' 
                                             : record.paidToType === 'emergency'
@@ -449,7 +458,7 @@ export function ExpenseSection() {
                           )) : (
                               <tr>
                                   <td colSpan={7} className="px-8 py-20 text-center">
-                                      <span className="text-xs text-zinc-500 uppercase tracking-[0.2em]">No expenses recorded for this period</span>
+                                      <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">No expenses recorded for this period</span>
                                   </td>
                               </tr>
                           )}
@@ -468,7 +477,7 @@ export function ExpenseSection() {
                 <h3 className="text-3xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter">
                   {editingRecord ? 'Edit Expense' : 'Add Expense'}
                 </h3>
-                <button onClick={() => setIsModalOpen(false)} className="text-zinc-600 hover:text-zinc-900 dark:hover:text-white transition-colors">
+                <button onClick={() => setIsModalOpen(false)} className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors">
                   <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>

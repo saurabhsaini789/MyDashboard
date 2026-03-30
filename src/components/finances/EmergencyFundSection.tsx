@@ -86,11 +86,11 @@ export function EmergencyFundSection() {
   if (!isLoaded || !data) return null;
 
   const exchangeRate = getExchangeRate();
-  const totalSaved = data.contributions.reduce((sum, c) => sum + convertToINR(c.amount, c.currency, exchangeRate), 0);
+  const totalSaved = (data.contributions || []).reduce((sum, c) => sum + convertToINR(c.amount, c.currency, exchangeRate), 0);
   const progressPercent = Math.min(100, (totalSaved / (data.targetAmount || 1)) * 100);
   const monthsCovered = data.monthlyExpenses > 0 ? totalSaved / data.monthlyExpenses : 0;
   const remaining = Math.max(0, data.targetAmount - totalSaved);
-  const recentContributions = data.contributions.slice(0, 1);
+  const recentContributions = (data.contributions || []).slice(0, 1);
 
   const handleUpdateSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,20 +205,20 @@ export function EmergencyFundSection() {
                     }`}>
                         {progressPercent.toFixed(0)}% Saved
                     </span>
-                    <span className="text-xs text-zinc-600 uppercase tracking-[0.3em] mb-1">Coverage</span>
+                    <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-[0.3em] mb-1">Coverage</span>
                     <span className="text-5xl md:text-6xl text-zinc-900 dark:text-white tracking-tighter leading-none">
                         {monthsCovered < 10 ? monthsCovered.toFixed(1) : Math.floor(monthsCovered)}
                     </span>
-                    <span className="text-base text-zinc-600 uppercase tracking-widest mt-2">{monthsCovered === 1 ? 'Month' : 'Months'}</span>
+                    <span className="text-base text-zinc-600 dark:text-zinc-400 uppercase tracking-widest mt-2">{monthsCovered === 1 ? 'Month' : 'Months'}</span>
                 </div>
             </div>
 
             <div className="flex flex-col items-center gap-2">
                 <span className="text-2xl text-zinc-900 dark:text-white tracking-tighter">
-                    ₹{totalSaved.toLocaleString('en-IN')} Saved
+                    ₹{(totalSaved || 0).toLocaleString('en-IN')} Saved
                 </span>
-                <span className="text-xs text-zinc-600 uppercase tracking-[0.2em]">
-                    Target: ₹{data.targetAmount.toLocaleString('en-IN')}
+                <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-[0.2em]">
+                    Target: ₹{(data.targetAmount || 0).toLocaleString('en-IN')}
                 </span>
             </div>
           </div>
@@ -229,16 +229,16 @@ export function EmergencyFundSection() {
             {/* Top Metrics Row */}
             <div className="grid grid-cols-2 gap-6">
                 <div className="bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl p-6 border border-zinc-100 dark:border-zinc-800/50">
-                    <span className="text-xs text-zinc-600 uppercase tracking-widest mb-3 block">Ideal Monthly Expense</span>
+                    <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest mb-3 block">Ideal Monthly Expense</span>
                     <div className="flex items-baseline gap-1">
-                        <span className="text-2xl text-zinc-900 dark:text-white tracking-tighter">₹{data.monthlyExpenses.toLocaleString('en-IN')}</span>
-                        <span className="text-xs text-zinc-600">/mo</span>
+                        <span className="text-2xl text-zinc-900 dark:text-white tracking-tighter">₹{(data.monthlyExpenses || 0).toLocaleString('en-IN')}</span>
+                        <span className="text-xs text-zinc-600 dark:text-zinc-400">/mo</span>
                     </div>
                 </div>
                 <div className="bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl p-6 border border-zinc-100 dark:border-zinc-800/50">
-                    <span className="text-xs text-zinc-600 uppercase tracking-widest mb-3 block">Remaining Goal</span>
+                    <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest mb-3 block">Remaining Goal</span>
                     <div className="flex items-baseline gap-1">
-                        <span className="text-2xl text-zinc-900 dark:text-white tracking-tighter">₹{remaining.toLocaleString('en-IN')}</span>
+                        <span className="text-2xl text-zinc-900 dark:text-white tracking-tighter">₹{(remaining || 0).toLocaleString('en-IN')}</span>
                     </div>
                 </div>
             </div>
@@ -249,7 +249,7 @@ export function EmergencyFundSection() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex flex-col gap-1">
                         <h4 className="text-base font-bold text-zinc-900 dark:text-white uppercase tracking-tight">Adjust Monthly Baseline</h4>
-                        <p className="text-sm text-zinc-500 font-medium">Update your ideal monthly budget to recalculate safety coverage.</p>
+                        <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">Update your ideal monthly budget to recalculate safety coverage.</p>
                     </div>
                     <div className="relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600">₹</span>
@@ -266,8 +266,8 @@ export function EmergencyFundSection() {
             {/* Recent Contributions Tracker */}
             <div className="flex flex-col gap-6">
                 <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold text-zinc-600 uppercase tracking-[0.25em]">Last Contribution</h4>
-                    {data.contributions.length > 1 && (
+                    <h4 className="text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-[0.25em]">Last Contribution</h4>
+                    {(data.contributions || []).length > 1 && (
                         <button 
                             onClick={() => setIsHistoryModalOpen(true)}
                             className="text-xs text-zinc-900 dark:text-white uppercase tracking-widest hover:underline"
@@ -277,7 +277,7 @@ export function EmergencyFundSection() {
                     )}
                 </div>
                 <div className="flex flex-col gap-3">
-                    {recentContributions.length > 0 ? recentContributions.map(c => (
+                    {(recentContributions || []).length > 0 ? recentContributions.map(c => (
                         <div key={c.id} className="flex justify-between items-center p-5 bg-amber-50/10 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-900/30 rounded-[28px] group/item hover:border-amber-200 dark:hover:border-amber-800/50 transition-all">
                             <div className="flex items-center gap-4">
                                 <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
@@ -285,9 +285,9 @@ export function EmergencyFundSection() {
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-base text-zinc-900 dark:text-white uppercase tracking-tight">
-                                        +{c.currency === 'CAD' ? 'C$' : '₹'}{c.amount.toLocaleString('en-IN')}
+                                        +{c.currency === 'CAD' ? 'C$' : '₹'}{(c.amount || 0).toLocaleString('en-IN')}
                                     </span>
-                                    <span className="text-xs text-zinc-600">{new Date(c.date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                                    <span className="text-xs text-zinc-600 dark:text-zinc-400">{new Date(c.date).toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                                 </div>
                             </div>
                             <button 
@@ -402,7 +402,7 @@ export function EmergencyFundSection() {
 
               <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
                 <div className="flex flex-col gap-3">
-                  {data.contributions.map(c => (
+                  {(data.contributions || []).map(c => (
                     <div key={c.id} className="flex justify-between items-center p-5 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-zinc-100 dark:border-zinc-800/50 group">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
@@ -412,7 +412,7 @@ export function EmergencyFundSection() {
                             <span className="text-lg text-zinc-900 dark:text-zinc-100">
                                 {c.currency === 'CAD' ? 'C$' : '₹'}{c.amount.toLocaleString('en-IN')}
                             </span>
-                            <span className="text-xs text-zinc-600 uppercase tracking-widest">{new Date(c.date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                            <span className="text-xs text-zinc-600 uppercase tracking-widest">{new Date(c.date).toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                         </div>
                       </div>
                       <button onClick={() => deleteContribution(c.id)} className="p-2 text-zinc-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all">

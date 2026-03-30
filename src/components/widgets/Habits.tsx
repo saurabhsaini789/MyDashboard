@@ -345,10 +345,10 @@ export function Habits() {
 
       {isBeforeBirth ? (
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
-          <div className="text-5xl mb-4">👶</div>
+          <div className="text-5xl mb-4 text-zinc-900 dark:text-zinc-100">👶</div>
           <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Wait a minute!</h3>
           <p className="text-zinc-500 dark:text-zinc-400 max-w-sm">
-            I was not born then... I was born on <span className="font-semibold text-zinc-900 dark:text-zinc-300">27th March 2026</span>, so please select a month on or after that!
+            I was not born then... I was born on <span className="font-semibold text-zinc-800 dark:text-zinc-200">27th March 2026</span>, so please select a month on or after that!
           </p>
         </div>
       ) : (
@@ -361,12 +361,12 @@ export function Habits() {
                   {datesOfMonth.map((d, index) => {
                     const isToday = isCurrentViewRealTodayMonth && index === todayDateIndex;
                     return (
-                      <th key={`day-${index}`} className={`font-semibold text-[10px] uppercase tracking-wider pt-3 pb-1 px-2 text-center w-20 min-w-[3rem] select-none transition-colors ${isToday ? 'text-teal-600 dark:text-teal-400 bg-teal-50/50 dark:bg-teal-500/10' : 'text-zinc-400'}`}>
+                      <th className={`font-semibold text-[10px] uppercase tracking-wider pt-3 pb-1 px-2 text-center w-20 min-w-[3rem] select-none transition-colors ${isToday ? 'text-teal-600 dark:text-teal-400 bg-teal-50/50 dark:bg-teal-500/10' : 'text-zinc-500 dark:text-zinc-400'}`}>
                         {d.dayName}
                       </th>
                     );
                   })}
-                  <th className="font-semibold text-xs uppercase tracking-wider text-zinc-500 py-4 px-6 text-right w-28 rounded-tr-2xl select-none sticky right-0 z-20 bg-zinc-50 dark:bg-[#18181b] shadow-[-1px_0_0_0_#e4e4e7] dark:shadow-[-1px_0_0_0_#27272a]" rowSpan={2}>Total</th>
+                  <th className="font-semibold text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400 py-4 px-6 text-right w-28 rounded-tr-2xl select-none sticky right-0 z-20 bg-zinc-50 dark:bg-[#18181b] shadow-[-1px_0_0_0_#e4e4e7] dark:shadow-[-1px_0_0_0_#27272a]" rowSpan={2}>Total</th>
                 </tr>
                 <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
                   {datesOfMonth.map((d, index) => {

@@ -152,7 +152,7 @@ export function TasksCalendar() {
         <div className="w-full flex-1 flex flex-col pt-2">
           <div className="grid grid-cols-7 gap-1 mb-2">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
-              <div key={`${day}-${idx}`} className="text-center text-[10px] font-bold uppercase tracking-wider text-zinc-400 py-1">
+              <div key={`${day}-${idx}`} className="text-center text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 py-1">
                 {day}
               </div>
             ))}
@@ -207,14 +207,14 @@ export function TasksCalendar() {
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
               </span>
               Tasks for {months[currentMonth].slice(0, 3)} {selectedDay}
-              <span className="ml-auto text-xs font-semibold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">
+              <span className="ml-auto text-xs font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">
                 {selectedDayProjects.length}
               </span>
             </h4>
             
             <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-2">
               {selectedDayProjects.length === 0 ? (
-                <div className="text-center py-6 text-sm text-zinc-500 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800">
+                <div className="text-center py-6 text-sm text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800">
                   No due tasks for this date.
                 </div>
               ) : (
@@ -259,14 +259,14 @@ export function TasksCalendar() {
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
           </span>
           Next Tasks
-          <span className="ml-auto text-xs font-semibold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">
+          <span className="ml-auto text-xs font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">
             {nextTasks.length}
           </span>
         </h4>
         
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-2">
           {nextTasks.length === 0 ? (
-            <div className="text-center py-6 text-sm text-zinc-500 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800">
+            <div className="text-center py-6 text-sm text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800">
               No upcoming tasks.
             </div>
           ) : (

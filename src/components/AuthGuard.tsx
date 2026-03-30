@@ -8,8 +8,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [isLocal, setIsLocal] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+    setIsLocal(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -45,7 +50,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     setAuthorized(true);
   };
 
-  const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  if (!isMounted) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-[#0a0a0a] z-[9999]">
+        <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (loading && !isLocal) {
     return (
@@ -61,3 +72,4 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
+

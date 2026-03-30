@@ -24,15 +24,15 @@ export function IncomeSection() {
   const [editingRecord, setEditingRecord] = useState<IncomeRecord | null>(null);
 
   // Filter states
-  const [selectedMonths, setSelectedMonths] = useState<number[]>([new Date().getMonth()]); // 0-indexed
-  const [selectedYears, setSelectedYears] = useState<number[]>([new Date().getFullYear()]);
+  const [selectedMonths, setSelectedMonths] = useState<number[]>([]); // Initialize empty for SSR
+  const [selectedYears, setSelectedYears] = useState<number[]>([]);
 
   // Form state
   const [formData, setFormData] = useState({
     source: 'salary' as IncomeSource,
     amount: '',
     currency: 'INR' as 'INR' | 'CAD',
-    date: new Date().toISOString().split('T')[0],
+    date: '', // Initialize empty for SSR
     type: 'active' as IncomeType,
     assetId: ''
   });
@@ -46,37 +46,36 @@ export function IncomeSection() {
     const saved = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_INCOME));
     if (saved) {
       try {
-        setRecords(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        recordsRef.current = parsed;
+        setRecords(parsed);
       } catch (e) {
         console.error("Failed to parse income data", e);
       }
     } else {
         const mock: IncomeRecord[] = [
             { id: '1', source: 'salary', amount: 5000, date: new Date().toISOString().split('T')[0], type: 'active' },
-            { id: '2', source: 'freelance', amount: 1200, date: new Date().toISOString().split('T')[0], type: 'active' },
+            { id: '2', source: 'freelance', amount: 800, date: new Date().toISOString().split('T')[0], type: 'active' },
             { id: '3', source: 'investment', amount: 450, date: new Date().toISOString().split('T')[0], type: 'passive' },
         ];
+        recordsRef.current = mock;
         setRecords(mock);
     }
-    setIsLoaded(true);
 
-    // Load assets for dropdown
-    const savedAssets = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_ASSETS));
-    if (savedAssets) {
-      try { setAssets(JSON.parse(savedAssets)); } catch (e) {}
-    }
+    setSelectedMonths([new Date().getMonth()]);
+    setSelectedYears([new Date().getFullYear()]);
+    setFormData(prev => ({ ...prev, date: new Date().toISOString().split('T')[0] }));
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoaded) return;
 
     const handleLocal = (e: any) => {
       if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_INCOME) {
         const val = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_INCOME));
         if (val && val !== JSON.stringify(recordsRef.current)) {
           try { setRecords(JSON.parse(val)); } catch (e) {}
-        }
-      }
-      if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_ASSETS) {
-        const val = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_ASSETS));
-        if (val) {
-          try { setAssets(JSON.parse(val)); } catch (e) {}
         }
       }
       if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_EXCHANGE_RATE) {
@@ -87,7 +86,7 @@ export function IncomeSection() {
     };
     window.addEventListener('local-storage-change', handleLocal);
     return () => window.removeEventListener('local-storage-change', handleLocal);
-  }, []);
+  }, [isLoaded]);
 
   useEffect(() => {
     if (isLoaded) {
@@ -250,27 +249,27 @@ export function IncomeSection() {
           {/* Table Section */}
           <div className="bg-emerald-50/20 dark:bg-emerald-500/5 border border-emerald-100 dark:border-emerald-900/30 rounded-[40px] p-2 overflow-hidden hover:shadow-2xl transition-all flex flex-col pt-8">
               <div className="flex items-center justify-between px-8 mb-8">
-                  <span className="text-xs text-zinc-600 uppercase tracking-[0.3em]">Detailed Records</span>
+                  <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-[0.3em]">Detailed Records</span>
               </div>
 
               <div className="overflow-x-auto px-4">
                   <table className="w-full text-left border-collapse">
                       <thead>
                           <tr className="border-b border-zinc-50 dark:border-zinc-800/50">
-                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-600">Date</th>
-                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-600">Source</th>
-                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-600">Type</th>
-                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-600">Account</th>
-                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-600 text-right">Amount</th>
-                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-600"></th>
+                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Date</th>
+                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Source</th>
+                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Type</th>
+                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Account</th>
+                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400 text-right">Amount</th>
+                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400"></th>
                           </tr>
                       </thead>
                       <tbody>
                           {filteredRecords.length > 0 ? filteredRecords.map(record => (
                               <tr key={record.id} className="group hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors border-b border-zinc-50 dark:border-zinc-800/20 last:border-0">
                                   <td className="px-4 py-5">
-                                      <span className="text-xs text-zinc-600">
-                                          {new Date(record.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                      <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                                          {new Date(record.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
                                       </span>
                                   </td>
                                   <td className="px-4 py-5">
@@ -284,7 +283,7 @@ export function IncomeSection() {
                                       </span>
                                   </td>
                                   <td className="px-4 py-5">
-                                      <span className="text-sm text-zinc-500">
+                                      <span className="text-sm text-zinc-500 dark:text-zinc-400">
                                           {assets.find(a => a.id === record.assetId)?.name || '-'}
                                       </span>
                                   </td>
@@ -310,7 +309,7 @@ export function IncomeSection() {
                           )) : (
                               <tr>
                                   <td colSpan={6} className="px-8 py-20 text-center">
-                                      <span className="text-xs text-zinc-500 uppercase tracking-[0.2em]">No income recorded for this period</span>
+                                      <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">No income recorded for this period</span>
                                   </td>
                               </tr>
                           )}
