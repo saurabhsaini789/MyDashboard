@@ -3,6 +3,7 @@ import { SYNC_KEYS } from './sync-keys';
 import { setSyncedItem } from './storage';
 
 import { IncomeRecord, ExpenseRecord, Contribution, Asset, PaymentLog, Liability } from '@/types/finance';
+export type { IncomeRecord, ExpenseRecord, Contribution, Asset, PaymentLog, Liability };
 
 /**
  * Gets the current exchange rate for CAD to INR.
