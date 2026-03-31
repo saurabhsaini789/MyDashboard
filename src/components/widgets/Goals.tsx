@@ -5,6 +5,7 @@ import { setSyncedItem } from '@/lib/storage';
 import { getPrefixedKey } from '@/lib/keys';
 
 import { ProjectModal, type Project, type Task } from './ProjectModal';
+import { GanttView } from './GanttView';
 
 const BUCKETS = [
   'Health', 'Income', 'Career',
@@ -12,24 +13,98 @@ const BUCKETS = [
   'Learning', 'Admin', 'Mental'
 ];
 
+// --- Shared Priority & Status Logic ---
+export const getProjectPriorityInfo = (p: Project) => {
+  if (p.isCompleted || p.status === 'completed') {
+    return {
+      label: 'Completed',
+      color: 'teal',
+      icon: '✓',
+      classes: 'bg-teal-50 dark:bg-teal-500/5 text-teal-700 dark:text-teal-500 border border-teal-200/50 dark:border-teal-900/50 opacity-80'
+    };
+  }
+
+  if (!p.dueDate) {
+    return {
+      label: p.isImportant ? 'Strategic' : 'On Track',
+      color: 'green',
+      icon: p.isImportant ? '📌' : '🟢',
+      classes: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 shadow-sm shadow-emerald-500/5'
+    };
+  }
+
+  const due = new Date(p.dueDate + 'T00:00:00');
+  due.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diffTime = due.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  const isImportant = p.isImportant;
+  
+  // Urgency Logic
+  let urgency: 'overdue' | 'soon' | 'upcoming' | 'on-track';
+  if (diffDays < 0) urgency = 'overdue';
+  else if (diffDays <= 7) urgency = 'soon';
+  else if (diffDays <= 21) urgency = 'upcoming';
+  else urgency = 'on-track';
+
+  // Combined Logic
+  if (urgency === 'overdue' || urgency === 'soon') {
+    if (isImportant) {
+      return {
+        label: 'Critical',
+        icon: '🔥',
+        color: 'red',
+        classes: 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 shadow-sm shadow-rose-500/5'
+      };
+    }
+    return {
+      label: 'Time-sensitive',
+      icon: '⚠️',
+      color: 'red',
+      classes: 'bg-rose-50/50 dark:bg-rose-500/5 text-rose-600 dark:text-rose-400/80 border border-rose-100 dark:border-rose-500/10 shadow-sm shadow-rose-500/5'
+    };
+  }
+
+  if (urgency === 'upcoming') {
+    return {
+      label: 'Upcoming',
+      icon: '🟡',
+      color: 'yellow',
+      classes: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 shadow-sm shadow-amber-500/5'
+    };
+  }
+
+  // On Track
+  if (isImportant) {
+    return {
+      label: 'Strategic',
+      icon: '📌',
+      color: 'green',
+      classes: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 shadow-sm shadow-emerald-500/5'
+    };
+  }
+
+  return {
+    label: 'On Track',
+    icon: '🟢',
+    color: 'green',
+    classes: 'bg-zinc-50 dark:bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-500/20 shadow-sm shadow-zinc-500/5'
+  };
+};
+
 export function Goals() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [view, setView] = useState<'grid' | 'gantt'>('grid');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [creatingForBucket, setCreatingForBucket] = useState<string | null>(null);
   const projectsRef = React.useRef(projects);
 
   React.useEffect(() => {
     projectsRef.current = projects;
   }, [projects]);
-
-  // Form states for creating a new project
-  const [creatingForBucket, setCreatingForBucket] = useState<string | null>(null);
-  const [newProjectTitle, setNewProjectTitle] = useState('');
-  const [newProjectDate, setNewProjectDate] = useState('');
-  const [newProjectImportant, setNewProjectImportant] = useState(false);
-
-  // Form state for creating a new task
-  const [newTaskTitle, setNewTaskTitle] = useState('');
 
   useEffect(() => {
     const stored = localStorage.getItem(getPrefixedKey('goals_projects'));
@@ -82,94 +157,15 @@ export function Goals() {
     }
   }, [projects, isLoaded]);
 
-  // --- Priority Logic ---
-  const getPriorityInfo = (project: Project) => {
-    if (project.isCompleted) {
-      return {
-        isImportant: false, isUrgent: false, isCompleted: true,
-        label: 'Completed',
-        classes: 'bg-teal-50 dark:bg-teal-500/5 text-teal-700 dark:text-teal-500 border border-teal-200/50 dark:border-teal-900/50 opacity-80'
-      };
-    }
-
-    if (!project.dueDate) {
-      return {
-        isImportant: project.isImportant, isUrgent: false, isCompleted: false,
-        label: project.isImportant ? 'Important' : 'Backlog',
-        classes: project.isImportant
-          ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 shadow-sm shadow-amber-500/5'
-          : 'bg-zinc-50 dark:bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-500/20 shadow-sm shadow-zinc-500/5'
-      };
-    }
-
-    const due = new Date(project.dueDate + 'T00:00:00');
-    due.setHours(0, 0, 0, 0);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const diffTime = due.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    const isUrgent = diffDays <= 7;
-    const isImportant = project.isImportant;
-
-    if (isImportant && isUrgent) {
-      return {
-        isImportant, isUrgent, isCompleted: false,
-        label: 'Important + Urgent',
-        classes: 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 shadow-sm shadow-rose-500/5'
-      };
-    } else if (isImportant && !isUrgent) {
-      return {
-        isImportant, isUrgent, isCompleted: false,
-        label: 'Important',
-        classes: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 shadow-sm shadow-amber-500/5'
-      };
-    } else if (!isImportant && isUrgent) {
-      return {
-        isImportant, isUrgent, isCompleted: false,
-        label: 'Urgent',
-        classes: 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-500/20 shadow-sm shadow-sky-500/5'
-      };
-    } else {
-      return {
-        isImportant, isUrgent, isCompleted: false,
-        label: 'Not Urgent',
-        classes: 'bg-zinc-50 dark:bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-500/20 shadow-sm shadow-zinc-500/5'
-      };
-    }
-  };
-
   // --- Handlers ---
-  const handleCreateProject = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!creatingForBucket || !newProjectTitle.trim()) return;
-
-    const newProject: Project = {
+  const handleCreateProject = (newProj: Project) => {
+    const finalProject: Project = {
+      ...newProj,
       id: crypto.randomUUID(),
-      bucketId: creatingForBucket,
-      title: newProjectTitle.trim(),
-      dueDate: newProjectDate,
-      isImportant: newProjectImportant,
-      isCompleted: false,
       tasks: [],
+      createdAt: new Date().toISOString()
     };
-
-    setProjects([...projects, newProject]);
-    setCreatingForBucket(null);
-    setNewProjectTitle('');
-    setNewProjectDate('');
-    setNewProjectImportant(false);
-  };
-
-  const handleToggleProjectCompletion = (projectId: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setProjects(projects.map(p =>
-      p.id === projectId ? { 
-        ...p, 
-        isCompleted: !p.isCompleted, 
-        completedAt: !p.isCompleted ? new Date().toISOString() : undefined 
-      } : p
-    ));
+    setProjects([...projects, finalProject]);
   };
 
   const handleUpdateProject = (updatedProject: Project) => {
@@ -182,176 +178,158 @@ export function Goals() {
     if (selectedProject?.id === projectId) setSelectedProject(null);
   };
 
-
-  const cancelProjectCreation = () => {
-    setCreatingForBucket(null);
-    setNewProjectTitle('');
-    setNewProjectDate('');
-    setNewProjectImportant(false);
-  };
-
   if (!isLoaded) return <div className="animate-pulse h-96 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800/50"></div>;
 
   return (
     <div className="w-full relative">
 
-      {/* Grid of 9 Buckets */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {BUCKETS.map(bucket => {
-          const bucketProjects = projects
-            .filter(p => p.bucketId === bucket && !p.isCompleted)
-            .sort((a, b) => {
-              const pA = getPriorityInfo(a);
-              const pB = getPriorityInfo(b);
-              const score = (p: { isCompleted?: boolean; isImportant?: boolean; isUrgent?: boolean }) => {
-                if (p.isCompleted) return 5;
-                if (p.isImportant && p.isUrgent) return 1;
-                if (p.isImportant && !p.isUrgent) return 2;
-                if (!p.isImportant && p.isUrgent) return 3;
-                return 4;
-              };
-              return score(pA) - score(pB);
-            });
+      {/* View Switcher Tabs */}
+      <div className="flex justify-center mb-8">
+        <div className="bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-xl flex items-center gap-1 shadow-inner">
+          <button
+            onClick={() => setView('grid')}
+            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${view === 'grid'
+              ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
+              : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+              }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
+            Grid View
+          </button>
+          <button
+            onClick={() => setView('gantt')}
+            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${view === 'gantt'
+              ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
+              : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+              }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10h18M3 14h18M3 18h18M7 6v4M17 6v4" /></svg>
+            Gantt View
+          </button>
+        </div>
+      </div>
 
-          return (
-            <div key={bucket} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 flex flex-col h-[380px] shadow-sm transition-all hover:shadow-md">
-              <div className="flex items-center justify-between mb-4 flex-shrink-0">
-                <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-teal-500/20 border border-teal-500"></div>
-                  {bucket}
-                </h3>
-                <button
-                  onClick={() => setCreatingForBucket(bucket)}
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 transition-colors"
-                  aria-label={`Add project to ${bucket}`}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
-                </button>
-              </div>
+      {/* Main Content */}
+      <div className={view === 'grid' ? 'block animate-in fade-in duration-500' : 'hidden'}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {BUCKETS.map(bucket => {
+            const bucketProjects = projects
+              .filter(p => p.bucketId === bucket && !p.isCompleted && p.status !== 'completed')
+              .sort((a, b) => {
+                const pA = getProjectPriorityInfo(a);
+                const pB = getProjectPriorityInfo(b);
+                const score = (label: string) => {
+                  if (label === 'Critical') return 1;
+                  if (label === 'Time-sensitive') return 2;
+                  if (label === 'Strategic') return 3;
+                  if (label === 'Upcoming') return 4;
+                  return 5;
+                };
+                return score(pA.label) - score(pB.label);
+              });
 
-              {/* Bucket Content */}
-              <div className="flex-1 flex flex-col gap-3 overflow-y-auto pr-1 custom-scrollbar">
-                {bucketProjects.length === 0 && creatingForBucket !== bucket && (
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400 italic mt-auto mb-auto text-center">No projects yet</p>
-                )}
+            return (
+              <div key={bucket} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 flex flex-col h-[480px] shadow-sm transition-all hover:shadow-md">
+                <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                  <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-teal-500/20 border border-teal-500"></div>
+                    {bucket}
+                  </h3>
+                  <button
+                    onClick={() => setCreatingForBucket(bucket)}
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 transition-colors"
+                    aria-label={`Add project to ${bucket}`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+                  </button>
+                </div>
 
-                {bucketProjects.map(project => {
-                  const priority = getPriorityInfo(project);
-                  return (
-                    <div
-                      key={project.id}
-                      onClick={() => {
-                        setSelectedProject(project);
-                      }}
-                      className={`text-left p-4 rounded-xl transition-all sm:hover:-translate-y-0.5 flex-shrink-0 flex flex-col justify-between cursor-pointer group ${priority.classes}`}
-                    >
-                      <div className="flex justify-between items-start gap-2 w-full">
-                        <div className="flex flex-col gap-1 flex-1 min-w-0">
-                          {(() => {
-                            const nextTask = project.tasks.find(t => !t.isCompleted);
-                            return (
-                              <>
-                                <h4 className={`font-semibold text-[15px] leading-tight break-words ${project.isCompleted ? 'line-through opacity-60' : ''}`}>
-                                  {project.title}
-                                </h4>
-                                {nextTask && !project.isCompleted && (
-                                  <div className="flex items-center gap-1.5 w-full">
-                                    <span className="text-[10px] opacity-40 shrink-0">→</span>
-                                    <p className="text-[11px] opacity-80 min-w-0 font-medium truncate">
-                                      {nextTask.title}
-                                    </p>
-                                  </div>
-                                )}
-                              </>
-                            );
-                          })()}
-                        </div>
-                        {project.dueDate && (
-                          <div className="flex items-center gap-1.5 py-0.5 px-2 rounded-md bg-white/50 dark:bg-black/20 text-[10px] opacity-90 font-medium shrink-0 mt-0.5 -mr-2 ml-auto">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                            {new Date(project.dueDate + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                {/* Bucket Content */}
+                <div className="flex-1 flex flex-col gap-3 overflow-y-auto pr-1 custom-scrollbar">
+                  {bucketProjects.length === 0 && (
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400 italic mt-auto mb-auto text-center">No projects yet</p>
+                  )}
+
+                  {bucketProjects.map(project => {
+                    const priority = getProjectPriorityInfo(project);
+                    return (
+                      <div
+                        key={project.id}
+                        onClick={() => setSelectedProject(project)}
+                        className={`text-left p-4 rounded-xl transition-all sm:hover:-translate-y-0.5 flex-shrink-0 flex flex-col justify-between cursor-pointer group relative border-l-4 ${priority.classes}`}
+                      >
+                        
+                        <div className="flex justify-between items-start gap-2 w-full">
+                          <div className="flex flex-col gap-1 flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <span className="text-[11px] uppercase font-bold tracking-widest opacity-80">
+                                {priority.icon} {priority.label}
+                              </span>
+                            </div>
+                            <h4 className="font-bold text-[17px] leading-tight break-words flex items-center gap-2">
+                              {project.title}
+                              {project.isImportant && (
+                                <span className="text-amber-500 flex-shrink-0 animate-pulse-subtle">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+                                </span>
+                              )}
+                            </h4>
+                            {(() => {
+                              const nextTask = project.tasks.find(t => !t.isCompleted);
+                              if (!nextTask) return null;
+                              return (
+                                <div className="flex items-center gap-2 w-full mt-2">
+                                  <span className="text-xs opacity-40 shrink-0">→</span>
+                                  <p className="text-[13px] opacity-80 min-w-0 font-medium truncate italic">
+                                    {nextTask.title}
+                                  </p>
+                                </div>
+                              );
+                            })()}
                           </div>
-                        )}
+                          {project.dueDate && (
+                            <div className="flex items-center gap-1.5 py-1 px-2 rounded-lg bg-white/60 dark:bg-black/30 text-[11px] opacity-90 font-bold shrink-0 mt-0.5 shadow-sm">
+                              {new Date(project.dueDate + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-
-                {/* Inline Form for creating project in this bucket */}
-                {creatingForBucket === bucket && (
-                  <form onSubmit={handleCreateProject} className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700/50 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <input
-                      autoFocus
-                      type="text"
-                      placeholder="Project title..."
-                      value={newProjectTitle}
-                      onChange={(e) => setNewProjectTitle(e.target.value)}
-                      className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-900 dark:text-white mb-3 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-teal-500/50"
-                      required
-                    />
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] uppercase font-bold text-zinc-500 dark:text-zinc-400 tracking-wider">Due Date</label>
-                        <input
-                          type="date"
-                          value={newProjectDate}
-                          onChange={(e) => setNewProjectDate(e.target.value)}
-                          className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50"
-                          required
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] uppercase font-bold text-zinc-500 dark:text-zinc-400 tracking-wider">Priority</label>
-                        <button
-                          type="button"
-                          onClick={() => setNewProjectImportant(!newProjectImportant)}
-                          className={`w-full flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors border ${newProjectImportant
-                              ? 'bg-orange-50 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-500/30'
-                              : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700'
-                            }`}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill={newProjectImportant ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-                          Important
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 justify-end mt-1">
-                      <button type="button" onClick={cancelProjectCreation} className="px-3 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors">
-                        Cancel
-                      </button>
-                      <button type="submit" disabled={!newProjectTitle.trim() || !newProjectDate} className="px-3 py-1.5 text-xs font-semibold bg-zinc-900 dark:bg-white text-white dark:text-black rounded-md hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50">
-                        Create
-                      </button>
-                    </div>
-                  </form>
-                )}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+      </div>
+
+      <div className={view === 'gantt' ? 'block animate-in fade-in duration-500' : 'hidden'}>
+        <GanttView 
+          projects={projects.filter(p => !p.isCompleted && p.status !== 'completed')} 
+          buckets={BUCKETS}
+          onSelectProject={setSelectedProject}
+        />
       </div>
 
       {/* Completed Projects Section */}
       {(() => {
-        const completedProjects = projects.filter(p => p.isCompleted);
+        const completedProjects = projects.filter(p => p.isCompleted || p.status === 'completed');
         if (completedProjects.length === 0) return null;
         return (
           <div className="mt-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2 mb-6">
-              <span className="w-8 h-8 rounded-full bg-teal-50 dark:bg-teal-500/10 text-teal-500 flex items-center justify-center">
+              <span className="w-8 h-8 rounded-full bg-teal-50 dark:bg-teal-500/10 text-teal-500 flex items-center justify-center shadow-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
               </span>
               Completed Projects
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {completedProjects.map(project => {
-                const priority = getPriorityInfo(project);
+                const priority = getProjectPriorityInfo(project);
                 return (
                   <div
                     key={project.id}
-                    onClick={() => {
-                      setSelectedProject(project);
-                    }}
+                    onClick={() => setSelectedProject(project)}
                     className={`text-left p-4 rounded-xl transition-all sm:hover:-translate-y-0.5 flex-shrink-0 flex flex-col justify-between cursor-pointer shadow-sm ${priority.classes}`}
                   >
                     <div className="flex flex-col gap-1.5 w-full">
@@ -383,6 +361,26 @@ export function Goals() {
           onClose={() => setSelectedProject(null)}
           onUpdateProject={handleUpdateProject}
           onDeleteProject={handleDeleteProject}
+        />
+      )}
+
+      {/* Create Modal overlay */}
+      {creatingForBucket && (
+        <ProjectModal
+          mode="create"
+          project={{
+            id: '',
+            bucketId: creatingForBucket,
+            title: '',
+            dueDate: new Date().toISOString().split('T')[0],
+            isImportant: false,
+            status: 'not-started',
+            createdAt: new Date().toISOString(),
+            tasks: []
+          }}
+          onClose={() => setCreatingForBucket(null)}
+          onUpdateProject={handleCreateProject}
+          onDeleteProject={() => {}}
         />
       )}
 

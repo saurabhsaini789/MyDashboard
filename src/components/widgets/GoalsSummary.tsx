@@ -37,7 +37,7 @@ export function GoalsSummary() {
           sevenDaysFromNow.setDate(today.getDate() + 7);
 
           const isMatch = (item: any) => {
-            if (!item.isCompleted) return false;
+            if (!item.isCompleted && item.status !== 'completed') return false;
             
             if (filter === 'Custom Month') {
               const date = item.completedAt ? new Date(item.completedAt) : (item.dueDate ? new Date(item.dueDate + 'T12:00:00') : null);
@@ -66,7 +66,7 @@ export function GoalsSummary() {
               if (isMatch(p)) pCount++;
 
               // Global metrics
-              if (!p.isCompleted) {
+              if (!p.isCompleted && p.status !== 'completed') {
                 activeP++;
                 if (p.dueDate) {
                   const pDate = new Date(p.dueDate + 'T00:00:00');

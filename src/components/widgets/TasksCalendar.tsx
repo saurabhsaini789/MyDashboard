@@ -61,7 +61,11 @@ export function TasksCalendar() {
   };
 
   const handleDeleteProject = (projectId: string) => {
-    const newProjects = projects.filter(p => p.id !== projectId);
+    const newProjects = projects.filter(p => {
+      if (typeof projectId === 'string') return p.id !== projectId;
+      // safety check for accidental non-string IDs
+      return (p as any).id !== projectId;
+    });
     setProjects(newProjects);
     setSyncedItem('goals_projects', JSON.stringify(newProjects));
     setSelectedProject(null);
@@ -82,21 +86,81 @@ export function TasksCalendar() {
   // Find projects for a specific day
   const getProjectsForDay = (day: number) => {
     const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return projects.filter(p => !p.isCompleted && p.dueDate === dateStr);
+    return projects.filter(p => !p.isCompleted && p.status !== 'completed' && p.dueDate === dateStr);
   };
   
-  const getPriorityInfo = (project: Project) => {
-    if (!project.dueDate) return { label: project.isImportant ? 'Important' : '', classes: '' };
-    const due = new Date(project.dueDate + 'T00:00:00');
-    due.setHours(0,0,0,0);
+  // --- Priority & Urgency Logic (Matches ProjectModal) ---
+  const getPriorityInfo = (p: Project) => {
+    if (p.isCompleted || p.status === 'completed') {
+      return {
+        label: 'Completed',
+        icon: '✓',
+        classes: 'text-teal-600 bg-teal-50 dark:bg-teal-500/10 dark:text-teal-400 border-teal-200/50 dark:border-teal-900/40'
+      };
+    }
+
+    if (!p.dueDate) {
+      return {
+        label: p.isImportant ? 'Strategic' : 'On Track',
+        icon: p.isImportant ? '📌' : '🟢',
+        classes: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-900/40'
+      };
+    }
+
+    const due = new Date(p.dueDate + 'T00:00:00');
+    due.setHours(0, 0, 0, 0);
     const today = new Date();
-    today.setHours(0,0,0,0);
-    const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    today.setHours(0, 0, 0, 0);
+    const diffTime = due.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    const isImportant = p.isImportant;
     
-    if (project.isImportant && diffDays <= 7) return { label: 'Important + Urgent', classes: 'text-rose-600 bg-rose-50 dark:bg-rose-500/10 dark:text-rose-400 border-rose-200 dark:border-rose-900/40' };
-    if (project.isImportant) return { label: 'Important', classes: 'text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-400 border-amber-200 dark:border-amber-900/40' };
-    if (diffDays <= 7) return { label: 'Urgent', classes: 'text-sky-600 bg-sky-50 dark:bg-sky-500/10 dark:text-sky-400 border-sky-200 dark:border-sky-900/40' };
-    return { label: 'Not Urgent', classes: 'text-zinc-500 bg-zinc-50 dark:bg-zinc-500/10 border-zinc-200 dark:border-zinc-800' };
+    // Urgency Logic
+    let urgency: 'overdue' | 'soon' | 'upcoming' | 'on-track';
+    if (diffDays < 0) urgency = 'overdue';
+    else if (diffDays <= 7) urgency = 'soon';
+    else if (diffDays <= 21) urgency = 'upcoming';
+    else urgency = 'on-track';
+
+    // Combined Logic
+    if (urgency === 'overdue' || urgency === 'soon') {
+      if (isImportant) {
+        return {
+          label: 'Critical',
+          icon: '🔥',
+          classes: 'text-rose-600 bg-rose-50 dark:bg-rose-500/10 dark:text-rose-400 border-rose-200 dark:border-rose-900/40'
+        };
+      }
+      return {
+        label: 'Time-sensitive',
+        icon: '⚠️',
+        classes: 'text-rose-500/80 bg-rose-50/50 dark:bg-rose-500/5 dark:text-rose-400/80 border-rose-100 dark:border-rose-900/20'
+      };
+    }
+
+    if (urgency === 'upcoming') {
+      return {
+        label: 'Upcoming',
+        icon: '🟡',
+        classes: 'text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-400 border-amber-200 dark:border-amber-900/40'
+      };
+    }
+
+    // On Track
+    if (isImportant) {
+      return {
+        label: 'Strategic',
+        icon: '📌',
+        classes: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-900/40'
+      };
+    }
+
+    return {
+      label: 'On Track',
+      icon: '🟢',
+      classes: 'text-zinc-500 bg-zinc-50 dark:bg-zinc-500/10 border-zinc-200 dark:border-zinc-800'
+    };
   };
 
   const selectedDayProjects = selectedDay ? getProjectsForDay(selectedDay) : [];
@@ -104,7 +168,7 @@ export function TasksCalendar() {
   const getNextTasks = () => {
     const todayStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
     return projects
-      .filter(p => !p.isCompleted && p.dueDate && p.dueDate >= todayStr)
+      .filter(p => !p.isCompleted && p.status !== 'completed' && p.dueDate && p.dueDate >= todayStr)
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
       .slice(0, 10);
   };
@@ -234,7 +298,8 @@ export function TasksCalendar() {
                           {p.bucketId || "General"}
                         </span>
                         {priority.label && (
-                          <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${priority.classes}`}>
+                          <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border flex items-center gap-1 ${priority.classes}`}>
+                            <span>{priority.icon}</span>
                             {priority.label}
                           </span>
                         )}
@@ -279,7 +344,7 @@ export function TasksCalendar() {
                   className="flex flex-col gap-1 p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800 transition-colors hover:border-zinc-200 dark:hover:border-zinc-700 cursor-pointer group"
                 >
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">
+                    <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-tight text-wrap break-words max-w-[200px]">
                       {p.title}
                     </span>
                     <span className="shrink-0 text-[10px] font-bold bg-white dark:bg-black/20 px-1.5 py-0.5 rounded-md border border-zinc-200 dark:border-zinc-700">
@@ -291,7 +356,8 @@ export function TasksCalendar() {
                       {p.bucketId || "General"}
                     </span>
                     {priority.label && (
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${priority.classes}`}>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border flex items-center gap-1 ${priority.classes}`}>
+                        <span>{priority.icon}</span>
                         {priority.label}
                       </span>
                     )}
