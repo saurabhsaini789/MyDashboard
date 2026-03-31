@@ -29,5 +29,7 @@ export const CONTENT_TYPES = [
   'Reels',
   'Posts',
   'Shorts',
-  'Mixed'
+  'Mixed',
+  'Other'
 ];
+

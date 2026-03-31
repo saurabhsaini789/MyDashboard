@@ -36,10 +36,12 @@ export function BusinessChannelsSection() {
     platform: 'Instagram',
     customPlatform: '',
     contentType: 'Posts',
+    customContentType: '',
     status: 'Active' as 'Active' | 'Paused' | 'Idea',
     postingFrequency: 1,
     lastPostedDate: new Date().toISOString().split('T')[0]
   });
+
 
   const channelsRef = useRef(channels);
   useEffect(() => {
@@ -88,7 +90,8 @@ export function BusinessChannelsSection() {
       name: '',
       platform: 'Instagram',
       customPlatform: '',
-      contentType: '',
+      contentType: 'Posts',
+      customContentType: '',
       status: 'Active',
       postingFrequency: 1,
       lastPostedDate: new Date().toISOString().split('T')[0]
@@ -96,13 +99,15 @@ export function BusinessChannelsSection() {
     setIsModalOpen(true);
   };
 
+
   const openEditModal = (channel: BusinessChannel) => {
     setEditingChannel(channel);
     setFormData({
       name: channel.name,
       platform: DEFAULT_PLATFORMS.includes(channel.platform) ? channel.platform : 'Other',
       customPlatform: DEFAULT_PLATFORMS.includes(channel.platform) ? '' : channel.platform,
-      contentType: channel.contentType || '',
+      contentType: CONTENT_TYPES.includes(channel.contentType || '') ? (channel.contentType || 'Posts') : 'Other',
+      customContentType: CONTENT_TYPES.includes(channel.contentType || '') ? '' : (channel.contentType || ''),
       status: channel.status,
       postingFrequency: channel.postingFrequency,
       lastPostedDate: channel.lastPostedDate
@@ -110,10 +115,12 @@ export function BusinessChannelsSection() {
     setIsModalOpen(true);
   };
 
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     const platform = formData.platform === 'Other' ? formData.customPlatform : formData.platform;
+    const contentType = formData.contentType === 'Other' ? formData.customContentType : formData.contentType;
     const lastPostedDate = new Date(formData.lastPostedDate);
     const nextDueDate = new Date(lastPostedDate);
     nextDueDate.setDate(lastPostedDate.getDate() + formData.postingFrequency);
@@ -122,7 +129,7 @@ export function BusinessChannelsSection() {
       id: editingChannel ? editingChannel.id : crypto.randomUUID(),
       name: formData.name,
       platform: platform || 'Other',
-      contentType: formData.contentType,
+      contentType: contentType || 'Other',
       status: formData.status,
       postingFrequency: formData.postingFrequency,
       lastPostedDate: formData.lastPostedDate,
@@ -140,6 +147,7 @@ export function BusinessChannelsSection() {
     setSyncedItem(SYNC_KEYS.FINANCES_BUSINESS, JSON.stringify(updatedChannels));
     setIsModalOpen(false);
   };
+
 
   const deleteChannel = (id: string) => {
     const updated = channels.filter(c => c.id !== id);
@@ -233,12 +241,13 @@ export function BusinessChannelsSection() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 px-2">
         <div>
           <h2 className="text-xl md:text-2xl font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-tight flex items-center gap-2">
-            Channels
+            Channels / Businesses
           </h2>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 uppercase tracking-widest">
             The central database and control layer of your content empire
           </p>
         </div>
+
         
         <button 
           onClick={openAddModal}
@@ -255,14 +264,15 @@ export function BusinessChannelsSection() {
             <thead>
               <tr className="border-b border-zinc-100 dark:border-zinc-800">
                 <th className="px-6 py-6 text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-black">Status</th>
-                <th className="px-6 py-6 text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-black">Channel Name</th>
-                <th className="px-6 py-6 text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-black">Platform</th>
-                <th className="px-6 py-6 text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-black">Content</th>
+                <th className="px-6 py-6 text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-black">Channel / Business Name</th>
+                <th className="px-6 py-6 text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-black">Platform / Location</th>
+                <th className="px-6 py-6 text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-black">Content / Category</th>
                 <th className="px-6 py-6 text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-black text-center">Freq</th>
                 <th className="px-6 py-6 text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-black text-center">Days Ago</th>
                 <th className="px-6 py-6 text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-black text-right">Next Due</th>
                 <th className="px-6 py-6 text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-black"></th>
               </tr>
+
             </thead>
             <tbody>
               {sortedChannels.length > 0 ? sortedChannels.map(channel => {
@@ -370,8 +380,9 @@ export function BusinessChannelsSection() {
       {/* Modal Integration */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-xl animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[40px] w-full max-w-xl shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300">
-            <div className="p-8 md:p-12">
+          <div className="bg-white dark:bg-zinc-900 rounded-[40px] w-full max-w-xl shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300 max-h-[90vh] flex flex-col">
+            <div className="p-8 md:p-12 overflow-y-auto">
+
               <div className="flex justify-between items-center mb-10">
                 <h3 className="text-3xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter">
                   {editingChannel ? 'Edit Channel' : 'New Channel'}
@@ -384,7 +395,7 @@ export function BusinessChannelsSection() {
               <form onSubmit={handleSubmit} className="space-y-8">
                 <div className="space-y-6">
                   <div className="flex flex-col gap-3">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Channel Name</label>
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Channel / Business Name</label>
                     <input 
                       required 
                       type="text" 
@@ -395,9 +406,10 @@ export function BusinessChannelsSection() {
                     />
                   </div>
 
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex flex-col gap-3">
-                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Platform</label>
+                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Platform / Location</label>
                       <select 
                         value={formData.platform} 
                         onChange={e => setFormData({...formData, platform: e.target.value})}
@@ -408,6 +420,7 @@ export function BusinessChannelsSection() {
                         ))}
                       </select>
                     </div>
+
 
                     {formData.platform === 'Other' && (
                       <div className="flex flex-col gap-3">
@@ -424,7 +437,7 @@ export function BusinessChannelsSection() {
                     )}
 
                     <div className="flex flex-col gap-3">
-                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Content Type</label>
+                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Content / Category</label>
                       <select 
                         value={formData.contentType} 
                         onChange={e => setFormData({...formData, contentType: e.target.value})}
@@ -435,7 +448,22 @@ export function BusinessChannelsSection() {
                         ))}
                       </select>
                     </div>
+
+                    {formData.contentType === 'Other' && (
+                      <div className="flex flex-col gap-3">
+                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Other Content Type</label>
+                        <input 
+                          required 
+                          type="text" 
+                          value={formData.customContentType} 
+                          onChange={e => setFormData({...formData, customContentType: e.target.value})} 
+                          placeholder="Category name..."
+                          className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all"
+                        />
+                      </div>
+                    )}
                   </div>
+
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex flex-col gap-3">
