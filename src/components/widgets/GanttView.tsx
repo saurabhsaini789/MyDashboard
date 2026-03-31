@@ -121,7 +121,7 @@ export function GanttView({ projects, buckets, onSelectProject }: GanttViewProps
     setCollapsedBuckets(prev => ({ ...prev, [bucket]: !prev[bucket] }));
   };
 
-  const leftColumnWidth = 200; // Smaller sidebar for more responsive space
+  const leftColumnWidth = 240; // Increased sidebar for more readable titles
 
   // Years for dropdown (Current Year ± 2)
   const years = useMemo(() => {
@@ -205,7 +205,7 @@ export function GanttView({ projects, buckets, onSelectProject }: GanttViewProps
             className="sticky top-0 z-20 grid bg-white dark:bg-zinc-950 border-b border-zinc-100 dark:border-zinc-800"
             style={{ gridTemplateColumns }}
           >
-            <div className="sticky left-0 z-30 bg-white dark:bg-zinc-950 border-r border-zinc-100 dark:border-zinc-800 px-6 py-3 font-bold text-xs uppercase tracking-widest text-zinc-400">
+            <div className="sticky left-0 z-30 bg-white dark:bg-zinc-950 border-r border-zinc-200/50 dark:border-zinc-800/50 px-6 py-4 font-extrabold text-sm uppercase tracking-widest text-zinc-500">
               Active Projects
             </div>
             {timelineRange.days.map((day, i) => {
@@ -218,10 +218,10 @@ export function GanttView({ projects, buckets, onSelectProject }: GanttViewProps
                   key={i} 
                   className={`border-r border-zinc-100/50 dark:border-zinc-800/30 flex flex-col items-center justify-center py-2 h-14 ${isToday ? 'bg-teal-500/5' : isWeekend ? 'bg-zinc-50/50 dark:bg-zinc-900/10' : ''}`}
                 >
-                  <span className="text-[10px] font-medium text-zinc-400 uppercase tracking-tighter">
+                  <span className="text-xs font-bold text-zinc-400 uppercase tracking-tighter">
                     {day.toLocaleDateString(undefined, { weekday: 'narrow' })}
                   </span>
-                  <span className={`text-xs font-bold ${isToday ? 'text-teal-500' : 'text-zinc-600 dark:text-zinc-400'}`}>
+                  <span className={`text-sm font-black ${isToday ? 'text-teal-500' : 'text-zinc-600 dark:text-zinc-300'}`}>
                     {day.getDate()}
                   </span>
                 </div>
@@ -232,11 +232,11 @@ export function GanttView({ projects, buckets, onSelectProject }: GanttViewProps
           {/* Grid Lines Overlay Container */}
           <div className="absolute inset-0 pointer-events-none mt-14">
             <div className="grid h-full w-full" style={{ gridTemplateColumns }}>
-              <div className="border-r border-zinc-100 dark:border-zinc-800"></div> {/* Sidebar column */}
+              <div className="border-r border-zinc-200/50 dark:border-zinc-800/50"></div> {/* Sidebar column */}
               {timelineRange.days.map((day, i) => {
                 const isWeekend = day.getDay() === 0 || day.getDay() === 6;
                 return (
-                  <div key={i} className={`h-full border-r border-zinc-100/20 dark:border-zinc-800/20 ${isWeekend ? 'bg-zinc-50/20 dark:bg-zinc-900/10' : ''}`}></div>
+                  <div key={i} className={`h-full border-r border-zinc-200/40 dark:border-zinc-800/40 ${isWeekend ? 'bg-zinc-100/30 dark:bg-zinc-900/40' : ''}`}></div>
                 );
               })}
             </div>
@@ -271,13 +271,13 @@ export function GanttView({ projects, buckets, onSelectProject }: GanttViewProps
                     className="grid bg-zinc-50/80 dark:bg-zinc-900/40 border-b border-zinc-100 dark:border-zinc-800 cursor-pointer group/bucket sticky top-14 z-10"
                     style={{ gridTemplateColumns }}
                   >
-                    <div className="sticky left-0 z-20 bg-zinc-50 dark:bg-zinc-900/80 backdrop-blur-sm border-r border-zinc-100 dark:border-zinc-800 px-6 py-2.5 flex items-center gap-3">
+                    <div className="sticky left-0 z-20 bg-zinc-50 dark:bg-zinc-900/80 backdrop-blur-sm border-r border-zinc-200/50 dark:border-zinc-800/50 px-6 py-3 flex items-center gap-3">
                       <span className={`transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400"><path d="m6 9 6 6 6-6"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500"><path d="m6 9 6 6 6-6"/></svg>
                       </span>
-                      <div className="w-1.5 h-1.5 rounded-full bg-teal-500 shadow-[0_0_8px_rgba(20,184,166,0.5)]"></div>
-                      <span className="text-[11px] font-extrabold uppercase tracking-widest text-zinc-600 dark:text-zinc-300 truncate">{bucket}</span>
-                      <span className="ml-auto text-[10px] bg-white dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-zinc-500 font-bold border border-zinc-100 dark:border-zinc-700">
+                      <div className="w-2 h-2 rounded-full bg-teal-500 shadow-[0_0_8px_rgba(20,184,166,0.5)]"></div>
+                      <span className="text-base font-extrabold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 truncate">{bucket}</span>
+                      <span className="ml-auto text-xs bg-white dark:bg-zinc-800 px-2 py-0.5 rounded-md text-zinc-600 font-bold border border-zinc-200 dark:border-zinc-700">
                         {bucketProjects.length}
                       </span>
                     </div>
@@ -300,12 +300,12 @@ export function GanttView({ projects, buckets, onSelectProject }: GanttViewProps
                         {/* Sidebar Project Info */}
                         <div 
                           onClick={() => onSelectProject(project)}
-                          className="sticky left-0 z-20 bg-white dark:bg-zinc-950 group-hover:bg-zinc-50 dark:group-hover:bg-zinc-900 border-r border-zinc-100 dark:border-zinc-800 px-6 py-4 cursor-pointer flex flex-col justify-center gap-1"
+                          className="sticky left-0 z-20 bg-white dark:bg-zinc-950 group-hover:bg-zinc-50 dark:group-hover:bg-zinc-900 border-r border-zinc-200/50 dark:border-zinc-800/50 px-6 py-5 cursor-pointer flex flex-col justify-center gap-1.5"
                         >
-                          <h4 className="text-[12px] font-bold text-zinc-900 dark:text-white truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+                          <h4 className="text-base font-black text-zinc-900 dark:text-white truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
                             {project.title}
                           </h4>
-                          <span className="text-[9px] font-bold uppercase tracking-wider opacity-60 flex items-center gap-1">
+                          <span className="text-[11px] font-bold uppercase tracking-wider opacity-70 flex items-center gap-1.5">
                             {priority.icon} {priority.label}
                           </span>
                         </div>
@@ -320,7 +320,7 @@ export function GanttView({ projects, buckets, onSelectProject }: GanttViewProps
                           >
                             <div 
                               onClick={() => onSelectProject(project)}
-                              className={`w-full h-7 rounded-lg flex items-center px-3 cursor-pointer transition-all hover:scale-[1.01] hover:shadow-lg hover:z-50 group/bar border ${priority.classes} shadow-sm overflow-hidden`}
+                              className={`w-full h-8 rounded-lg flex items-center px-3 cursor-pointer transition-all hover:scale-[1.01] hover:shadow-lg hover:z-50 group/bar border ${priority.classes} shadow-sm overflow-hidden`}
                             >
                               {/* Clipped Indicators */}
                               {cols.isClippedStart && (
@@ -334,12 +334,12 @@ export function GanttView({ projects, buckets, onSelectProject }: GanttViewProps
                                 </div>
                               )}
 
-                              <span className={`text-[9px] font-extrabold whitespace-nowrap overflow-hidden text-ellipsis px-1 ${cols.isClippedStart ? 'ml-1.5' : ''} ${cols.isClippedEnd ? 'mr-1.5' : ''}`}>
+                              <span className={`text-sm font-black whitespace-nowrap overflow-hidden text-ellipsis px-1 ${cols.isClippedStart ? 'ml-1.5' : ''} ${cols.isClippedEnd ? 'mr-1.5' : ''}`}>
                                 {project.title}
                               </span>
                               
                               {/* Hover Tooltip */}
-                              <div className="invisible group-hover/bar:visible absolute -top-10 left-1/2 -translate-x-1/2 bg-zinc-950 dark:bg-white text-white dark:text-black text-[10px] font-bold py-1.5 px-2.5 rounded-lg whitespace-nowrap z-50 shadow-2xl border border-white/10 dark:border-black/5 animate-in fade-in zoom-in-95 duration-150">
+                              <div className="invisible group-hover/bar:visible absolute -top-12 left-1/2 -translate-x-1/2 bg-zinc-950 dark:bg-white text-white dark:text-black text-xs font-bold py-2 px-3 rounded-lg whitespace-nowrap z-50 shadow-2xl border border-white/10 dark:border-black/5 animate-in fade-in zoom-in-95 duration-150">
                                 {project.startDate || '—'} → {project.dueDate}
                               </div>
                             </div>
