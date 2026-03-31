@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
-import { calculateAssetBalance, type IncomeRecord } from '@/lib/finances';
+import { calculateAssetBalance } from '@/lib/finances';
+import type { IncomeRecord } from '@/types/finance';
 import { IncomeMetrics } from './IncomeMetrics';
 import { MultiSelectDropdown } from '../ui/MultiSelectDropdown';
 import { MONTHS, YEARS } from '@/lib/constants';
@@ -66,6 +67,12 @@ export function IncomeSection() {
     setSelectedYears([new Date().getFullYear()]);
     setFormData(prev => ({ ...prev, date: new Date().toISOString().split('T')[0] }));
     setIsLoaded(true);
+
+    // Load assets for dropdown
+    const savedAssets = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_ASSETS));
+    if (savedAssets) {
+      try { setAssets(JSON.parse(savedAssets)); } catch (e) {}
+    }
   }, []);
 
   useEffect(() => {
@@ -76,6 +83,12 @@ export function IncomeSection() {
         const val = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_INCOME));
         if (val && val !== JSON.stringify(recordsRef.current)) {
           try { setRecords(JSON.parse(val)); } catch (e) {}
+        }
+      }
+      if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_ASSETS) {
+        const val = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_ASSETS));
+        if (val) {
+          try { setAssets(JSON.parse(val)); } catch (e) {}
         }
       }
       if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_EXCHANGE_RATE) {
@@ -400,7 +413,7 @@ export function IncomeSection() {
                     >
                         <option value="">No linked account</option>
                         {assets.filter(a => a.type === 'Bank Balance' || a.type === 'Cash').map(asset => (
-                            <option key={asset.id} value={asset.id}>{asset.name} (₹{calculateAssetBalance(asset).toLocaleString('en-IN', { maximumFractionDigits: 0 })})</option>
+                            <option key={asset.id} value={asset.id}>{asset.name}</option>
                         ))}
                         {assets.filter(a => a.type !== 'Bank Balance' && a.type !== 'Cash').length > 0 && (
                             <optgroup label="Other Assets">

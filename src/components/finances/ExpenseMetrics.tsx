@@ -1,6 +1,6 @@
 "use client";
 
-import { type ExpenseRecord } from '@/lib/finances';
+import { type ExpenseRecord } from '@/types/finance';
 import { MONTHS } from '@/lib/constants';
 import { getExchangeRate, convertToINR } from '@/lib/finances';
 

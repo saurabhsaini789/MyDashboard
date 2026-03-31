@@ -8,23 +8,7 @@ import { ExpenseMetrics } from './ExpenseMetrics';
 import { MultiSelectDropdown } from '../ui/MultiSelectDropdown';
 import { MONTHS, YEARS } from '@/lib/constants';
 import { SYNC_KEYS } from '@/lib/sync-keys';
-
-export interface ExpenseRecord {
-  id: string;
-  category: 'rent' | 'EMI' | 'Insurance' | 'food' | 'travel' | 'shopping' | 'investment' | 'savings';
-  subcategory: string;
-  amount: number;
-  currency?: 'INR' | 'CAD';
-  date: string;
-  type: 'need' | 'want' | 'investment';
-  assetId?: string; // Account used for payment
-  paidToType: 'savings' | 'emergency' | 'asset' | 'other';
-  paidToId?: string; // ID of Goal/Asset or 'emergency'
-  paidToName?: string; // For 'other' recipient
-}
-
-export type ExpenseCategory = ExpenseRecord['category'];
-export type ExpenseType = ExpenseRecord['type'];
+import { ExpenseRecord, ExpenseCategory, ExpenseType } from '@/types/finance';
 
 const CATEGORIES: ExpenseCategory[] = ['rent', 'EMI', 'Insurance', 'food', 'travel', 'shopping', 'investment', 'savings'];
 const TYPES: ExpenseType[] = ['need', 'want', 'investment'];
@@ -53,7 +37,9 @@ export function ExpenseSection() {
     assetId: '',
     paidToType: 'other' as ExpenseRecord['paidToType'],
     paidToId: '',
-    paidToName: ''
+    paidToName: '',
+    entryType: 'Quick' as ExpenseRecord['entryType'],
+    paymentMethod: 'UPI / Wallet' as ExpenseRecord['paymentMethod']
   });
 
   const recordsRef = useRef(records);
@@ -72,9 +58,9 @@ export function ExpenseSection() {
       }
     } else {
         const mock: ExpenseRecord[] = [
-            { id: '1', category: 'food', subcategory: 'Groceries', amount: 150, date: new Date().toISOString().split('T')[0], type: 'need', paidToType: 'other' },
-            { id: '2', category: 'travel', subcategory: 'Uber', amount: 25, date: new Date().toISOString().split('T')[0], type: 'want', paidToType: 'other' },
-            { id: '3', category: 'rent', subcategory: 'Monthly Rent', amount: 1800, date: new Date().toISOString().split('T')[0], type: 'need', paidToType: 'other' },
+            { id: '1', category: 'food', subcategory: 'Groceries', amount: 150, date: new Date().toISOString().split('T')[0], type: 'need', paidToType: 'other', entryType: 'Quick', paymentMethod: 'Credit Card' },
+            { id: '2', category: 'travel', subcategory: 'Uber', amount: 25, date: new Date().toISOString().split('T')[0], type: 'want', paidToType: 'other', entryType: 'Quick', paymentMethod: 'Credit Card' },
+            { id: '3', category: 'rent', subcategory: 'Monthly Rent', amount: 1800, date: new Date().toISOString().split('T')[0], type: 'need', paidToType: 'other', entryType: 'Quick', paymentMethod: 'Bank Transfer' },
         ];
         recordsRef.current = mock;
         setRecords(mock);
@@ -149,7 +135,9 @@ export function ExpenseSection() {
       assetId: '',
       paidToType: 'other',
       paidToId: '',
-      paidToName: ''
+      paidToName: '',
+      entryType: 'Quick',
+      paymentMethod: 'UPI / Wallet'
     });
     setIsModalOpen(true);
   };
@@ -166,7 +154,9 @@ export function ExpenseSection() {
       assetId: record.assetId || '',
       paidToType: record.paidToType || 'other',
       paidToId: record.paidToId || '',
-      paidToName: record.paidToName || ''
+      paidToName: record.paidToName || '',
+      entryType: record.entryType || 'Quick',
+      paymentMethod: record.paymentMethod || 'UPI / Wallet'
     });
     setIsModalOpen(true);
   };
@@ -304,7 +294,9 @@ export function ExpenseSection() {
       assetId: formData.assetId || undefined,
       paidToType: formData.paidToType,
       paidToId: formData.paidToId || undefined,
-      paidToName: formData.paidToName || undefined
+      paidToName: formData.paidToName || undefined,
+      entryType: formData.entryType,
+      paymentMethod: formData.paymentMethod
     };
 
     // Update Asset Sync: Subtract from account paid from
@@ -560,7 +552,7 @@ export function ExpenseSection() {
                         >
                             <option value="">No linked account</option>
                             {assets.filter(a => a.type === 'Bank Balance' || a.type === 'Cash').map(asset => (
-                                <option key={asset.id} value={asset.id}>{asset.name} (₹{calculateAssetBalance(asset).toLocaleString('en-IN', { maximumFractionDigits: 0 })})</option>
+                                <option key={asset.id} value={asset.id}>{asset.name}</option>
                             ))}
                             {assets.filter(a => a.type !== 'Bank Balance' && a.type !== 'Cash').length > 0 && (
                                 <optgroup label="Other Assets">
