@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { type Project, getProjectPriorityInfo } from './ProjectModal';
+import { type Project, getProjectPriorityInfo, sortProjects } from './ProjectModal';
+
 
 
 interface GanttViewProps {
@@ -285,7 +286,8 @@ export function GanttView({ projects, buckets, onSelectProject }: GanttViewProps
                   </div>
 
                   {/* Project Rows */}
-                  {!isCollapsed && bucketProjects.map(project => {
+                  {!isCollapsed && sortProjects(bucketProjects).map(project => {
+
                     const priority = getProjectPriorityInfo(project);
                     const cols = getProjectCols(project);
                     

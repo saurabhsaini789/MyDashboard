@@ -104,6 +104,43 @@ export const getProjectPriorityInfo = (p: Project) => {
   };
 };
 
+// Unified Sorting Logic: Priority Level > Due Date > Importance
+export const sortProjects = (projects: Project[]) => {
+  return [...projects].sort((a, b) => {
+    const pA = getProjectPriorityInfo(a);
+    const pB = getProjectPriorityInfo(b);
+
+    const score = (label: string) => {
+      switch (label) {
+        case 'Critical': return 1;
+        case 'Time-sensitive': return 2;
+        case 'Strategic': return 3;
+        case 'Upcoming': return 4;
+        case 'On Track': return 5;
+        case 'Completed': return 6;
+        default: return 99;
+      }
+    };
+
+    const sA = score(pA.label);
+    const sB = score(pB.label);
+
+    if (sA !== sB) return sA - sB;
+
+    // Secondary Sort: Due Date (Earliest first)
+    const dA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+    const dB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+    
+    if (dA !== dB) return dA - dB;
+
+    // Tertiary Sort: Importance (True first)
+    if (a.isImportant !== b.isImportant) return a.isImportant ? -1 : 1;
+
+    return 0;
+  });
+};
+
+
 interface ProjectModalProps {
 
   project: Project;

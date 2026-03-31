@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { setSyncedItem } from '@/lib/storage';
 import { getPrefixedKey } from '@/lib/keys';
 
-import { ProjectModal, type Project, type Task, getProjectPriorityInfo } from './ProjectModal';
+import { ProjectModal, type Project, type Task, getProjectPriorityInfo, sortProjects } from './ProjectModal';
+
 import { GanttView } from './GanttView';
 
 
@@ -136,20 +137,10 @@ export function Goals() {
       <div className={view === 'grid' ? 'block animate-in fade-in duration-500' : 'hidden'}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {BUCKETS.map(bucket => {
-            const bucketProjects = projects
-              .filter(p => p.bucketId === bucket && !p.isCompleted && p.status !== 'completed')
-              .sort((a, b) => {
-                const pA = getProjectPriorityInfo(a);
-                const pB = getProjectPriorityInfo(b);
-                const score = (label: string) => {
-                  if (label === 'Critical') return 1;
-                  if (label === 'Time-sensitive') return 2;
-                  if (label === 'Strategic') return 3;
-                  if (label === 'Upcoming') return 4;
-                  return 5;
-                };
-                return score(pA.label) - score(pB.label);
-              });
+            const bucketProjects = sortProjects(
+              projects.filter(p => p.bucketId === bucket && !p.isCompleted && p.status !== 'completed')
+            );
+
 
             return (
               <div key={bucket} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 flex flex-col h-[480px] shadow-sm transition-all hover:shadow-md">
