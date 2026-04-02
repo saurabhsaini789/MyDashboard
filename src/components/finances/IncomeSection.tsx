@@ -35,7 +35,9 @@ export function IncomeSection() {
     currency: 'INR' as 'INR' | 'CAD',
     date: '', // Initialize empty for SSR
     type: 'active' as IncomeType,
-    assetId: ''
+    assetId: '',
+    notes: '',
+    customSource: ''
   });
 
   const recordsRef = useRef(records);
@@ -116,7 +118,9 @@ export function IncomeSection() {
       currency: 'INR',
       date: new Date().toISOString().split('T')[0],
       type: 'active',
-      assetId: ''
+      assetId: '',
+      notes: '',
+      customSource: ''
     });
     setIsModalOpen(true);
   };
@@ -129,7 +133,9 @@ export function IncomeSection() {
       currency: record.currency || 'INR',
       date: record.date,
       type: record.type,
-      assetId: record.assetId || ''
+      assetId: record.assetId || '',
+      notes: record.notes || '',
+      customSource: record.customSource || ''
     });
     setIsModalOpen(true);
   };
@@ -194,7 +200,9 @@ export function IncomeSection() {
       currency: formData.currency,
       date: formData.date,
       type: formData.type,
-      assetId: formData.assetId || undefined
+      assetId: formData.assetId || undefined,
+      notes: formData.notes || undefined,
+      customSource: formData.source === 'other' ? (formData.customSource || undefined) : undefined
     };
 
     // Update Asset Sync
@@ -273,6 +281,7 @@ export function IncomeSection() {
                               <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Source</th>
                               <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Type</th>
                               <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Account</th>
+                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Notes</th>
                               <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400 text-right">Amount</th>
                               <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400"></th>
                           </tr>
@@ -287,7 +296,7 @@ export function IncomeSection() {
                                   </td>
                                   <td className="px-4 py-5">
                                       <span className="text-sm text-zinc-900 dark:text-zinc-100 uppercase tracking-tight">
-                                          {record.source}
+                                          {record.source === 'other' && record.customSource ? `Other (${record.customSource})` : record.source}
                                       </span>
                                   </td>
                                   <td className="px-4 py-5">
@@ -298,6 +307,11 @@ export function IncomeSection() {
                                   <td className="px-4 py-5">
                                       <span className="text-sm text-zinc-500 dark:text-zinc-400">
                                           {assets.find(a => a.id === record.assetId)?.name || '-'}
+                                      </span>
+                                  </td>
+                                  <td className="px-4 py-5 max-w-[150px]">
+                                      <span className="text-xs text-zinc-500 dark:text-zinc-400 truncate block">
+                                          {record.notes || '-'}
                                       </span>
                                   </td>
                                   <td className="px-4 py-5 text-right">
@@ -321,7 +335,7 @@ export function IncomeSection() {
                               </tr>
                           )) : (
                               <tr>
-                                  <td colSpan={6} className="px-8 py-20 text-center">
+                                  <td colSpan={7} className="px-8 py-20 text-center">
                                       <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">No income recorded for this period</span>
                                   </td>
                               </tr>
@@ -374,6 +388,18 @@ export function IncomeSection() {
                     </div>
                 </div>
 
+                {formData.source === 'other' && (
+                    <div className="flex flex-col gap-2">
+                        <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Specify Custom Source</label>
+                        <input 
+                            type="text" value={formData.customSource} 
+                            onChange={e => setFormData({...formData, customSource: e.target.value})} 
+                            placeholder="e.g. Sold old bicycle..."
+                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all" 
+                        />
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="flex flex-col gap-2 md:col-span-2">
                         <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Amount</label>
@@ -423,6 +449,16 @@ export function IncomeSection() {
                             </optgroup>
                         )}
                     </select>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                    <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Quick Notes</label>
+                    <textarea 
+                        value={formData.notes} 
+                        onChange={e => setFormData({...formData, notes: e.target.value})} 
+                        placeholder="Any additional details or context..."
+                        className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all resize-none h-24" 
+                    />
                 </div>
 
                 <div className="flex gap-4 pt-6">

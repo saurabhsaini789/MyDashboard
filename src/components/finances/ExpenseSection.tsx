@@ -10,7 +10,7 @@ import { MONTHS, YEARS } from '@/lib/constants';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 import { ExpenseRecord, ExpenseCategory, ExpenseType } from '@/types/finance';
 
-const CATEGORIES: ExpenseCategory[] = ['rent', 'EMI', 'Insurance', 'food', 'travel', 'shopping', 'investment', 'savings'];
+const CATEGORIES: ExpenseCategory[] = ['rent', 'EMI', 'Insurance', 'food', 'travel', 'shopping', 'investment', 'savings', 'Other'];
 const TYPES: ExpenseType[] = ['need', 'want', 'investment'];
 
 export function ExpenseSection() {
@@ -39,7 +39,8 @@ export function ExpenseSection() {
     paidToId: '',
     paidToName: '',
     entryType: 'Quick' as ExpenseRecord['entryType'],
-    paymentMethod: 'UPI / Wallet' as ExpenseRecord['paymentMethod']
+    paymentMethod: 'UPI / Wallet' as ExpenseRecord['paymentMethod'],
+    notes: ''
   });
 
   const recordsRef = useRef(records);
@@ -137,7 +138,8 @@ export function ExpenseSection() {
       paidToId: '',
       paidToName: '',
       entryType: 'Quick',
-      paymentMethod: 'UPI / Wallet'
+      paymentMethod: 'UPI / Wallet',
+      notes: ''
     });
     setIsModalOpen(true);
   };
@@ -156,7 +158,8 @@ export function ExpenseSection() {
       paidToId: record.paidToId || '',
       paidToName: record.paidToName || '',
       entryType: record.entryType || 'Quick',
-      paymentMethod: record.paymentMethod || 'UPI / Wallet'
+      paymentMethod: record.paymentMethod || 'UPI / Wallet',
+      notes: record.notes || ''
     });
     setIsModalOpen(true);
   };
@@ -296,7 +299,8 @@ export function ExpenseSection() {
       paidToId: formData.paidToId || undefined,
       paidToName: formData.paidToName || undefined,
       entryType: formData.entryType,
-      paymentMethod: formData.paymentMethod
+      paymentMethod: formData.paymentMethod,
+      notes: formData.notes || undefined
     };
 
     // Update Asset Sync: Subtract from account paid from
@@ -383,6 +387,7 @@ export function ExpenseSection() {
                               <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Type</th>
                               <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Paid from</th>
                               <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Paid to</th>
+                              <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Notes</th>
                               <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400 text-right">Amount</th>
                               <th className="px-4 py-4 text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400"></th>
                           </tr>
@@ -428,6 +433,11 @@ export function ExpenseSection() {
                                             : '-'}
                                       </span>
                                   </td>
+                                  <td className="px-4 py-5 max-w-[150px]">
+                                      <span className="text-xs text-zinc-500 dark:text-zinc-400 truncate block">
+                                          {record.notes || '-'}
+                                      </span>
+                                  </td>
                                    <td className="px-4 py-5 text-right">
                                        <span className="text-base text-zinc-900 dark:text-zinc-100 tracking-tighter">
                                            {record.currency === 'CAD' ? `C${record.amount.toLocaleString('en-IN')}` : `₹${record.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
@@ -449,7 +459,7 @@ export function ExpenseSection() {
                               </tr>
                           )) : (
                               <tr>
-                                  <td colSpan={7} className="px-8 py-20 text-center">
+                                  <td colSpan={8} className="px-8 py-20 text-center">
                                       <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">No expenses recorded for this period</span>
                                   </td>
                               </tr>
@@ -503,11 +513,13 @@ export function ExpenseSection() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                    <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Subcategory</label>
+                    <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">
+                        {formData.category === 'Other' ? 'Specify Category' : 'Subcategory'}
+                    </label>
                     <input 
                         type="text" value={formData.subcategory} 
                         onChange={e => setFormData({...formData, subcategory: e.target.value})} 
-                        placeholder="e.g. Groceries, Rent, Netflix..."
+                        placeholder={formData.category === 'Other' ? "e.g. Pet supplies, Maintenance..." : "e.g. Groceries, Rent, Netflix..."}
                         className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all" 
                     />
                 </div>
@@ -612,6 +624,16 @@ export function ExpenseSection() {
 
                 {/* Helper to parse the combined value if needed, or just adjust the onChange */}
                 {/* I'll adjust the onChange in the next step if this gets complex, but for now let's refine the value handling */}
+
+                <div className="flex flex-col gap-2">
+                    <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Quick Notes</label>
+                    <textarea 
+                        value={formData.notes} 
+                        onChange={e => setFormData({...formData, notes: e.target.value})} 
+                        placeholder="Any additional details or context..."
+                        className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all resize-none h-24" 
+                    />
+                </div>
 
                 <div className="flex gap-4 pt-6">
                   {editingRecord && (

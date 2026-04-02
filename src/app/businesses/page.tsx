@@ -21,7 +21,7 @@ export default function BusinessesPage() {
 
         {/* Page Title & Strategic Description */}
         <div className="flex flex-col gap-6 items-center mb-4">
-          <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-zinc-900 dark:text-white text-center uppercase tracking-[0.3em] fade-in drop-shadow-sm leading-tight">
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-black text-zinc-900 dark:text-white text-center uppercase tracking-wider fade-in drop-shadow-sm leading-tight">
             Businesses
           </h1>
           <div className="h-1 w-20 bg-teal-500 rounded-full animate-pulse" />

@@ -61,7 +61,7 @@ export default function PantryPage() {
 
         {/* Page Title */}
         <div className="flex flex-col gap-6 items-center">
-          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-zinc-900 dark:text-zinc-100 text-center uppercase tracking-[0.3em] drop-shadow-sm leading-tight">
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-zinc-100 text-center uppercase tracking-wider drop-shadow-sm leading-tight">
             Pantry
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-center max-w-lg">

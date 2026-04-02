@@ -75,7 +75,7 @@ export default function BooksPage() {
         {/* Header Section */}
         <header className="mb-20 text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
           <div className="space-y-4">
-            <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-zinc-900 dark:text-white">
+            <h1 className="text-4xl md:text-6xl font-black tracking-tight text-zinc-900 dark:text-white">
               Books
             </h1>
             <p className="text-xl text-zinc-500 dark:text-zinc-400 mt-6 font-medium max-w-xl leading-relaxed">Track your reading journey, yearly progress, and distilled wisdom.</p>

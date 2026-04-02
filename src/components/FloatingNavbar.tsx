@@ -65,8 +65,9 @@ export function FloatingNavbar() {
     { name: 'Books', href: '/books', icon: BookMarked },
     { name: 'Finances', href: '/finances', icon: CircleDollarSign },
     { name: 'Businesses', href: '/businesses', icon: Rocket },
-    { name: 'Pantry', href: '/pantry', icon: ShoppingBasket },
+    { name: 'Expenses', href: '/pantry', icon: ShoppingBasket },
   ];
+
 
   const scrollToTop = () => {
     window.scrollTo({

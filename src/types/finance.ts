@@ -81,6 +81,8 @@ export interface IncomeRecord {
   date: string;
   type: 'active' | 'passive' | 'one time';
   assetId?: string;
+  notes?: string;
+  customSource?: string;
 }
 
 export interface Contribution {

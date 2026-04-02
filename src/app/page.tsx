@@ -20,7 +20,7 @@ export default function Home() {
         
 
         {/* Page Title */}
-        <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-zinc-900 dark:text-white text-center uppercase tracking-widest fade-in">
+        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-900/80 dark:text-zinc-100/80 text-center uppercase fade-in">
           Remember Your Why
         </h2>
 

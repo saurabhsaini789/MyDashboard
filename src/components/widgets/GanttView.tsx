@@ -23,7 +23,6 @@ export function GanttView({ projects, buckets, onSelectProject }: GanttViewProps
     d.setHours(0, 0, 0, 0);
     return d;
   });
-  const [collapsedBuckets, setCollapsedBuckets] = useState<Record<string, boolean>>({});
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const currentYear = viewDate.getFullYear();
@@ -115,10 +114,6 @@ export function GanttView({ projects, buckets, onSelectProject }: GanttViewProps
       isClippedStart: start < timelineRange.start, 
       isClippedEnd: due > timelineRange.end 
     };
-  };
-
-  const toggleBucket = (bucket: string) => {
-    setCollapsedBuckets(prev => ({ ...prev, [bucket]: !prev[bucket] }));
   };
 
   const leftColumnWidth = 240; // Increased sidebar for more readable titles
@@ -258,45 +253,16 @@ export function GanttView({ projects, buckets, onSelectProject }: GanttViewProps
 
           {/* Rows Container */}
           <div className="relative z-0">
-            {buckets.map(bucket => {
-              const bucketProjects = projects.filter(p => p.bucketId === bucket);
-              if (bucketProjects.length === 0) return null;
-              const isCollapsed = collapsedBuckets[bucket];
-
+            {sortProjects(projects).map(project => {
+              const priority = getProjectPriorityInfo(project);
+              const cols = getProjectCols(project);
+              
               return (
-                <div key={bucket} className="flex flex-col">
-                  {/* Bucket Header Row */}
-                  <div 
-                    onClick={() => toggleBucket(bucket)}
-                    className="grid bg-zinc-50/80 dark:bg-zinc-900/40 border-b border-zinc-100 dark:border-zinc-800 cursor-pointer group/bucket sticky top-14 z-10"
-                    style={{ gridTemplateColumns }}
-                  >
-                    <div className="sticky left-0 z-20 bg-zinc-50 dark:bg-zinc-900/80 backdrop-blur-sm border-r border-zinc-200/50 dark:border-zinc-800/50 px-6 py-3 flex items-center gap-3">
-                      <span className={`transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500"><path d="m6 9 6 6 6-6"/></svg>
-                      </span>
-                      <div className="w-2 h-2 rounded-full bg-teal-500 shadow-[0_0_8px_rgba(20,184,166,0.5)]"></div>
-                      <span className="text-base font-extrabold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 truncate">{bucket}</span>
-                      <span className="ml-auto text-xs bg-white dark:bg-zinc-800 px-2 py-0.5 rounded-md text-zinc-600 font-bold border border-zinc-200 dark:border-zinc-700">
-                        {bucketProjects.length}
-                      </span>
-                    </div>
-                    {/* Empty headers for grid alignment */}
-                    <div className="col-span-full h-10"></div>
-                  </div>
-
-                  {/* Project Rows */}
-                  {!isCollapsed && sortProjects(bucketProjects).map(project => {
-
-                    const priority = getProjectPriorityInfo(project);
-                    const cols = getProjectCols(project);
-                    
-                    return (
-                      <div 
-                        key={project.id} 
-                        className="group grid items-center hover:bg-zinc-50/50 dark:hover:bg-zinc-900/20 transition-colors border-b border-zinc-50 dark:border-zinc-900"
-                        style={{ gridTemplateColumns }}
-                      >
+                <div 
+                  key={project.id} 
+                  className="group grid items-center hover:bg-zinc-50/50 dark:hover:bg-zinc-900/20 transition-colors border-b border-zinc-50 dark:border-zinc-900"
+                  style={{ gridTemplateColumns }}
+                >
                         {/* Sidebar Project Info */}
                         <div 
                           onClick={() => onSelectProject(project)}
@@ -306,48 +272,45 @@ export function GanttView({ projects, buckets, onSelectProject }: GanttViewProps
                             {project.title}
                           </h4>
                           <span className="text-[11px] font-bold uppercase tracking-wider opacity-70 flex items-center gap-1.5">
-                            {priority.icon} {priority.label}
+                            <span>{priority.label}</span>
                           </span>
                         </div>
 
-                        {/* Responsive Bar Column Placement */}
-                        {cols && (
-                          <div 
-                            className="relative h-16 flex items-center"
-                            style={{ 
-                              gridColumn: `${cols.startIdx} / ${cols.endIdx}`
-                            }}
-                          >
-                            <div 
-                              onClick={() => onSelectProject(project)}
-                              className={`w-full h-8 rounded-lg flex items-center px-3 cursor-pointer transition-all hover:scale-[1.01] hover:shadow-lg hover:z-50 group/bar border ${priority.classes} shadow-sm overflow-hidden`}
-                            >
-                              {/* Clipped Indicators */}
-                              {cols.isClippedStart && (
-                                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-zinc-900/10 dark:bg-white/10 flex items-center justify-center">
-                                  <span className="text-[8px] opacity-40">«</span>
-                                </div>
-                              )}
-                              {cols.isClippedEnd && (
-                                <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-zinc-900/10 dark:bg-white/10 flex items-center justify-center">
-                                  <span className="text-[8px] opacity-40">»</span>
-                                </div>
-                              )}
-
-                              <span className={`text-sm font-black whitespace-nowrap overflow-hidden text-ellipsis px-1 ${cols.isClippedStart ? 'ml-1.5' : ''} ${cols.isClippedEnd ? 'mr-1.5' : ''}`}>
-                                {project.title}
-                              </span>
-                              
-                              {/* Hover Tooltip */}
-                              <div className="invisible group-hover/bar:visible absolute -top-12 left-1/2 -translate-x-1/2 bg-zinc-950 dark:bg-white text-white dark:text-black text-xs font-bold py-2 px-3 rounded-lg whitespace-nowrap z-50 shadow-2xl border border-white/10 dark:border-black/5 animate-in fade-in zoom-in-95 duration-150">
-                                {project.startDate || '—'} → {project.dueDate}
-                              </div>
-                            </div>
+                  {/* Responsive Bar Column Placement */}
+                  {cols && (
+                    <div 
+                      className="relative h-16 flex items-center"
+                      style={{ 
+                        gridColumn: `${cols.startIdx} / ${cols.endIdx}`
+                      }}
+                    >
+                      <div 
+                        onClick={() => onSelectProject(project)}
+                        className={`w-full h-8 rounded-lg flex items-center px-3 cursor-pointer transition-all hover:scale-[1.01] hover:shadow-lg hover:z-50 group/bar border ${priority.classes} shadow-sm overflow-hidden`}
+                      >
+                        {/* Clipped Indicators */}
+                        {cols.isClippedStart && (
+                          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-zinc-900/10 dark:bg-white/10 flex items-center justify-center">
+                            <span className="text-[8px] opacity-40">«</span>
                           </div>
                         )}
+                        {cols.isClippedEnd && (
+                          <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-zinc-900/10 dark:bg-white/10 flex items-center justify-center">
+                            <span className="text-[8px] opacity-40">»</span>
+                          </div>
+                        )}
+
+                        <span className={`text-sm font-black whitespace-nowrap overflow-hidden text-ellipsis px-1 ${cols.isClippedStart ? 'ml-1.5' : ''} ${cols.isClippedEnd ? 'mr-1.5' : ''}`}>
+                          {project.title}
+                        </span>
+                        
+                        {/* Hover Tooltip */}
+                        <div className="invisible group-hover/bar:visible absolute -top-12 left-1/2 -translate-x-1/2 bg-zinc-950 dark:bg-white text-white dark:text-black text-xs font-bold py-2 px-3 rounded-lg whitespace-nowrap z-50 shadow-2xl border border-white/10 dark:border-black/5 animate-in fade-in zoom-in-95 duration-150">
+                          {project.startDate || '—'} → {project.dueDate}
+                        </div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  )}
                 </div>
               );
             })}

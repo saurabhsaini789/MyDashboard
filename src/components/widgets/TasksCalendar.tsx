@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { setSyncedItem } from "@/lib/storage";
 import { getPrefixedKey } from "@/lib/keys";
 
-import { ProjectModal, type Project } from "./ProjectModal";
+import { ProjectModal, type Project, getProjectPriorityInfo } from "./ProjectModal";
 
 export function TasksCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -89,79 +89,7 @@ export function TasksCalendar() {
     return projects.filter(p => !p.isCompleted && p.status !== 'completed' && p.dueDate === dateStr);
   };
   
-  // --- Priority & Urgency Logic (Matches ProjectModal) ---
-  const getPriorityInfo = (p: Project) => {
-    if (p.isCompleted || p.status === 'completed') {
-      return {
-        label: 'Completed',
-        icon: '✓',
-        classes: 'text-teal-600 bg-teal-50 dark:bg-teal-500/10 dark:text-teal-400 border-teal-200/50 dark:border-teal-900/40'
-      };
-    }
 
-    if (!p.dueDate) {
-      return {
-        label: p.isImportant ? 'Strategic' : 'On Track',
-        icon: p.isImportant ? '📌' : '🟢',
-        classes: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-900/40'
-      };
-    }
-
-    const due = new Date(p.dueDate + 'T00:00:00');
-    due.setHours(0, 0, 0, 0);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const diffTime = due.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    const isImportant = p.isImportant;
-    
-    // Urgency Logic
-    let urgency: 'overdue' | 'soon' | 'upcoming' | 'on-track';
-    if (diffDays < 0) urgency = 'overdue';
-    else if (diffDays <= 7) urgency = 'soon';
-    else if (diffDays <= 21) urgency = 'upcoming';
-    else urgency = 'on-track';
-
-    // Combined Logic
-    if (urgency === 'overdue' || urgency === 'soon') {
-      if (isImportant) {
-        return {
-          label: 'Critical',
-          icon: '🔥',
-          classes: 'text-rose-600 bg-rose-50 dark:bg-rose-500/10 dark:text-rose-400 border-rose-200 dark:border-rose-900/40'
-        };
-      }
-      return {
-        label: 'Time-sensitive',
-        icon: '⚠️',
-        classes: 'text-rose-500/80 bg-rose-50/50 dark:bg-rose-500/5 dark:text-rose-400/80 border-rose-100 dark:border-rose-900/20'
-      };
-    }
-
-    if (urgency === 'upcoming') {
-      return {
-        label: 'Upcoming',
-        icon: '🟡',
-        classes: 'text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-400 border-amber-200 dark:border-amber-900/40'
-      };
-    }
-
-    // On Track
-    if (isImportant) {
-      return {
-        label: 'Strategic',
-        icon: '📌',
-        classes: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-900/40'
-      };
-    }
-
-    return {
-      label: 'On Track',
-      icon: '🟢',
-      classes: 'text-zinc-500 bg-zinc-50 dark:bg-zinc-500/10 border-zinc-200 dark:border-zinc-800'
-    };
-  };
 
   const selectedDayProjects = selectedDay ? getProjectsForDay(selectedDay) : [];
 
@@ -283,7 +211,7 @@ export function TasksCalendar() {
                 </div>
               ) : (
                 selectedDayProjects.map(p => {
-                  const priority = getPriorityInfo(p);
+                  const priority = getProjectPriorityInfo(p);
                   return (
                     <div 
                       key={p.id} 
@@ -299,8 +227,7 @@ export function TasksCalendar() {
                         </span>
                         {priority.label && (
                           <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border flex items-center gap-1 ${priority.classes}`}>
-                            <span>{priority.icon}</span>
-                            {priority.label}
+                            <span>{priority.label}</span>
                           </span>
                         )}
                       </div>
@@ -336,7 +263,7 @@ export function TasksCalendar() {
             </div>
           ) : (
             nextTasks.map(p => {
-              const priority = getPriorityInfo(p);
+              const priority = getProjectPriorityInfo(p);
               return (
                 <div 
                   key={p.id} 
@@ -357,8 +284,7 @@ export function TasksCalendar() {
                     </span>
                     {priority.label && (
                       <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border flex items-center gap-1 ${priority.classes}`}>
-                        <span>{priority.icon}</span>
-                        {priority.label}
+                        <span>{priority.label}</span>
                       </span>
                     )}
                   </div>

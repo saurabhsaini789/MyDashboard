@@ -23,89 +23,71 @@ export type Project = {
   tasks: Task[];
 };
 
-// Priority & Urgency Logic
+// Action-Oriented Priority Logic
 export const getProjectPriorityInfo = (p: Project) => {
+  // 1. Completed
   if (p.isCompleted || p.status === 'completed') {
     return {
       label: 'Completed',
       color: 'teal',
-      icon: '✓',
       classes: 'bg-teal-50 dark:bg-teal-500/5 text-teal-700 dark:text-teal-500 border border-teal-200/50 dark:border-teal-900/50 opacity-80'
     };
   }
 
-  if (!p.dueDate) {
+  // 2. On Hold
+  if (p.status === 'on-hold') {
     return {
-      label: p.isImportant ? 'Strategic' : 'On Track',
-      color: 'green',
-      icon: p.isImportant ? '📌' : '🟢',
-      classes: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 shadow-sm shadow-emerald-500/5'
+      label: 'On Hold',
+      color: 'gray',
+      classes: 'bg-zinc-100 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-500 border border-dashed border-zinc-300 dark:border-zinc-700 opacity-80'
     };
   }
 
-  const due = new Date(p.dueDate + 'T00:00:00');
-  due.setHours(0, 0, 0, 0);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const diffTime = due.getTime() - today.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  const isImportant = p.isImportant;
+  // Parse dates safely
+  const due = p.dueDate ? new Date(p.dueDate + 'T00:00:00') : null;
+  if (due) due.setHours(0, 0, 0, 0);
   
-  // Urgency Logic
-  let urgency: 'overdue' | 'soon' | 'upcoming' | 'on-track';
-  if (diffDays < 0) urgency = 'overdue';
-  else if (diffDays <= 7) urgency = 'soon';
-  else if (diffDays <= 21) urgency = 'upcoming';
-  else urgency = 'on-track';
+  const start = p.startDate ? new Date(p.startDate + 'T00:00:00') : null;
+  if (start) start.setHours(0, 0, 0, 0);
 
-  // Combined Logic
-  if (urgency === 'overdue' || urgency === 'soon') {
-    if (isImportant) {
-      return {
-        label: 'Critical',
-        icon: '🔥',
-        color: 'red',
-        classes: 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 shadow-sm shadow-rose-500/5'
-      };
-    }
+  const diffDays = due ? Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : Infinity;
+  const isPastStart = start ? today >= start : true;
+  
+  // Calculate Progress based on tasks
+  const totalTasks = p.tasks?.length || 0;
+  const completedTasks = p.tasks?.filter(t => t.isCompleted).length || 0;
+  const taskProgress = totalTasks > 0 ? completedTasks / totalTasks : (p.status === 'in-progress' ? 0.5 : 0);
+
+  // 3. Off Track (Past due date OR missed start date)
+  if ((due && diffDays < 0) || (p.status === 'not-started' && isPastStart)) {
     return {
-      label: 'Time-sensitive',
-      icon: '⚠️',
+      label: 'Off Track',
       color: 'red',
-      classes: 'bg-rose-50/50 dark:bg-rose-500/5 text-rose-600 dark:text-rose-400/80 border border-rose-100 dark:border-rose-500/10 shadow-sm shadow-rose-500/5'
+      classes: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/50 font-bold focus-within:ring-red-500'
     };
   }
 
-  // Priority to Important focus (Strategic)
-  if (isImportant) {
+  // 4. At Risk (Due in <= 7 days but progress is < 25%)
+  if (due && diffDays <= 7 && taskProgress < 0.25) {
     return {
-      label: 'Strategic',
-      icon: '📌',
-      color: 'green',
-      classes: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 shadow-sm shadow-emerald-500/5'
+      label: 'At Risk',
+      color: 'orange',
+      classes: 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-900/50 font-bold'
     };
   }
 
-  if (urgency === 'upcoming') {
-    return {
-      label: 'Upcoming',
-      icon: '🟡',
-      color: 'yellow',
-      classes: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 shadow-sm shadow-amber-500/5'
-    };
-  }
-
-  // On Track (Not Important, >21 days)
+  // 5. On Track (Everything else)
   return {
     label: 'On Track',
-    icon: '🟢',
     color: 'green',
-    classes: 'bg-zinc-50 dark:bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-500/20 shadow-sm shadow-zinc-500/5'
+    classes: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50 font-medium'
   };
 };
 
-// Unified Sorting Logic: Priority Level > Due Date > Importance
+// Unified Sorting Logic
 export const sortProjects = (projects: Project[]) => {
   return [...projects].sort((a, b) => {
     const pA = getProjectPriorityInfo(a);
@@ -113,12 +95,11 @@ export const sortProjects = (projects: Project[]) => {
 
     const score = (label: string) => {
       switch (label) {
-        case 'Critical': return 1;
-        case 'Time-sensitive': return 2;
-        case 'Strategic': return 3;
-        case 'Upcoming': return 4;
-        case 'On Track': return 5;
-        case 'Completed': return 6;
+        case 'Off Track': return 1;
+        case 'At Risk': return 2;
+        case 'On Track': return 3;
+        case 'On Hold': return 4;
+        case 'Completed': return 5;
         default: return 99;
       }
     };
@@ -303,12 +284,26 @@ export function ProjectModal({ project, onClose, onUpdateProject, onDeleteProjec
                   {project.bucketId}
                 </span>
                 <span className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-md flex items-center gap-1.5 ${priority.classes}`}>
-                  <span>{priority.icon}</span>
-                  {priority.label}
+                  <span>{priority.label}</span>
                 </span>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                  Status: {project.status?.replace('-', ' ') || 'not started'}
-                </span>
+                <select 
+                  value={project.status || 'not-started'}
+                  onChange={(e) => {
+                    const newStatus = e.target.value as Project['status'];
+                    onUpdateProject({
+                      ...project,
+                      status: newStatus,
+                      isCompleted: newStatus === 'completed',
+                      completedAt: newStatus === 'completed' ? new Date().toISOString() : undefined
+                    });
+                  }}
+                  className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 bg-zinc-100/50 dark:bg-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded px-2 py-1 cursor-pointer focus:outline-none transition-colors border-none"
+                >
+                  <option value="not-started" className="dark:bg-zinc-900">STATUS: NOT STARTED</option>
+                  <option value="in-progress" className="dark:bg-zinc-900">STATUS: IN PROGRESS</option>
+                  <option value="on-hold" className="dark:bg-zinc-900">STATUS: ON HOLD</option>
+                  <option value="completed" className="dark:bg-zinc-900">STATUS: COMPLETED</option>
+                </select>
               </div>
               <h2 className={`text-2xl font-extrabold leading-tight flex items-center gap-2 ${project.isCompleted || project.status === 'completed' ? 'text-zinc-400 dark:text-zinc-600 line-through' : 'text-zinc-900 dark:text-white'}`}>
                 {project.title}
