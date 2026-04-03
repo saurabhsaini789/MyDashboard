@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { ExpenseRecord, ExpenseItem } from '@/types/finance';
-import { convertToCAD } from '@/lib/finances';
+
 
 interface PriceIntelligenceProps {
   records: ExpenseRecord[];
@@ -12,6 +12,8 @@ interface PriceInstance {
   price: number;
   date: string;
   vendor: string;
+  brand?: string;
+  size?: string;
 }
 
 interface SmartInsight {
@@ -21,7 +23,7 @@ interface SmartInsight {
 
 interface ItemStats {
   name: string;
-  currency: 'INR' | 'CAD';
+  
   history: PriceInstance[];
   averagePrice: number;
   lowestPrice: PriceInstance;
@@ -32,11 +34,12 @@ interface ItemStats {
 
 export function PriceIntelligence({ records }: PriceIntelligenceProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeItemStats, setActiveItemStats] = useState<ItemStats | null>(null);
 
   const itemStats: ItemStats[] = useMemo(() => {
     const map: Record<string, {
       name: string;
-      currency: 'INR' | 'CAD';
+      
       history: PriceInstance[];
     }> = {};
 
@@ -45,35 +48,44 @@ export function PriceIntelligence({ records }: PriceIntelligenceProps) {
       const isApplicable = record.category === 'Grocery' || (record.items && record.items.length > 0);
       if (!isApplicable) return;
 
-      const currency = record.currency || 'CAD';
+      
       const vendor = record.vendor || 'Unknown Store';
       
       if (record.items && record.items.length > 0) {
         record.items.forEach(item => {
           const name = item.name.trim();
           if (!name) return;
-          const price = item.unitPrice > 0 ? item.unitPrice : (item.totalPrice / (parseFloat(item.quantity) || 1));
-          if (price <= 0) return; // ignore invalid prices
-
-          const key = `${name.toLowerCase()}_${currency}`;
-          if (!map[key]) {
-            map[key] = { name, currency, history: [] };
+          
+          const qty = parseFloat(item.quantity) || 1;
+          let parsedSize = 1;
+          if (item.size) {
+            const extracted = parseFloat(item.size);
+            if (!isNaN(extracted) && extracted > 0) parsedSize = extracted;
           }
-          map[key].history.push({ price, date: record.date, vendor });
+          let price = item.totalPrice > 0 ? (item.totalPrice / qty) : item.unitPrice;
+          
+          if (price <= 0 || isNaN(price)) return; // ignore invalid prices
+
+          const key = name.toLowerCase();
+          if (!map[key]) {
+            map[key] = { name, history: [] };
+          }
+          map[key].history.push({ price, date: record.date, vendor, brand: item.brand, size: item.size });
         });
       } else {
         // top level fallback if no items array but categorized as grocery
         const name = (record.subcategory || record.category).trim();
         if (!name) return;
+        
         const qty = parseFloat(record.quantity || '1') || 1;
         const price = record.amount / qty;
-        if (price <= 0) return;
+        if (price <= 0 || isNaN(price)) return;
 
-        const key = `${name.toLowerCase()}_${currency}`;
+        const key = name.toLowerCase();
         if (!map[key]) {
-            map[key] = { name, currency, history: [] };
+            map[key] = { name, history: [] };
         }
-        map[key].history.push({ price, date: record.date, vendor });
+        map[key].history.push({ price, date: record.date, vendor, brand: record.brand, size: record.size });
       }
     });
 
@@ -124,8 +136,8 @@ export function PriceIntelligence({ records }: PriceIntelligenceProps) {
          storeAvgs.sort((a, b) => a.avg - b.avg);
          const cheapest = storeAvgs[0];
          const mostExpensive = storeAvgs[storeAvgs.length - 1];
-         // if > 10% diff
-         if ((mostExpensive.avg - cheapest.avg) / cheapest.avg > 0.1 && cheapest.store !== 'Unknown Store') {
+         // Any measurable price difference logic (tell me which milk is cheaper)
+         if ((mostExpensive.avg - cheapest.avg) > 0.001 && cheapest.store !== 'Unknown Store') {
            const vs = mostExpensive.store === 'Unknown Store' ? 'others' : mostExpensive.store;
            insights.push({ text: `${cheapest.store} averages cheaper than ${vs}`, type: 'positive' });
          }
@@ -232,16 +244,16 @@ export function PriceIntelligence({ records }: PriceIntelligenceProps) {
            <p className="text-zinc-500 font-medium">{itemStats.length === 0 ? "No grocery items logged yet. Add items in Quick Entry or detailed bills." : "No items found matching your search."}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
           {filteredStats.map(stat => (
-            <div key={`${stat.name}_${stat.currency}`} className="group bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-[28px] p-5 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between">
+            <div key={stat.name} onClick={() => setActiveItemStats(stat)} className="group bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-[28px] p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between cursor-pointer">
                 
                 <div>
                    {/* Name & Trend Indicator */}
                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex flex-col gap-0.5 max-w-[70%]">
-                        <h4 className="font-bold text-[15px] text-zinc-900 dark:text-zinc-100 truncate" title={stat.name}>{stat.name}</h4>
-                        <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-400">{stat.history.length} Logs</span>
+                      <div className="flex flex-col gap-1 max-w-[70%]">
+                        <h4 className="font-bold text-[17px] text-zinc-900 dark:text-zinc-100 truncate" title={stat.name}>{stat.name}</h4>
+                        <span className="text-[11px] uppercase font-bold tracking-widest text-zinc-400">{stat.history.length} Logs</span>
                       </div>
                       <div className={`px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${
                          stat.priceTrend > 3 ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400' 
@@ -255,41 +267,30 @@ export function PriceIntelligence({ records }: PriceIntelligenceProps) {
                    {/* Price & Sparkline */}
                    <div className="flex items-end justify-between mb-5">
                       <div className="flex flex-col gap-0.5">
-                         <span className="text-3xl font-bold tracking-tighter text-zinc-900 dark:text-white leading-none">
-                           <span className="text-sm font-semibold tracking-normal text-zinc-400 mr-1">{stat.currency === 'CAD' ? 'C$' : '₹'}</span>
-                           {stat.lastPurchase.price.toLocaleString(stat.currency === 'CAD' ? 'en-CA' : 'en-IN', { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
-                           {stat.currency === 'INR' && (
-                             <span className="text-lg opacity-40 ml-2 font-medium tracking-normal text-zinc-400">
-                               (C${convertToCAD(stat.lastPurchase.price, 'INR').toLocaleString('en-CA', { maximumFractionDigits: 1 })})
-                             </span>
-                           )}
+                         <span className="text-4xl font-bold tracking-tighter text-zinc-900 dark:text-white leading-none">
+                           <span className="text-base font-semibold tracking-normal text-zinc-400 mr-1">$</span>{stat.lastPurchase.price.toLocaleString("en-CA", { minimumFractionDigits: 1, maximumFractionDigits: 3 })}
+                           <span className="text-sm font-semibold text-zinc-400 ml-1">/ {stat.lastPurchase.size || 'unit'}</span>
                          </span>
-                         <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mt-1 truncate max-w-[120px]" title={stat.lastPurchase.vendor}>
-                            at {stat.lastPurchase.vendor}
+                         <span className="text-xs text-zinc-500 uppercase tracking-widest font-bold mt-1 truncate max-w-[150px]" title={stat.lastPurchase.vendor}>
+                            at {stat.lastPurchase.vendor} {stat.lastPurchase.brand ? `(${stat.lastPurchase.brand})` : ''}
                          </span>
                       </div>
                       {renderSparkline(stat.history, stat.priceTrend)}
                    </div>
                    
                    {/* Avg vs Lowest Tracker */}
-                   <div className="flex justify-between text-xs mb-4 p-3.5 bg-zinc-50 dark:bg-zinc-950/40 rounded-2xl border border-zinc-100 dark:border-zinc-800/50">
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.15em]">Average</span>
-                        <span className="font-bold text-zinc-700 dark:text-zinc-300">
-                          {stat.currency === 'CAD' ? 'C$' : '₹'}{stat.averagePrice.toLocaleString(undefined, {maximumFractionDigits:2})}
-                          {stat.currency === 'INR' && (
-                            <span className="text-[9px] opacity-60 ml-1 font-medium">(C${convertToCAD(stat.averagePrice, 'INR').toLocaleString('en-CA', { maximumFractionDigits: 1 })})</span>
-                          )}
+                   <div className="flex justify-between text-sm mb-4 p-4 bg-zinc-50 dark:bg-zinc-950/40 rounded-2xl border border-zinc-100 dark:border-zinc-800/50">
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-[0.15em]">Average</span>
+                        <span className="font-bold text-zinc-700 dark:text-zinc-300 text-sm">
+                          ${stat.averagePrice.toLocaleString("en-CA", {maximumFractionDigits:2})}
                         </span>
                       </div>
-                      <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800 my-auto" />
-                      <div className="flex flex-col gap-1 text-right">
-                        <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.15em]">Lowest</span>
-                        <span className="font-bold text-teal-600 dark:text-teal-400">
-                          {stat.currency === 'CAD' ? 'C$' : '₹'}{stat.lowestPrice.price.toLocaleString(undefined, {maximumFractionDigits:2})}
-                          {stat.currency === 'INR' && (
-                            <span className="text-[9px] opacity-60 ml-1 font-medium">(C${convertToCAD(stat.lowestPrice.price, 'INR').toLocaleString('en-CA', { maximumFractionDigits: 1 })})</span>
-                          )}
+                      <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-800 my-auto" />
+                      <div className="flex flex-col gap-1.5 text-right">
+                        <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-[0.15em]">Lowest</span>
+                        <span className="font-bold text-teal-600 dark:text-teal-400 text-sm">
+                          ${stat.lowestPrice.price.toLocaleString("en-CA", {maximumFractionDigits:2})}
                         </span>
                       </div>
                    </div>
@@ -316,6 +317,101 @@ export function PriceIntelligence({ records }: PriceIntelligenceProps) {
                 )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Pop-up Modal for Detailed Tracking */}
+      {activeItemStats && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-zinc-950/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-zinc-900 rounded-[40px] w-full max-w-2xl shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300 flex flex-col max-h-[85vh]">
+            <div className="p-8 pb-6 flex justify-between items-start border-b border-zinc-100 dark:border-zinc-800">
+               <div>
+                  <h3 className="text-3xl font-bold text-zinc-900 dark:text-white truncate">{activeItemStats.name}</h3>
+                  <p className="text-sm text-zinc-500 mt-2 font-medium">Detailed Price Tracking History</p>
+               </div>
+               <button onClick={() => setActiveItemStats(null)} className="p-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full text-zinc-500 transition-all">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+               </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8">
+               {/* Summary Header inside Modal */}
+               <div className="grid grid-cols-3 gap-4">
+                  <div className="p-5 rounded-3xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-100 dark:border-zinc-800 flex flex-col gap-2">
+                     <span className="text-[11px] uppercase font-bold tracking-widest text-zinc-400">Lowest</span>
+                     <span className="text-2xl font-bold text-teal-600 dark:text-teal-400">${activeItemStats.lowestPrice.price.toLocaleString("en-CA", {maximumFractionDigits:2})}</span>
+                     <span className="text-xs text-zinc-500 truncate" title={activeItemStats.lowestPrice.vendor}>at {activeItemStats.lowestPrice.vendor}</span>
+                  </div>
+                  <div className="p-5 rounded-3xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-100 dark:border-zinc-800 flex flex-col gap-2">
+                     <span className="text-[11px] uppercase font-bold tracking-widest text-zinc-400">Average</span>
+                     <span className="text-2xl font-bold text-zinc-800 dark:text-zinc-200">${activeItemStats.averagePrice.toLocaleString("en-CA", {maximumFractionDigits:2})}</span>
+                     <span className="text-xs text-zinc-500">{activeItemStats.history.length} purchases</span>
+                  </div>
+                  <div className="p-5 rounded-3xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-100 dark:border-zinc-800 flex flex-col gap-2">
+                     <span className="text-[11px] uppercase font-bold tracking-widest text-zinc-400">Trend</span>
+                     <span className={`text-2xl font-bold ${activeItemStats.priceTrend > 3 ? 'text-rose-500' : activeItemStats.priceTrend < -3 ? 'text-teal-500' : 'text-zinc-500'}`}>
+                        {activeItemStats.priceTrend > 0 ? '+' : ''}{activeItemStats.priceTrend.toFixed(1)}%
+                     </span>
+                     <span className="text-xs text-zinc-500">vs average</span>
+                  </div>
+               </div>
+
+               {/* Extended Insights */}
+               {activeItemStats.smartInsights.length > 0 && (
+                 <div className="space-y-3">
+                    <h4 className="text-[11px] uppercase tracking-[0.2em] font-bold text-zinc-400 pl-2">Smart Insights</h4>
+                    <div className="flex flex-col gap-2">
+                       {activeItemStats.smartInsights.map((insight, idx) => (
+                         <div key={idx} className={`p-4 rounded-2xl border flex items-center gap-3 text-sm font-bold ${
+                           insight.type === 'positive' ? 'bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-100 dark:border-teal-500/20' : 
+                           insight.type === 'negative' ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-100 dark:border-rose-500/20' : 
+                           'bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700'
+                         }`}>
+                           <span className="text-xl">{insight.type === 'positive' ? '✨' : insight.type === 'negative' ? '⚠️' : '💡'}</span>
+                           {insight.text}
+                         </div>
+                       ))}
+                    </div>
+                 </div>
+               )}
+
+               {/* History Table */}
+               <div className="space-y-3">
+                  <h4 className="text-[11px] uppercase tracking-[0.2em] font-bold text-zinc-400 pl-2">Price History</h4>
+                  <div className="border border-zinc-100 dark:border-zinc-800 rounded-3xl overflow-hidden">
+                     <table className="w-full text-left">
+                        <thead className="bg-zinc-50 dark:bg-zinc-950/50 border-b border-zinc-100 dark:border-zinc-800">
+                           <tr>
+                              <th className="p-4 px-6 text-[10px] uppercase tracking-widest text-zinc-400 font-bold">Date</th>
+                              <th className="p-4 px-6 text-[10px] uppercase tracking-widest text-zinc-400 font-bold">Store</th>
+                              <th className="p-4 px-6 text-[10px] uppercase tracking-widest text-zinc-400 font-bold text-right">Details</th>
+                              <th className="p-4 px-6 text-[10px] uppercase tracking-widest text-zinc-400 font-bold text-right">Unit Price</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           {[...activeItemStats.history].reverse().map((h, i) => (
+                              <tr key={i} className="border-b border-zinc-50 dark:border-zinc-800/50 last:border-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
+                                 <td className="p-4 px-6 text-sm text-zinc-600 dark:text-zinc-400 font-medium">
+                                    {new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                 </td>
+                                 <td className="p-4 px-6 text-sm font-bold text-zinc-900 dark:text-white">
+                                    {h.vendor}
+                                 </td>
+                                 <td className="p-4 px-6 text-xs text-zinc-500 dark:text-zinc-400 text-right">
+                                    {h.brand ? <span className="font-bold mr-2">{h.brand}</span> : null}
+                                    {h.size || ''}
+                                 </td>
+                                 <td className="p-4 px-6 text-sm font-bold text-zinc-900 dark:text-white text-right tracking-tighter">
+                                    ${h.price.toLocaleString("en-CA", {minimumFractionDigits: 2, maximumFractionDigits: 3})}
+                                 </td>
+                              </tr>
+                           ))}
+                        </tbody>
+                     </table>
+                  </div>
+               </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

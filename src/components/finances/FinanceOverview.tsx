@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { getPrefixedKey } from '@/lib/keys';
 import { MultiSelectDropdown } from '../ui/MultiSelectDropdown';
 import { MONTHS, YEARS } from '@/lib/constants';
-import { getExchangeRate, convertToINR, convertToCAD, calculateAssetBalance, calculateLiabilityBalance, type Asset, type Liability } from '@/lib/finances';
+import { calculateAssetBalance, calculateLiabilityBalance, type Asset, type Liability } from '@/lib/finances';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 
 interface MetricProps {
@@ -14,10 +14,10 @@ interface MetricProps {
   icon: React.ReactNode;
   color: 'teal' | 'emerald' | 'rose' | 'amber' | 'indigo' | 'blue';
   customBg?: string;
-  cadValue?: string;
+  
 }
 
-function MetricCard({ label, value, cadValue, subValue, icon, color, customBg }: MetricProps) {
+function MetricCard({ label, value, subValue, icon, color, customBg }: MetricProps) {
   const iconClasses = {
     teal: "bg-teal-50 text-teal-600 dark:bg-teal-500/10 dark:text-teal-400",
     emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400",
@@ -59,11 +59,7 @@ function MetricCard({ label, value, cadValue, subValue, icon, color, customBg }:
           <span className={`text-xl md:text-2xl tracking-tighter text-zinc-900 dark:text-zinc-100 leading-none font-bold`}>
             {value}
           </span>
-          {cadValue && (
-            <span className="text-[9px] md:text-[10px] text-zinc-500 font-medium uppercase tracking-wider mt-1 opacity-80">
-              ({cadValue})
-            </span>
-          )}
+          
         </div>
       </div>
     </div>
@@ -73,7 +69,7 @@ function MetricCard({ label, value, cadValue, subValue, icon, color, customBg }:
 interface EmergencyFundData {
   targetAmount: number;
   monthlyExpenses: number;
-  contributions: { id: string; amount: number; currency?: 'INR' | 'CAD' }[];
+  contributions: { id: string; amount: number }[];
 }
 
 export function FinanceOverview() {
@@ -88,7 +84,7 @@ export function FinanceOverview() {
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
 
   const calculateFinance = () => {
-    const exchangeRate = getExchangeRate();
+    
 
     // 1. Calculate Income
     const incomeData = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_INCOME));
@@ -101,7 +97,7 @@ export function FinanceOverview() {
             const d = new Date(r.date);
             return selectedMonths.includes(d.getMonth()) && selectedYears.includes(d.getFullYear());
           })
-          .reduce((sum: number, r: any) => sum + convertToINR(r.amount, r.currency, exchangeRate), 0);
+          .reduce((sum: number, r: any) => sum + r.amount, 0);
       } catch (e) { }
     }
     setIncome(totalIncomeCount);
@@ -117,7 +113,7 @@ export function FinanceOverview() {
             const d = new Date(r.date);
             return selectedMonths.includes(d.getMonth()) && selectedYears.includes(d.getFullYear());
           })
-          .reduce((sum: number, r: any) => sum + convertToINR(r.amount, r.currency, exchangeRate), 0);
+          .reduce((sum: number, r: any) => sum + r.amount, 0);
       } catch (e) { }
     }
     setExpenses(totalExpensesCount);
@@ -148,7 +144,7 @@ export function FinanceOverview() {
     if (efData) {
         try {
             const data: EmergencyFundData = JSON.parse(efData);
-            const totalSaved = data.contributions.reduce((sum, c) => sum + convertToINR(c.amount, c.currency, exchangeRate), 0);
+            const totalSaved = data.contributions.reduce((sum, c) => sum + c.amount, 0);
             monthsCovered = data.monthlyExpenses > 0 ? totalSaved / data.monthlyExpenses : 0;
         } catch (e) {}
     }
@@ -173,7 +169,7 @@ export function FinanceOverview() {
         SYNC_KEYS.FINANCES_ASSETS, 
         SYNC_KEYS.FINANCES_LIABILITIES, 
         SYNC_KEYS.FINANCES_EMERGENCY_FUND,
-        SYNC_KEYS.FINANCES_EXCHANGE_RATE
+        // SYNC_KEYS.FINANCES_EXCHANGE_RATE
       ].includes(e.detail.key)) {
         calculateFinance();
       }
@@ -214,8 +210,8 @@ export function FinanceOverview() {
       <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6">
         <MetricCard 
           label="Net Worth"
-          value={`₹${netWorth.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
-          cadValue={`CAD $${convertToCAD(netWorth).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+          value={`${netWorth.toLocaleString("en-CA", { maximumFractionDigits: 0 })}`}
+          
           subValue={netWorth >= 0 ? "Positive Equity" : "Negative Equity"}
           color={netWorth >= 0 ? "emerald" : "rose"}
           customBg={netWorth >= 0 
@@ -232,7 +228,7 @@ export function FinanceOverview() {
         <MetricCard 
           label="Emergency Fund"
           value={`${emergencyFundMonths < 10 ? emergencyFundMonths.toFixed(1) : Math.floor(emergencyFundMonths)} Months`}
-          cadValue={`CAD $${convertToCAD(emergencyFundMonths * (expenses || 0)).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+          
           subValue={emergencyFundMonths >= 6 ? "Fully Funded" : emergencyFundMonths >= 3 ? "On Track" : "Focus Needed"}
           color={emergencyFundMonths >= 6 ? "emerald" : emergencyFundMonths >= 3 ? "amber" : "rose"}
           customBg={emergencyFundMonths >= 6 
@@ -250,8 +246,8 @@ export function FinanceOverview() {
 
         <MetricCard
           label="Monthly Income"
-          value={`₹${income.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
-          cadValue={`CAD $${convertToCAD(income).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+          value={`${income.toLocaleString("en-CA", { maximumFractionDigits: 0 })}`}
+          
           subValue={selectedMonths.length === 1 && selectedYears.length === 1 ? MONTHS[selectedMonths[0]] : `${selectedMonths.length} Months`}
           color="emerald"
           icon={
@@ -263,8 +259,8 @@ export function FinanceOverview() {
 
         <MetricCard
           label="Monthly Expenses"
-          value={`₹${expenses.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
-          cadValue={`CAD $${convertToCAD(expenses).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+          value={`${expenses.toLocaleString("en-CA", { maximumFractionDigits: 0 })}`}
+          
           subValue={`${income > 0 ? ((expenses / income) * 100).toFixed(0) : 0}% of Income`}
           color="rose"
           icon={

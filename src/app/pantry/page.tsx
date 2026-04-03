@@ -15,6 +15,7 @@ export default function PantryPage() {
   const [mounted, setMounted] = useState(false);
   const [records, setRecords] = useState<ExpenseRecord[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [viewingDate, setViewingDate] = useState(new Date());
 
   useEffect(() => {
     setMounted(true);
@@ -55,6 +56,17 @@ export default function PantryPage() {
 
   if (!mounted || !isLoaded) return null;
 
+  const currentMonthRecords = records.filter(r => {
+    if (!r.date) return false;
+    const [rYear, rMonth] = r.date.split('-');
+    return parseInt(rMonth) - 1 === viewingDate.getMonth() && parseInt(rYear) === viewingDate.getFullYear();
+  });
+
+  const categoryTotals = currentMonthRecords.reduce((acc, r) => {
+    acc[r.category] = (acc[r.category] || 0) + r.amount;
+    return acc;
+  }, {} as Record<string, number>);
+
   return (
     <main className="min-h-screen bg-[#fcfcfc] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 selection:bg-teal-500/10 p-6 md:p-10 lg:p-12 relative overflow-hidden">
       <div className="mx-auto w-full max-w-7xl flex flex-col gap-8 md:gap-10 pt-4 relative z-10">
@@ -69,14 +81,37 @@ export default function PantryPage() {
           </p>
         </div>
 
+        {/* Current Month Breakdown Overview */}
+        {Object.keys(categoryTotals).length > 0 && (
+          <div className="flex flex-col gap-4 fade-in animate-in slide-in-from-bottom-4 duration-700 delay-100">
+             <div className="flex items-center justify-between px-2">
+                 <span className="text-xs text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-[0.2em]">{viewingDate.toLocaleString('default', { month: 'long', year: 'numeric' })} Breakdown</span>
+                 <span className="text-xs text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-[0.2em]">Total: ${currentMonthRecords.reduce((a,b)=>a+b.amount,0).toLocaleString('en-CA', {maximumFractionDigits:0})}</span>
+             </div>
+             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+               {Object.entries(categoryTotals).sort((a,b) => b[1] - a[1]).map(([cat, total]) => (
+                  <div key={cat} className="flex flex-col p-4 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-sm">
+                     <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 truncate">{cat}</span>
+                     <span className="text-xl font-bold text-teal-600 dark:text-teal-400">${total.toLocaleString('en-CA', {maximumFractionDigits: 0})}</span>
+                  </div>
+               ))}
+             </div>
+          </div>
+        )}
+
         {/* Dynamic Pantry Calendar */}
         <div className="fade-in animate-in slide-in-from-bottom-4 duration-700">
-          <PantryCalendar records={records} onUpdateRecords={updateRecords} />
+          <PantryCalendar 
+             records={records} 
+             onUpdateRecords={updateRecords} 
+             viewingDate={viewingDate} 
+             setViewingDate={setViewingDate} 
+          />
         </div>
 
         {/* Monthly Grocery Plan */}
         <div className="fade-in animate-in slide-in-from-bottom-4 duration-700 delay-200">
-          <GroceryPlan records={records} />
+          <GroceryPlan records={records} viewingDate={viewingDate} />
         </div>
 
         {/* Price Intelligence Tracker */}
@@ -91,7 +126,7 @@ export default function PantryPage() {
 
         {/* Smart Insights (AI-Powered) */}
         <div className="fade-in animate-in slide-in-from-bottom-4 duration-700 delay-500">
-          <SmartInsights records={records} />
+          <SmartInsights records={records} viewingDate={viewingDate} />
         </div>
 
       </div>

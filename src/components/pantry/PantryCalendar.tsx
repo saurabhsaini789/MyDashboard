@@ -3,21 +3,22 @@
 import React, { useState, useMemo } from 'react';
 import { ExpenseRecord } from '@/types/finance';
 import { PantryEntryModal } from './PantryEntryModal';
-import { convertToINR, convertToCAD } from '@/lib/finances';
+
 
 interface PantryCalendarProps {
   records: ExpenseRecord[];
   onUpdateRecords: (records: ExpenseRecord[]) => void;
+  viewingDate: Date;
+  setViewingDate: (date: Date) => void;
 }
 
-export function PantryCalendar({ records, onUpdateRecords }: PantryCalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date());
+export function PantryCalendar({ records, onUpdateRecords, viewingDate, setViewingDate }: PantryCalendarProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<ExpenseRecord | null>(null);
 
-  const month = currentDate.getMonth();
-  const year = currentDate.getFullYear();
+  const month = viewingDate.getMonth();
+  const year = viewingDate.getFullYear();
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = new Date(year, month, 1).getDay();
@@ -37,7 +38,7 @@ export function PantryCalendar({ records, onUpdateRecords }: PantryCalendarProps
   const dailyTotals = useMemo(() => {
     const totals: Record<string, number> = {};
     Object.entries(recordsByDate).forEach(([date, dateRecords]) => {
-      totals[date] = dateRecords.reduce((sum, r) => sum + convertToINR(r.amount, r.currency), 0);
+      totals[date] = dateRecords.reduce((sum, r) => sum + r.amount, 0);
     });
     return totals;
   }, [recordsByDate]);
@@ -46,14 +47,15 @@ export function PantryCalendar({ records, onUpdateRecords }: PantryCalendarProps
   const monthlyTotal = useMemo(() => {
     return records
       .filter(r => {
-        const d = new Date(r.date);
-        return d.getMonth() === month && d.getFullYear() === year;
+        if (!r.date) return false;
+        const [rYear, rMonth] = r.date.split('-');
+        return parseInt(rMonth) - 1 === month && parseInt(rYear) === year;
       })
-      .reduce((sum, r) => sum + convertToINR(r.amount, r.currency), 0);
+      .reduce((sum, r) => sum + r.amount, 0);
   }, [records, month, year]);
 
-  const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
-  const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+  const prevMonth = () => setViewingDate(new Date(year, month - 1, 1));
+  const nextMonth = () => setViewingDate(new Date(year, month + 1, 1));
 
   const handleDateClick = (dateStr: string) => {
     setSelectedDate(dateStr);
@@ -78,10 +80,7 @@ export function PantryCalendar({ records, onUpdateRecords }: PantryCalendarProps
         <div className="flex flex-col gap-1">
           <span className="text-xs uppercase tracking-[0.3em] opacity-60">Monthly Spend</span>
           <span className="text-4xl font-bold tracking-tighter">
-            ₹{monthlyTotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-            <span className="text-xl opacity-60 ml-2 font-medium tracking-normal">
-              (C${convertToCAD(monthlyTotal).toLocaleString('en-CA', { maximumFractionDigits: 1 })})
-            </span>
+            ${monthlyTotal.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
           </span>
         </div>
         <div className="flex items-center gap-4">
@@ -90,7 +89,7 @@ export function PantryCalendar({ records, onUpdateRecords }: PantryCalendarProps
           </button>
           <div className="flex flex-col items-center">
              <span className="text-sm font-bold uppercase tracking-widest">
-                {new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(currentDate)}
+                {new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(viewingDate)}
              </span>
           </div>
           <button onClick={nextMonth} className="p-3 hover:bg-white/10 rounded-2xl transition-all">
@@ -114,8 +113,8 @@ export function PantryCalendar({ records, onUpdateRecords }: PantryCalendarProps
 
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
-            const dateObj = new Date(year, month, day);
-            const dateStr = dateObj.toISOString().split('T')[0];
+            const pad = (n: number) => n.toString().padStart(2, '0');
+            const dateStr = `${year}-${pad(month + 1)}-${pad(day)}`;
             const recordsOnDay = recordsByDate[dateStr] || [];
             const totalOnDay = dailyTotals[dateStr] || 0;
             const isToday = new Date().toISOString().split('T')[0] === dateStr;
@@ -136,16 +135,13 @@ export function PantryCalendar({ records, onUpdateRecords }: PantryCalendarProps
                   {totalOnDay > 0 && (
                     <div className="flex flex-col items-end">
                       <span className="text-[10px] md:text-xs font-bold tracking-tight">
-                        ₹{totalOnDay.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                      </span>
-                      <span className="text-[8px] md:text-[9px] opacity-60 font-medium -mt-0.5">
-                        (C${convertToCAD(totalOnDay).toLocaleString('en-CA', { maximumFractionDigits: 0 })})
+                        ${totalOnDay.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
                       </span>
                     </div>
                   )}
                 </div>
 
-                <div className="mt-2 flex flex-col gap-1 overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="mt-2 flex flex-col gap-1 overflow-hidden">
                    {recordsOnDay.slice(0, 2).map((r, idx) => (
                      <div key={idx} className="text-[10px] truncate uppercase tracking-tighter text-zinc-500">
                         {r.vendor ? `${r.vendor}${r.entryType === 'Bill' ? ' Bill' : ''}` : (r.subcategory || r.category)}

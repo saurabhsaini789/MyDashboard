@@ -5,10 +5,11 @@ import { GroceryPlanItem, ExpenseRecord } from '@/types/finance';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
-import { convertToINR, convertToCAD, getExchangeRate } from '@/lib/finances';
+
 
 interface GroceryPlanProps {
   records: ExpenseRecord[];
+  viewingDate: Date;
 }
 
 const DEFAULT_CATEGORIES = [
@@ -24,44 +25,10 @@ const DEFAULT_CATEGORIES = [
 
 const MOCK_ITEMS: GroceryPlanItem[] = [
   // Dairy & Refrigerated
-  { id: 'm1', name: 'Milk', category: '🥛 Dairy & Refrigerated', plannedQuantity: 4, unitSize: '1L', frequency: 'Weekly', idealTiming: 'Every Sunday', expectedPrice: 2, currency: 'CAD', checkedUnits: [] },
-  { id: 'm2', name: 'Paneer', category: '🥛 Dairy & Refrigerated', plannedQuantity: 2, unitSize: '400g', frequency: 'Bi-Weekly', idealTiming: '', expectedPrice: 5, currency: 'CAD', checkedUnits: [] },
-  { id: 'm3', name: 'Curd', category: '🥛 Dairy & Refrigerated', plannedQuantity: 4, unitSize: '750g', frequency: 'Weekly', idealTiming: '', expectedPrice: 3, currency: 'CAD', checkedUnits: [] },
-  // Protein
-  { id: 'p1', name: 'Chicken', category: '🥩 Protein (Meat & Alternatives)', plannedQuantity: 2, unitSize: '1kg', frequency: 'Bi-Weekly', idealTiming: '', expectedPrice: 15, currency: 'CAD', checkedUnits: [] },
-  { id: 'p2', name: 'Fish', category: '🥩 Protein (Meat & Alternatives)', plannedQuantity: 1, unitSize: '1kg', frequency: 'Monthly', idealTiming: '', expectedPrice: 20, currency: 'CAD', checkedUnits: [] },
-  { id: 'p3', name: 'Chickpeas', category: '🥩 Protein (Meat & Alternatives)', plannedQuantity: 2, unitSize: '1kg', frequency: 'Monthly', idealTiming: '', expectedPrice: 4, currency: 'CAD', checkedUnits: [] },
-  // Grains & Staples
-  { id: 'g1', name: 'Aata (Flour)', category: '🌾 Grains & Staples', plannedQuantity: 1, unitSize: '10kg', frequency: 'Monthly', idealTiming: 'Start of month', expectedPrice: 18, currency: 'CAD', checkedUnits: [] },
-  { id: 'g2', name: 'Rice', category: '🌾 Grains & Staples', plannedQuantity: 1, unitSize: '5kg', frequency: 'Monthly', idealTiming: '', expectedPrice: 12, currency: 'CAD', checkedUnits: [] },
-  { id: 'g3', name: 'Oats', category: '🌾 Grains & Staples', plannedQuantity: 1, unitSize: '1kg', frequency: 'Monthly', idealTiming: '', expectedPrice: 4, currency: 'CAD', checkedUnits: [] },
-  { id: 'g4', name: 'Dalia', category: '🌾 Grains & Staples', plannedQuantity: 1, unitSize: '500g', frequency: 'Monthly', idealTiming: '', expectedPrice: 3, currency: 'CAD', checkedUnits: [] },
-  { id: 'g5', name: 'Suji', category: '🌾 Grains & Staples', plannedQuantity: 1, unitSize: '500g', frequency: 'Monthly', idealTiming: '', expectedPrice: 2, currency: 'CAD', checkedUnits: [] },
-  { id: 'g6', name: 'Besan', category: '🌾 Grains & Staples', plannedQuantity: 1, unitSize: '1kg', frequency: 'Monthly', idealTiming: '', expectedPrice: 5, currency: 'CAD', checkedUnits: [] },
-  // Vegetables
-  { id: 'v1', name: 'Onion', category: '🥕 Vegetables', plannedQuantity: 2, unitSize: '2kg', frequency: 'Bi-Weekly', idealTiming: '', expectedPrice: 4, currency: 'CAD', checkedUnits: [] },
-  { id: 'v2', name: 'Tomato', category: '🥕 Vegetables', plannedQuantity: 4, unitSize: '1kg', frequency: 'Weekly', idealTiming: '', expectedPrice: 3, currency: 'CAD', checkedUnits: [] },
-  { id: 'v3', name: 'Ginger', category: '🥕 Vegetables', plannedQuantity: 1, unitSize: '250g', frequency: 'Monthly', idealTiming: '', expectedPrice: 2, currency: 'CAD', checkedUnits: [] },
-  { id: 'v4', name: 'Garlic', category: '🥕 Vegetables', plannedQuantity: 1, unitSize: '250g', frequency: 'Monthly', idealTiming: '', expectedPrice: 2, currency: 'CAD', checkedUnits: [] },
-  { id: 'v5', name: 'Potato', category: '🥕 Vegetables', plannedQuantity: 2, unitSize: '5kg', frequency: 'Bi-Weekly', idealTiming: '', expectedPrice: 6, currency: 'CAD', checkedUnits: [] },
-  { id: 'v6', name: 'Matar (Peas)', category: '🥕 Vegetables', plannedQuantity: 1, unitSize: '1kg', frequency: 'Monthly', idealTiming: '', expectedPrice: 4, currency: 'CAD', checkedUnits: [] },
-  { id: 'v7', name: 'Corn', category: '🥕 Vegetables', plannedQuantity: 1, unitSize: '500g', frequency: 'Monthly', idealTiming: '', expectedPrice: 3, currency: 'CAD', checkedUnits: [] },
-  { id: 'v8', name: 'Green Vegetables', category: '🥕 Vegetables', plannedQuantity: 4, unitSize: '1bunch', frequency: 'Weekly', idealTiming: '', expectedPrice: 5, currency: 'CAD', checkedUnits: [] },
-  // Fruits
-  { id: 'f1', name: 'Fruit', category: '🍎 Fruits', plannedQuantity: 4, unitSize: 'Assorted', frequency: 'Weekly', idealTiming: '', expectedPrice: 10, currency: 'CAD', checkedUnits: [] },
-  { id: 'f2', name: 'Dry Fruits', category: '🍎 Fruits', plannedQuantity: 1, unitSize: 'Mixed', frequency: 'Monthly', idealTiming: '', expectedPrice: 25, currency: 'CAD', checkedUnits: [] },
-  // Essentials
-  { id: 'e1', name: 'Sugar', category: '🧂 Essentials', plannedQuantity: 1, unitSize: '2kg', frequency: 'Monthly', idealTiming: '', expectedPrice: 4, currency: 'CAD', checkedUnits: [] },
-  { id: 'e2', name: 'Salt', category: '🧂 Essentials', plannedQuantity: 1, unitSize: '1kg', frequency: 'Monthly', idealTiming: '', expectedPrice: 2, currency: 'CAD', checkedUnits: [] },
-  { id: 'e3', name: 'Ghee', category: '🧂 Essentials', plannedQuantity: 1, unitSize: '1L', frequency: 'Monthly', idealTiming: '', expectedPrice: 15, currency: 'CAD', checkedUnits: [] },
-  { id: 'e4', name: 'Vegetable Oil', category: '🧂 Essentials', plannedQuantity: 1, unitSize: '3L', frequency: 'Monthly', idealTiming: '', expectedPrice: 10, currency: 'CAD', checkedUnits: [] },
-  { id: 'e5', name: 'Lemon Juice', category: '🧂 Essentials', plannedQuantity: 1, unitSize: 'Bottle', frequency: 'Monthly', idealTiming: '', expectedPrice: 3, currency: 'CAD', checkedUnits: [] },
-  { id: 'e6', name: 'Ketchup', category: '🧂 Essentials', plannedQuantity: 1, unitSize: 'Bottle', frequency: 'Monthly', idealTiming: '', expectedPrice: 4, currency: 'CAD', checkedUnits: [] },
-  // Household Items
-  { id: 'h1', name: 'Dishwasher Soap', category: '🧼 Household Items', plannedQuantity: 1, unitSize: 'Pack', frequency: 'Monthly', idealTiming: '', expectedPrice: 8, currency: 'CAD', checkedUnits: [] }
+  { id: 'h1', name: 'Dishwasher Soap', category: '🧼 Household Items', plannedQuantity: 1, unitSize: 'Pack', frequency: 'Monthly', idealTiming: '', expectedPrice: 8, checkedUnits: [], consumptionDays: 30 }
 ];
 
-export function GroceryPlan({ records }: GroceryPlanProps) {
+export function GroceryPlan({ records, viewingDate }: GroceryPlanProps) {
   const [items, setItems] = useState<GroceryPlanItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -74,7 +41,12 @@ export function GroceryPlan({ records }: GroceryPlanProps) {
   const [frequency, setFrequency] = useState<GroceryPlanItem['frequency']>('Weekly');
   const [idealTiming, setIdealTiming] = useState('');
   const [expectedPrice, setExpectedPrice] = useState('');
-  const [currency, setCurrency] = useState<'INR' | 'CAD'>('CAD');
+  const [consumptionDays, setConsumptionDays] = useState('');
+  const [editingItem, setEditingItem] = useState<GroceryPlanItem | null>(null);
+
+  const currentMonthKey = useMemo(() => {
+    return `${viewingDate.getFullYear()}-${(viewingDate.getMonth() + 1).toString().padStart(2, '0')}`;
+  }, [viewingDate]);
 
   useEffect(() => {
     const saved = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_GROCERY_PLAN));
@@ -103,15 +75,15 @@ export function GroceryPlan({ records }: GroceryPlanProps) {
   };
 
   const currentMonthRecords = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    const vMonth = viewingDate.getMonth();
+    const vYear = viewingDate.getFullYear();
 
     return records.filter(r => {
-      const d = new Date(r.date);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear && r.category === 'Grocery';
+      if (!r.date) return false;
+      const [rYear, rMonth] = r.date.split('-');
+      return parseInt(rMonth) - 1 === vMonth && parseInt(rYear) === vYear && r.category === 'Grocery';
     });
-  }, [records]);
+  }, [records, viewingDate]);
 
   const loggedQuantitiesByName = useMemo(() => {
     const map: Record<string, number> = {};
@@ -133,18 +105,21 @@ export function GroceryPlan({ records }: GroceryPlanProps) {
     return map;
   }, [currentMonthRecords]);
 
-  const { plannedTotalINR, projectedTotalINR, plannedTotalCAD, projectedTotalCAD } = useMemo(() => {
+  const { plannedTotalCAD, projectedTotalCAD } = useMemo(() => {
     let planned = 0;
     let projected = 0;
     items.forEach(item => {
-      const planCostINR = convertToINR(item.expectedPrice * item.plannedQuantity, item.currency, getExchangeRate());
-      planned += planCostINR;
+      const isSkipped = item.skippedMonths?.includes(currentMonthKey);
+      if (isSkipped) return; // Completely ignore skilled items for the month
+
+      const planCost = item.expectedPrice * item.plannedQuantity;
+      planned += planCost;
 
       const loggedQty = loggedQuantitiesByName[item.name.toLowerCase()] || 0;
       if (loggedQty > item.plannedQuantity) {
-        projected += convertToINR(item.expectedPrice * loggedQty, item.currency, getExchangeRate());
+        projected += item.expectedPrice * loggedQty;
       } else {
-        projected += planCostINR;
+        projected += planCost;
       }
     });
 
@@ -153,41 +128,75 @@ export function GroceryPlan({ records }: GroceryPlanProps) {
       if (record.items && record.items.length > 0) {
         record.items.forEach(item => {
           if (!plannedNames.includes(item.name.toLowerCase())) {
-            projected += convertToINR(item.totalPrice, record.currency, getExchangeRate());
+            projected += item.totalPrice;
           }
         });
       } else {
         const n = (record.subcategory || record.category).toLowerCase();
         if (!plannedNames.includes(n)) {
-          projected += convertToINR(record.amount, record.currency, getExchangeRate());
+          projected += record.amount;
         }
       }
     });
 
     return { 
-      plannedTotalINR: planned, 
-      projectedTotalINR: projected,
-      plannedTotalCAD: convertToCAD(planned),
-      projectedTotalCAD: convertToCAD(projected)
+      plannedTotalCAD: planned, 
+      projectedTotalCAD: projected
     };
-  }, [items, currentMonthRecords, loggedQuantitiesByName]);
+  }, [items, currentMonthRecords, loggedQuantitiesByName, currentMonthKey]);
+
+  const handleEdit = (item: GroceryPlanItem) => {
+    setEditingItem(item);
+    setName(item.name);
+    setCategory(item.category || DEFAULT_CATEGORIES[0]);
+    setPlannedQuantity(item.plannedQuantity.toString());
+    setUnitSize(item.unitSize);
+    setFrequency(item.frequency);
+    setIdealTiming(item.idealTiming || '');
+    setExpectedPrice(item.expectedPrice.toString());
+    setConsumptionDays(item.consumptionDays?.toString() || '');
+    setIsFormOpen(true);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const qty = parseInt(plannedQuantity) || 1;
-    const newItem: GroceryPlanItem = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: name.trim(),
-      category,
-      plannedQuantity: qty,
-      unitSize,
-      frequency,
-      idealTiming,
-      expectedPrice: parseFloat(expectedPrice) || 0,
-      currency,
-      checkedUnits: new Array(qty).fill(false)
-    };
-    saveItems([...items, newItem]);
+    const qty = parseFloat(plannedQuantity) || 1;
+    
+    if (editingItem) {
+      const updatedItems = items.map(i => {
+        if (i.id === editingItem.id) {
+          return {
+            ...i,
+            name: name.trim(),
+            category,
+            plannedQuantity: qty,
+            unitSize,
+            frequency,
+            idealTiming,
+            expectedPrice: parseFloat(expectedPrice) || 0,
+            consumptionDays: parseInt(consumptionDays) || 0,
+          };
+        }
+        return i;
+      });
+      saveItems(updatedItems);
+      setEditingItem(null);
+    } else {
+      const newItem: GroceryPlanItem = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: name.trim(),
+        category,
+        plannedQuantity: qty,
+        unitSize,
+        frequency,
+        idealTiming,
+        expectedPrice: parseFloat(expectedPrice) || 0,
+        checkedUnits: new Array(Math.ceil(qty)).fill('pending'),
+        consumptionDays: parseInt(consumptionDays) || 0,
+        skippedMonths: []
+      };
+      saveItems([...items, newItem]);
+    }
     
     setName('');
     setPlannedQuantity('');
@@ -195,6 +204,7 @@ export function GroceryPlan({ records }: GroceryPlanProps) {
     setFrequency('Weekly');
     setIdealTiming('');
     setExpectedPrice('');
+    setConsumptionDays('');
     setIsFormOpen(false);
   };
 
@@ -202,12 +212,34 @@ export function GroceryPlan({ records }: GroceryPlanProps) {
     saveItems(items.filter(i => i.id !== id));
   };
 
-  const toggleCheckbox = (id: string, index: number) => {
+  const toggleCheckboxGrid = (itemId: string, index: number) => {
+    const newItems = items.map(i => {
+      if (i.id === itemId) {
+        const statuses = [...(i.checkedUnits || new Array(Math.ceil(i.plannedQuantity)).fill('pending'))];
+        const current = statuses[index] || 'pending';
+        
+        let next: 'bought' | 'skipped' | 'pending' = 'pending';
+        if (current === 'pending') next = 'bought';
+        else if (current === 'bought') next = 'skipped';
+        else next = 'pending';
+
+        statuses[index] = next;
+        return { ...i, checkedUnits: statuses };
+      }
+      return i;
+    });
+    saveItems(newItems);
+  };
+
+  const toggleSkipMonth = (id: string) => {
     const newItems = items.map(i => {
       if (i.id === id) {
-        const checks = [...(i.checkedUnits || new Array(i.plannedQuantity).fill(false))];
-        checks[index] = !checks[index];
-        return { ...i, checkedUnits: checks };
+        const skipped = i.skippedMonths || [];
+        if (skipped.includes(currentMonthKey)) {
+          return { ...i, skippedMonths: skipped.filter(m => m !== currentMonthKey) };
+        } else {
+          return { ...i, skippedMonths: [...skipped, currentMonthKey] };
+        }
       }
       return i;
     });
@@ -244,16 +276,14 @@ export function GroceryPlan({ records }: GroceryPlanProps) {
             <div className="flex flex-col items-start md:items-end">
                <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Planned Cost</span>
                <span className="text-2xl md:text-3xl font-bold tracking-tight">
-                  ₹{plannedTotalINR.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                  <span className="text-sm md:text-lg opacity-40 ml-2 font-medium tracking-normal">(C${plannedTotalCAD.toLocaleString('en-CA', { maximumFractionDigits: 0 })})</span>
+                  ${plannedTotalCAD.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
                </span>
             </div>
             <div className="w-px h-12 bg-zinc-800 hidden md:block" />
             <div className="flex flex-col items-start md:items-end">
                <span className="text-xs uppercase tracking-widest text-teal-500/80 font-bold">Projected</span>
                <span className="text-2xl md:text-3xl font-bold tracking-tight text-teal-400">
-                  ₹{projectedTotalINR.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                  <span className="text-sm md:text-lg opacity-60 ml-2 font-medium tracking-normal text-teal-500/50">(C${projectedTotalCAD.toLocaleString('en-CA', { maximumFractionDigits: 0 })})</span>
+                  ${projectedTotalCAD.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
                </span>
             </div>
          </div>
@@ -263,16 +293,33 @@ export function GroceryPlan({ records }: GroceryPlanProps) {
          <div className="flex justify-between items-center">
             <h3 className="uppercase tracking-[0.3em] font-bold text-sm text-zinc-400">Master Grocery List</h3>
             <button 
-              onClick={() => setIsFormOpen(!isFormOpen)}
+              onClick={() => {
+                if (isFormOpen) {
+                  setEditingItem(null);
+                  setName('');
+                  setPlannedQuantity('');
+                  setUnitSize('');
+                  setFrequency('Weekly');
+                  setIdealTiming('');
+                  setExpectedPrice('');
+                  setConsumptionDays('');
+                }
+                setIsFormOpen(!isFormOpen);
+              }}
               className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl text-xs font-bold uppercase tracking-widest transition-all text-zinc-600 dark:text-zinc-300 shadow-sm"
             >
               {isFormOpen ? 'Cancel' : '➕ Add Item'}
             </button>
          </div>
 
-         {/* Add Item Form */}
+         {/* Add/Edit Item Form */}
          {isFormOpen && (
            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 p-4 bg-zinc-50 dark:bg-zinc-950/50 rounded-3xl border border-zinc-100 dark:border-zinc-800 animate-in slide-in-from-top-4 duration-300">
+              <div className="col-span-full">
+                 <h4 className="text-xs font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400 mb-2">
+                    {editingItem ? 'Edit Grocery Item' : 'Add New Item to Plan'}
+                 </h4>
+              </div>
               <div className="lg:col-span-2 flex flex-col gap-1.5">
                  <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-2">Item Name</label>
                  <input required type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Milk" className="w-full bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20" />
@@ -285,23 +332,23 @@ export function GroceryPlan({ records }: GroceryPlanProps) {
               </div>
               
               <div className="lg:col-span-2 flex flex-col gap-1.5">
-                 <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-2">Expected Price (ea)</label>
-                 <div className="flex gap-2">
-                   <select value={currency} onChange={e => setCurrency(e.target.value as any)} className="bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm appearance-none min-w-[4rem]">
-                      <option value="CAD">CAD</option><option value="INR">INR</option>
-                   </select>
-                   <input required type="number" step="0.01" value={expectedPrice} onChange={e => setExpectedPrice(e.target.value)} placeholder="0.00" className="w-full bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20" />
-                 </div>
+                 <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-2">Unit Expected Price</label>
+                 <input required type="number" step="0.01" value={expectedPrice} onChange={e => setExpectedPrice(e.target.value)} placeholder="0.00" className="w-full bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20" />
               </div>
 
               <div className="lg:col-span-1 flex flex-col gap-1.5">
-                 <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-2">Total Units</label>
-                 <input required type="number" min="1" value={plannedQuantity} onChange={e => setPlannedQuantity(e.target.value)} placeholder="e.g. 4" className="w-full bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20" />
+                 <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-2">Total Units (Planned)</label>
+                 <input required type="number" min="0" step="0.1" value={plannedQuantity} onChange={e => setPlannedQuantity(e.target.value)} placeholder="e.g. 1.5" className="w-full bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20" />
               </div>
 
               <div className="lg:col-span-1 flex flex-col gap-1.5">
                  <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-2">Unit Size</label>
                  <input type="text" value={unitSize} onChange={e => setUnitSize(e.target.value)} placeholder="e.g. 1kg" className="w-full bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20" />
+              </div>
+
+              <div className="lg:col-span-1 flex flex-col gap-1.5">
+                 <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-2">Consumption (Days)</label>
+                 <input type="number" value={consumptionDays} onChange={e => setConsumptionDays(e.target.value)} placeholder="e.g. 7 (for 1 week)" className="w-full bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20" />
               </div>
 
               <div className="lg:col-span-1 flex flex-col gap-1.5">
@@ -351,22 +398,20 @@ export function GroceryPlan({ records }: GroceryPlanProps) {
                            
                            {/* Items */}
                            {catItems.map((item) => {
+                              const isSkipped = item.skippedMonths?.includes(currentMonthKey);
                               const loggedQty = loggedQuantitiesByName[item.name.toLowerCase()] || 0;
-                              const isExceeded = loggedQty > item.plannedQuantity;
+                              const isExceeded = loggedQty > item.plannedQuantity && !isSkipped;
                               
-                              const totalItemCostCAD = convertToINR(item.expectedPrice * item.plannedQuantity, item.currency, 1 / getExchangeRate());
-                              const totalItemCostINR = convertToINR(item.expectedPrice * item.plannedQuantity, item.currency, getExchangeRate());
                               const localCost = item.expectedPrice * item.plannedQuantity;
-
-                              const numBoxes = item.plannedQuantity;
-                              const checks = item.checkedUnits || new Array(numBoxes).fill(false);
                               
+                              const progressPct = Math.min(100, (loggedQty / item.plannedQuantity) * 100);
+
                               return (
-                                 <tr key={item.id} className={`group hover:bg-zinc-50 dark:hover:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800/50 transition-colors ${isExceeded ? 'bg-rose-50/30 dark:bg-rose-900/10' : ''}`}>
+                                 <tr key={item.id} className={`group hover:bg-zinc-50 dark:hover:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800/50 transition-all ${isSkipped ? 'opacity-50 grayscale' : isExceeded ? 'bg-rose-50/30 dark:bg-rose-900/10' : ''}`}>
                                     <td className="p-4 max-w-[200px]">
                                        <div className="flex flex-col gap-0.5">
-                                          <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">{item.name}</span>
-                                          {item.idealTiming && <span className="text-[10px] text-teal-600 dark:text-teal-400 font-medium truncate">{item.idealTiming}</span>}
+                                          <span className={`font-bold text-sm truncate ${isSkipped ? 'line-through text-zinc-500' : 'text-zinc-900 dark:text-zinc-100'}`}>{item.name}</span>
+                                          {item.consumptionDays ? <span className="text-[10px] text-teal-600 dark:text-teal-400 font-medium truncate">Consumes in {item.consumptionDays} days</span> : <span className="text-[10px] text-zinc-400 font-medium">No limit</span>}
                                        </div>
                                     </td>
                                     <td className="p-4">
@@ -376,45 +421,75 @@ export function GroceryPlan({ records }: GroceryPlanProps) {
                                        </div>
                                     </td>
                                     <td className="p-4 text-xs font-bold text-zinc-600 dark:text-zinc-400">
-                                       {item.currency === 'CAD' ? 'C$' : '₹'}{item.expectedPrice.toLocaleString(item.currency === 'CAD' ? 'en-CA' : 'en-IN')}
+                                       {"$"}{item.expectedPrice.toLocaleString("en-CA")}
                                     </td>
-                                    <td className="p-4">
-                                       <div className="flex flex-wrap gap-1.5 items-center">
-                                          <span className={`text-[10px] font-bold w-6 mr-1 ${isExceeded ? 'text-rose-500' : 'text-zinc-400'}`}>
-                                             {loggedQty} / {item.plannedQuantity}
-                                          </span>
-                                          {Array.from({ length: Math.min(numBoxes, 20) }).map((_, i) => {
-                                             const autoFilled = loggedQty > i;
-                                             const isChecked = checks[i] || autoFilled;
-                                             return (
-                                                <button 
-                                                   key={i} type="button" onClick={() => toggleCheckbox(item.id, i)}
-                                                   className={`w-5 h-5 rounded flex items-center justify-center transition-all ${isChecked ? (autoFilled ? 'bg-teal-500 shadow text-white' : 'bg-zinc-800 text-white') : 'bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
-                                                >
-                                                   {isChecked && <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                                                </button>
-                                             );
-                                          })}
-                                          {numBoxes > 20 && <span className="text-[10px] text-zinc-400">+{numBoxes - 20}</span>}
-                                       </div>
+                               <td className="p-4">
+                                       {isSkipped ? (
+                                          <span className="text-[10px] font-bold uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-lg text-zinc-500">Skipped for {viewingDate.toLocaleString('default', { month: 'short' })}</span>
+                                       ) : (
+                                          <div className="flex flex-wrap gap-1.5 items-center">
+                                             <span className={`text-[10px] font-bold w-6 mr-1 ${isExceeded ? 'text-rose-500' : 'text-zinc-400'}`}>
+                                                {loggedQty} / {item.plannedQuantity}
+                                             </span>
+                                             {Array.from({ length: Math.ceil(item.plannedQuantity) }).map((_, i) => {
+                                                const autoFilled = loggedQty > i;
+                                                const unitStatuses = item.checkedUnits || [];
+                                                const status = unitStatuses[i] || 'pending';
+                                                
+                                                const isBought = status === 'bought' || autoFilled;
+                                                const isSkippedUnit = status === 'skipped';
+
+                                                return (
+                                                   <button 
+                                                      key={i} type="button" 
+                                                      onClick={() => toggleCheckboxGrid(item.id, i)}
+                                                      className={`w-5 h-5 rounded flex items-center justify-center transition-all 
+                                                         ${isBought ? (autoFilled ? 'bg-teal-500 shadow text-white' : 'bg-zinc-800 text-white shadow-sm') : 
+                                                           isSkippedUnit ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-500 border border-rose-200 dark:border-rose-800' :
+                                                           'bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200/50 dark:border-zinc-700/50'}`}
+                                                   >
+                                                      {isBought && <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                                      {isSkippedUnit && <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>}
+                                                   </button>
+                                                );
+                                             })}
+                                          </div>
+                                       )}
                                     </td>
                                     <td className="p-4 text-right">
                                        <div className="flex flex-col items-end gap-0.5">
-                                          <span className="text-sm font-bold tracking-tight text-zinc-900 dark:text-white">
-                                                 ₹{totalItemCostINR.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                                          </span>
-                                          <span className="text-[10px] text-zinc-500 font-medium">
-                                             (C${convertToCAD(totalItemCostINR).toLocaleString('en-CA', { maximumFractionDigits: 1 })})
+                                          <span className={`text-sm font-bold tracking-tight ${isSkipped ? 'text-zinc-400 line-through' : 'text-zinc-900 dark:text-white'}`}>
+                                                 ${localCost.toLocaleString("en-CA", { maximumFractionDigits: 1 })}
                                           </span>
                                        </div>
                                     </td>
                                     <td className="p-4 text-right">
-                                       <button 
-                                          onClick={() => deleteItem(item.id)}
-                                          className="p-2 text-zinc-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                                       >
-                                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                       </button>
+                                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <button 
+                                             onClick={() => handleEdit(item)}
+                                             className="p-2 text-zinc-400 hover:text-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition-all"
+                                             title="Edit Item"
+                                          >
+                                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                          </button>
+                                          <button 
+                                             onClick={() => toggleSkipMonth(item.id)}
+                                             className="p-2 text-zinc-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-all"
+                                             title={isSkipped ? 'Unskip' : 'Skip for this month'}
+                                          >
+                                             {isSkipped ? (
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg> // Undo
+                                             ) : (
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg> // Cross
+                                             )}
+                                          </button>
+                                          <button 
+                                             onClick={() => deleteItem(item.id)}
+                                             className="p-2 text-zinc-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-all"
+                                          >
+                                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                          </button>
+                                       </div>
                                     </td>
                                  </tr>
                               );

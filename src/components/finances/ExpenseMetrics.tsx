@@ -2,7 +2,7 @@
 
 import { type ExpenseRecord } from '@/types/finance';
 import { MONTHS } from '@/lib/constants';
-import { getExchangeRate, convertToINR, convertToCAD } from '@/lib/finances';
+
 
 interface ExpenseMetricsProps {
   records: ExpenseRecord[];
@@ -13,13 +13,12 @@ interface ExpenseMetricsProps {
 interface MetricProps {
   label: string;
   value: string;
-  cadValue?: string;
   subValue?: string;
   icon: React.ReactNode;
   color: 'teal' | 'emerald' | 'amber' | 'indigo' | 'blue' | 'rose';
 }
 
-function MetricCard({ label, value, cadValue, subValue, icon, color }: MetricProps) {
+function MetricCard({ label, value, subValue, icon, color }: MetricProps) {
   const iconClasses = {
     teal: "bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-300",
     emerald: "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300",
@@ -52,11 +51,6 @@ function MetricCard({ label, value, cadValue, subValue, icon, color }: MetricPro
           <span className="text-2xl tracking-tight text-zinc-900 dark:text-zinc-100 leading-none font-bold">
             {value}
           </span>
-          {cadValue && (
-            <span className="text-[10px] text-rose-600 dark:text-rose-400 font-medium uppercase tracking-wider mt-1">
-              ({cadValue})
-            </span>
-          )}
         </div>
       </div>
     </div>
@@ -64,19 +58,17 @@ function MetricCard({ label, value, cadValue, subValue, icon, color }: MetricPro
 }
 
 export function ExpenseMetrics({ records, selectedMonths, selectedYears }: ExpenseMetricsProps) {
-  const exchangeRate = getExchangeRate();
-
   const filteredRecords = records.filter(r => {
     const d = new Date(r.date);
     return selectedMonths.includes(d.getMonth()) && selectedYears.includes(d.getFullYear());
   });
 
-  const totalExpenses = filteredRecords.reduce((sum, r) => sum + convertToINR(r.amount, r.currency, exchangeRate), 0);
+  const totalExpenses = filteredRecords.reduce((sum, r) => sum + r.amount, 0);
 
   // Investment Percentage
   const investmentAmt = filteredRecords
     .filter(r => r.category === 'investment' || r.category === 'savings' || r.type === 'investment')
-    .reduce((sum, r) => sum + convertToINR(r.amount, r.currency, exchangeRate), 0);
+    .reduce((sum, r) => sum + r.amount, 0);
   const investmentPct = totalExpenses > 0 ? (investmentAmt / totalExpenses) * 100 : 0;
 
   // Expense Change (vs Previous Month)
@@ -91,7 +83,7 @@ export function ExpenseMetrics({ records, selectedMonths, selectedYears }: Expen
           const d = new Date(r.date);
           return d.getMonth() === lastMonth && d.getFullYear() === lastYear;
       });
-      const prevTotal = prevRecords.reduce((sum, r) => sum + convertToINR(r.amount, r.currency, exchangeRate), 0);
+      const prevTotal = prevRecords.reduce((sum, r) => sum + r.amount, 0);
       
       if (prevTotal > 0) {
           const change = ((totalExpenses - prevTotal) / prevTotal) * 100;
@@ -104,16 +96,15 @@ export function ExpenseMetrics({ records, selectedMonths, selectedYears }: Expen
   }
 
   // Needs vs Wants %
-  const needsAmt = filteredRecords.filter(r => r.type === 'need').reduce((sum, r) => sum + convertToINR(r.amount, r.currency, exchangeRate), 0);
-  const wantsAmt = filteredRecords.filter(r => r.type === 'want').reduce((sum, r) => sum + convertToINR(r.amount, r.currency, exchangeRate), 0);
+  const needsAmt = filteredRecords.filter(r => r.type === 'need').reduce((sum, r) => sum + r.amount, 0);
+  const wantsAmt = filteredRecords.filter(r => r.type === 'want').reduce((sum, r) => sum + r.amount, 0);
   const totalNeedsWants = needsAmt + wantsAmt;
   const needsPct = totalNeedsWants > 0 ? (needsAmt / totalNeedsWants) * 100 : 0;
 
   // Find Top Category
   const categoryTotals: Record<string, number> = {};
   filteredRecords.forEach(r => {
-    const amountInINR = convertToINR(r.amount, r.currency, exchangeRate);
-    categoryTotals[r.category] = (categoryTotals[r.category] || 0) + amountInINR;
+    categoryTotals[r.category] = (categoryTotals[r.category] || 0) + r.amount;
   });
   const topCategoryEntry = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0];
   const topCategoryStr = topCategoryEntry ? topCategoryEntry[0] : 'None';
@@ -127,8 +118,7 @@ export function ExpenseMetrics({ records, selectedMonths, selectedYears }: Expen
     <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-6">
       <MetricCard 
         label="Total Expenses"
-        value={`₹${totalExpenses.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
-        cadValue={`CAD $${convertToCAD(totalExpenses).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+        value={`$${totalExpenses.toLocaleString('en-CA', { maximumFractionDigits: 0 })}`}
         subValue={selectionLabel}
         color="rose"
         icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 17h10m0 0V9m0 8l-8-8-4 4-6-6" /></svg>}
@@ -137,8 +127,7 @@ export function ExpenseMetrics({ records, selectedMonths, selectedYears }: Expen
       <MetricCard 
         label="Investment %"
         value={`${investmentPct.toFixed(1)}%`}
-        cadValue={`CAD $${convertToCAD(investmentAmt).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
-        subValue={`₹${investmentAmt.toLocaleString('en-IN', { maximumFractionDigits: 0 })} Total`}
+        subValue={`$${investmentAmt.toLocaleString('en-CA', { maximumFractionDigits: 0 })} Total`}
         color={investmentPct >= 20 ? "emerald" : investmentPct >= 10 ? "amber" : "rose"}
         icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
       />
@@ -146,7 +135,6 @@ export function ExpenseMetrics({ records, selectedMonths, selectedYears }: Expen
       <MetricCard 
         label="Expense Change"
         value={changeStr}
-        cadValue={totalExpenses > 0 ? `CAD $${convertToCAD(totalExpenses).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : undefined}
         subValue="vs Last Month"
         color={changeColor}
         icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18" /></svg>}
@@ -155,8 +143,7 @@ export function ExpenseMetrics({ records, selectedMonths, selectedYears }: Expen
       <MetricCard 
         label="Needs vs Wants %"
         value={`${needsPct.toFixed(0)}% Needs`}
-        cadValue={`${(100 - needsPct).toFixed(0)}% Wants`}
-        subValue={`Balance Analysis`}
+        subValue={`${(100 - needsPct).toFixed(0)}% Wants`}
         color="rose"
         icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V6a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>}
       />
@@ -164,8 +151,7 @@ export function ExpenseMetrics({ records, selectedMonths, selectedYears }: Expen
       <MetricCard 
         label="Top Category"
         value={topCategoryStr.charAt(0).toUpperCase() + topCategoryStr.slice(1)}
-        cadValue={`CAD $${convertToCAD(topCategoryVal).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
-        subValue={`₹${topCategoryVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
+        subValue={`$${topCategoryVal.toLocaleString('en-CA', { maximumFractionDigits: 0 })}`}
         color="rose"
         icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
       />

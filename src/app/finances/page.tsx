@@ -8,7 +8,7 @@ import { ExpenseSection } from '@/components/finances/ExpenseSection';
 import { EmergencyFundSection } from '@/components/finances/EmergencyFundSection';
 import { AssetsSection } from '@/components/finances/AssetsSection';
 import { LiabilitiesSection } from '@/components/finances/LiabilitiesSection';
-import { ExchangeRateSection } from '@/components/finances/ExchangeRateSection';
+
 
 export default function FinancesPage() {
   const [mounted, setMounted] = useState(false);
@@ -65,10 +65,7 @@ export default function FinancesPage() {
           <LiabilitiesSection />
         </div>
 
-        {/* New Exchange Rate Section at the bottom */}
-        <div className="fade-in" style={{ animationDelay: '1.6s' }}>
-          <ExchangeRateSection />
-        </div>
+
 
       </div>
     </main>

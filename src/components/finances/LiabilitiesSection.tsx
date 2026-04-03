@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
-import { getExchangeRate, calculateLiabilityBalance, type Liability, type PaymentLog, convertToCAD } from '@/lib/finances';
+import { calculateLiabilityBalance, type Liability, type PaymentLog } from '@/lib/finances';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 
 export type LiabilityType = 'Home Loan' | 'Car Loan' | 'Personal Loan' | 'Credit Card' | 'Education Loan' | 'Business Loan' | 'Other';
@@ -28,7 +28,7 @@ export function LiabilitiesSection() {
   const [isRepayModalOpen, setIsRepayModalOpen] = useState(false);
   const [activeLiabilityId, setActiveLiabilityId] = useState<string | null>(null);
   const [repayAmount, setRepayAmount] = useState('');
-  const [repayCurrency, setRepayCurrency] = useState<'INR' | 'CAD'>('INR');
+  
   const [repayType, setRepayType] = useState<'Regular EMI' | 'Prepayment'>('Regular EMI');
 
   // Prepayment Simulation state
@@ -40,12 +40,12 @@ export function LiabilitiesSection() {
     name: '',
     type: 'Personal Loan' as LiabilityType,
     totalAmount: '',
-    totalAmountCurrency: 'INR' as 'INR' | 'CAD',
+    
     remainingBalance: '',
-    remainingBalanceCurrency: 'INR' as 'INR' | 'CAD',
+    
     interestRate: '',
     emi: '',
-    emiCurrency: 'INR' as 'INR' | 'CAD',
+    
     tenureRemaining: ''
   });
 
@@ -110,11 +110,7 @@ export function LiabilitiesSection() {
           try { setLiabilities(JSON.parse(val)); } catch (e) {}
         }
       }
-      if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_EXCHANGE_RATE) {
-        // Trigger re-render to update conversion
-        setIsLoaded(false);
-        setTimeout(() => setIsLoaded(true), 0);
-      }
+      
     };
     window.addEventListener('local-storage-change', handleLocal);
     return () => window.removeEventListener('local-storage-change', handleLocal);
@@ -133,12 +129,12 @@ export function LiabilitiesSection() {
       name: '',
       type: 'Personal Loan',
       totalAmount: '',
-      totalAmountCurrency: 'INR',
+      
       remainingBalance: '',
-      remainingBalanceCurrency: 'INR',
+      
       interestRate: '',
       emi: '',
-      emiCurrency: 'INR',
+      
       tenureRemaining: ''
     });
     setIsModalOpen(true);
@@ -150,12 +146,12 @@ export function LiabilitiesSection() {
       name: liability.name,
       type: liability.type as LiabilityType,
       totalAmount: liability.totalAmount?.toString() || '',
-      totalAmountCurrency: liability.totalAmountCurrency || 'INR',
+      
       remainingBalance: liability.remainingBalance?.toString() || '',
-      remainingBalanceCurrency: liability.remainingBalanceCurrency || 'INR',
+      
       interestRate: liability.interestRate?.toString() || '',
       emi: liability.emi?.toString() || '',
-      emiCurrency: liability.emiCurrency || 'INR',
+      
       tenureRemaining: liability.tenureRemaining?.toString() || ''
     });
     setIsModalOpen(true);
@@ -168,12 +164,12 @@ export function LiabilitiesSection() {
       name: formData.name,
       type: formData.type,
       totalAmount: parseFloat(formData.totalAmount),
-      totalAmountCurrency: formData.totalAmountCurrency,
+      
       remainingBalance: parseFloat(formData.remainingBalance),
-      remainingBalanceCurrency: formData.remainingBalanceCurrency,
+      
       interestRate: parseFloat(formData.interestRate),
       emi: parseFloat(formData.emi),
-      emiCurrency: formData.emiCurrency,
+      
       tenureRemaining: parseInt(formData.tenureRemaining),
       paymentLogs: editingLiability ? editingLiability.paymentLogs : [],
       lastUpdated: new Date().toISOString().split('T')[0]
@@ -201,7 +197,7 @@ export function LiabilitiesSection() {
       id: Math.random().toString(36).substr(2, 9),
       date: new Date().toISOString().split('T')[0],
       amount,
-      currency: repayCurrency,
+      
       type: repayType
     };
 
@@ -257,7 +253,7 @@ export function LiabilitiesSection() {
   };
 
   const totalDebt = liabilities.reduce((sum, l) => sum + calculateLiabilityBalance(l), 0);
-  const totalEMI = liabilities.reduce((sum, l) => sum + calculateLiabilityBalance({ ...l, remainingBalance: l.emi, remainingBalanceCurrency: l.emiCurrency || 'INR' } as any), 0);
+  const totalEMI = liabilities.reduce((sum, l) => sum + l.emi, 0);
   const dti = monthlyIncome > 0 ? (totalEMI / monthlyIncome) * 100 : 0;
 
   if (!isLoaded) return null;
@@ -284,11 +280,9 @@ export function LiabilitiesSection() {
                 <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-[0.2em]">Total Debt</span>
                 <div className="flex flex-col">
                   <span className="text-xl md:text-2xl text-zinc-900 dark:text-zinc-100 tracking-tighter font-bold">
-                      ₹{totalDebt.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                      ${totalDebt.toLocaleString("en-CA", { maximumFractionDigits: 0 })}
                   </span>
-                  <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-tight opacity-70">
-                      (CAD ${convertToCAD(totalDebt).toLocaleString('en-US', { maximumFractionDigits: 0 })})
-                  </span>
+                  
                 </div>
             </div>
 
@@ -296,11 +290,9 @@ export function LiabilitiesSection() {
                 <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-[0.2em]">EMI Burden</span>
                 <div className="flex flex-col">
                   <span className="text-xl md:text-2xl text-zinc-900 dark:text-zinc-100 tracking-tighter font-bold">
-                      ₹{totalEMI.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                      ${totalEMI.toLocaleString("en-CA", { maximumFractionDigits: 0 })}
                   </span>
-                  <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-tight opacity-70">
-                      (CAD ${convertToCAD(totalEMI).toLocaleString('en-US', { maximumFractionDigits: 0 })})
-                  </span>
+                  
                 </div>
             </div>
 
@@ -387,11 +379,9 @@ export function LiabilitiesSection() {
                     <div className="flex flex-col">
                         <span className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-widest font-medium">Outstanding Bal</span>
                         <span className="text-lg md:text-xl text-zinc-900 dark:text-zinc-100 tracking-tighter font-bold">
-                            ₹{calculateLiabilityBalance(liability).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                            ${calculateLiabilityBalance(liability).toLocaleString("en-CA", { maximumFractionDigits: 0 })}
                         </span>
-                        <span className="text-[9px] text-zinc-500 uppercase tracking-widest font-medium opacity-70">
-                            (CAD ${convertToCAD(calculateLiabilityBalance(liability)).toLocaleString('en-US', { maximumFractionDigits: 0 })})
-                        </span>
+                        
                     </div>
                 </div>
               </div>
@@ -416,8 +406,7 @@ export function LiabilitiesSection() {
                     <div className="flex flex-col gap-0.5">
                          <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">Remaining</span>
                         <span className="text-lg text-zinc-900 dark:text-zinc-100 tracking-tight">
-                            ₹{calculateLiabilityBalance(liability).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                            <span className="text-[10px] ml-1.5 text-zinc-500 font-medium">(CAD ${convertToCAD(calculateLiabilityBalance(liability)).toLocaleString('en-US', { maximumFractionDigits: 0 })})</span>
+                            ${calculateLiabilityBalance(liability).toLocaleString("en-CA", { maximumFractionDigits: 0 })}
                         </span>
                     </div>
                     <div className="flex flex-col gap-0.5 text-right">
@@ -507,44 +496,24 @@ export function LiabilitiesSection() {
                     </div>
                      <div className="flex flex-col gap-2">
                         <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Total Amount</label>
-                        <div className="relative w-full">
-                            <select 
-                                value={formData.totalAmountCurrency}
-                                onChange={e => setFormData({...formData, totalAmountCurrency: e.target.value as 'INR' | 'CAD'})}
-                                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2 py-1 text-[10px] font-bold text-zinc-600 outline-none cursor-pointer z-10"
-                            >
-                                <option value="INR">INR (₹)</option>
-                                <option value="CAD">CAD (C$)</option>
-                            </select>
-                            <input 
+                        <input 
                                 required type="number" step="0.01" value={formData.totalAmount} 
                                 onChange={e => setFormData({...formData, totalAmount: e.target.value})} 
                                 placeholder="0.00"
-                                className="w-full min-w-0 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl pl-24 pr-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" 
+                                className="w-full min-w-0 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 pr-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" 
                             />
-                        </div>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex flex-col gap-2">
                         <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Remaining Balance</label>
-                        <div className="relative w-full">
-                            <select 
-                                value={formData.remainingBalanceCurrency}
-                                onChange={e => setFormData({...formData, remainingBalanceCurrency: e.target.value as 'INR' | 'CAD'})}
-                                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2 py-1 text-[10px] font-bold text-zinc-600 outline-none cursor-pointer z-10"
-                            >
-                                <option value="INR">INR (₹)</option>
-                                <option value="CAD">CAD (C$)</option>
-                            </select>
-                            <input 
+                        <input 
                                 required type="number" step="0.01" value={formData.remainingBalance} 
                                 onChange={e => setFormData({...formData, remainingBalance: e.target.value})} 
                                 placeholder="0.00"
-                                className="w-full min-w-0 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl pl-24 pr-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all" 
+                                className="w-full min-w-0 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 pr-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all" 
                             />
-                        </div>
                     </div>
                     <div className="flex flex-col gap-2">
                         <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Interest Rate (%)</label>
@@ -560,22 +529,12 @@ export function LiabilitiesSection() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex flex-col gap-2">
                         <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Monthly EMI</label>
-                        <div className="relative w-full">
-                            <select 
-                                value={formData.emiCurrency}
-                                onChange={e => setFormData({...formData, emiCurrency: e.target.value as 'INR' | 'CAD'})}
-                                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2 py-1 text-[10px] font-bold text-zinc-600 outline-none cursor-pointer z-10"
-                            >
-                                <option value="INR">INR (₹)</option>
-                                <option value="CAD">CAD (C$)</option>
-                            </select>
-                            <input 
+                        <input 
                                 required type="number" step="0.01" value={formData.emi} 
                                 onChange={e => setFormData({...formData, emi: e.target.value})} 
                                 placeholder="0.00"
-                                className="w-full min-w-0 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl pl-24 pr-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all" 
+                                className="w-full min-w-0 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 pr-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all" 
                             />
-                        </div>
                     </div>
                     <div className="flex flex-col gap-2">
                         <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Remaining Tenure (Months)</label>
@@ -632,22 +591,7 @@ export function LiabilitiesSection() {
                 </div>
 
                 <div className="flex flex-col gap-4">
-                    <div className="flex gap-2 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-2xl mb-2">
-                        <button 
-                            type="button" 
-                            onClick={() => setRepayCurrency('INR')}
-                            className={`flex-1 py-3 text-[10px] uppercase tracking-widest rounded-xl transition-all ${repayCurrency === 'INR' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white' : 'text-zinc-600'}`}
-                        >
-                            ₹ INR
-                        </button>
-                        <button 
-                            type="button" 
-                            onClick={() => setRepayCurrency('CAD')}
-                            className={`flex-1 py-3 text-[10px] uppercase tracking-widest rounded-xl transition-all ${repayCurrency === 'CAD' ? 'bg-rose-600 text-white shadow-lg' : 'text-zinc-600'}`}
-                        >
-                            C$ CAD
-                        </button>
-                    </div>
+
                     <div className="flex flex-col gap-2">
                         <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] text-center">Amount</label>
                         <input 
@@ -682,7 +626,7 @@ export function LiabilitiesSection() {
               
               <div className="space-y-8">
                 <div className="flex flex-col gap-2">
-                    <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] text-center">Extra One-Time Payment (₹)</label>
+                    <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] text-center">Extra One-Time Payment ($)</label>
                     <input 
                         autoFocus type="number" step="100" value={simExtraPayment} 
                         onChange={e => setSimExtraPayment(e.target.value)} 

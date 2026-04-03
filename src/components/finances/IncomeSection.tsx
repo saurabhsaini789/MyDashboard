@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
-import { calculateAssetBalance, convertToCAD, convertToINR } from '@/lib/finances';
+import { calculateAssetBalance } from '@/lib/finances';
 import type { IncomeRecord } from '@/types/finance';
 import { IncomeMetrics } from './IncomeMetrics';
 import { MultiSelectDropdown } from '../ui/MultiSelectDropdown';
@@ -32,7 +32,7 @@ export function IncomeSection() {
   const [formData, setFormData] = useState({
     source: 'salary' as IncomeSource,
     amount: '',
-    currency: 'INR' as 'INR' | 'CAD',
+    
     date: '', // Initialize empty for SSR
     type: 'active' as IncomeType,
     assetId: '',
@@ -93,11 +93,7 @@ export function IncomeSection() {
           try { setAssets(JSON.parse(val)); } catch (e) {}
         }
       }
-      if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_EXCHANGE_RATE) {
-        // Trigger re-render to update metrics
-        setIsLoaded(false);
-        setTimeout(() => setIsLoaded(true), 0);
-      }
+      
     };
     window.addEventListener('local-storage-change', handleLocal);
     return () => window.removeEventListener('local-storage-change', handleLocal);
@@ -115,7 +111,6 @@ export function IncomeSection() {
     setFormData({
       source: 'salary',
       amount: '',
-      currency: 'INR',
       date: new Date().toISOString().split('T')[0],
       type: 'active',
       assetId: '',
@@ -130,7 +125,7 @@ export function IncomeSection() {
     setFormData({
       source: record.source,
       amount: record.amount.toString(),
-      currency: record.currency || 'INR',
+      
       date: record.date,
       type: record.type,
       assetId: record.assetId || '',
@@ -140,14 +135,13 @@ export function IncomeSection() {
     setIsModalOpen(true);
   };
 
-  const updateAssetContribution = (incomeId: string, assetId: string | undefined, amount: number, currency: 'INR' | 'CAD', date: string, isDelete = false) => {
+  const updateAssetContribution = (incomeId: string, assetId: string | undefined, amount: number, date: string, isDelete = false) => {
     const savedAssets = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_ASSETS));
     if (!savedAssets) return;
 
-    const savedRate = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_EXCHANGE_RATE));
-    const exchangeRate = savedRate ? parseFloat(savedRate) : 67;
-    // We used to convert here, but now we'll store the original currency in the contribution
-    // and let the balance calculation handle it dynamically.
+    
+    
+    
 
     try {
       let assetsList = JSON.parse(savedAssets);
@@ -171,8 +165,7 @@ export function IncomeSection() {
           targetAsset.contributions.unshift({
             id: `income-${incomeId}`,
             date: date,
-            amount: amount,
-            currency: currency
+            amount: amount
           });
           targetAsset.lastUpdated = new Date().toISOString().split('T')[0];
           changed = true;
@@ -197,7 +190,6 @@ export function IncomeSection() {
       id: editingRecord ? editingRecord.id : Math.random().toString(36).substr(2, 9),
       source: formData.source,
       amount,
-      currency: formData.currency,
       date: formData.date,
       type: formData.type,
       assetId: formData.assetId || undefined,
@@ -206,7 +198,7 @@ export function IncomeSection() {
     };
 
     // Update Asset Sync
-    updateAssetContribution(newRecord.id, newRecord.assetId, newRecord.amount, newRecord.currency || 'INR', newRecord.date);
+    updateAssetContribution(newRecord.id, newRecord.assetId, newRecord.amount,  newRecord.date);
 
     if (editingRecord) {
       setRecords(records.map(r => r.id === editingRecord.id ? newRecord : r));
@@ -218,7 +210,7 @@ export function IncomeSection() {
 
   const deleteRecord = (id: string) => {
     // Update Asset Sync: Remove contribution
-    updateAssetContribution(id, undefined, 0, 'INR', '', true);
+    updateAssetContribution(id, undefined, 0, '', true);
     
     setRecords(records.filter(r => r.id !== id));
     if (editingRecord?.id === id) setIsModalOpen(false);
@@ -315,14 +307,7 @@ export function IncomeSection() {
                                       </span>
                                   </td>
                                   <td className="px-4 py-5 text-right">
-                                      <span className="text-base text-zinc-900 dark:text-zinc-100 tracking-tighter">
-                                          {record.currency === 'CAD' ? `C$${record.amount.toLocaleString('en-IN')}` : `₹${record.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
-                                          </span>
-                                          <span className="text-[10px] text-zinc-500 uppercase tracking-tighter block text-right">
-                                          {record.currency === 'CAD'
-                                          ? `(₹${convertToINR(record.amount, 'CAD').toLocaleString('en-IN', { maximumFractionDigits: 0 })})`
-                                          : `(CAD $${convertToCAD(record.amount).toLocaleString('en-US', { maximumFractionDigits: 0 })})`}
-                                          </span>
+                                      <span className="text-base text-zinc-900 dark:text-zinc-100 tracking-tighter">${record.amount.toLocaleString("en-CA", { minimumFractionDigits: 2 })}</span>
                                   </td>
                                   <td className="px-4 py-5 text-right">
                                       <button 
@@ -402,21 +387,13 @@ export function IncomeSection() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="flex flex-col gap-2 md:col-span-2">
-                        <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Amount</label>
+                        <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Amount ($)</label>
                         <div className="relative">
-                            <select 
-                                value={formData.currency}
-                                onChange={e => setFormData({...formData, currency: e.target.value as 'INR' | 'CAD'})}
-                                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2 py-1 text-[10px] font-bold text-zinc-600 outline-none"
-                            >
-                                <option value="INR">INR (₹)</option>
-                                <option value="CAD">CAD (C$)</option>
-                            </select>
                             <input 
                                 required type="number" step="0.01" value={formData.amount} 
                                 onChange={e => setFormData({...formData, amount: e.target.value})} 
                                 placeholder="0.00"
-                                className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl pl-24 pr-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" 
+                                className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" 
                             />
                         </div>
                     </div>

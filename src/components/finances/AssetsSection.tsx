@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
-import { calculateAssetBalance, type Asset, type Contribution, convertToCAD } from '@/lib/finances';
+import { calculateAssetBalance, type Asset, type Contribution } from '@/lib/finances';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 
 export type AssetType = 'Cash' | 'Bank Balance' | 'Property' | 'Business Value' | 'Vehicle' | 'Investment' | 'Metal' | 'Loans Given';
@@ -27,7 +27,7 @@ export function AssetsSection() {
   const [isContribModalOpen, setIsContribModalOpen] = useState(false);
   const [activeAssetId, setActiveAssetId] = useState<string | null>(null);
   const [contribAmount, setContribAmount] = useState('');
-  const [contribCurrency, setContribCurrency] = useState<'INR' | 'CAD'>('INR');
+  
 
   // Growth Rate modal state
   const [isRateModalOpen, setIsRateModalOpen] = useState(false);
@@ -38,7 +38,7 @@ export function AssetsSection() {
     name: '',
     type: 'Bank Balance' as AssetType,
     initialValue: '',
-    initialCurrency: 'INR' as 'INR' | 'CAD',
+    
     startDate: '', // Initialize empty for SSR
     lastUpdated: ''
   });
@@ -97,11 +97,7 @@ export function AssetsSection() {
           } catch (e) {}
         }
       }
-      if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_EXCHANGE_RATE) {
-        // Trigger re-render to update conversion
-        setIsLoaded(false);
-        setTimeout(() => setIsLoaded(true), 0);
-      }
+      
     };
     window.addEventListener('local-storage-change', handleLocal);
     return () => window.removeEventListener('local-storage-change', handleLocal);
@@ -120,7 +116,7 @@ export function AssetsSection() {
       name: '',
       type: 'Bank Balance' as AssetType,
       initialValue: '',
-      initialCurrency: 'INR' as 'INR' | 'CAD',
+      
       startDate: new Date().toISOString().split('T')[0],
       lastUpdated: new Date().toISOString().split('T')[0]
     });
@@ -133,7 +129,7 @@ export function AssetsSection() {
       name: asset.name,
       type: asset.type as AssetType,
       initialValue: asset.initialValue?.toString() || '',
-      initialCurrency: asset.initialCurrency || 'INR',
+      
       startDate: asset.startDate,
       lastUpdated: asset.lastUpdated
     });
@@ -150,7 +146,7 @@ export function AssetsSection() {
       name: formData.name,
       type: formData.type as AssetType,
       initialValue: value,
-      initialCurrency: formData.initialCurrency,
+      
       startDate: formData.startDate,
       contributions: editingAsset ? editingAsset.contributions : [],
       growthRate: editingAsset ? editingAsset.growthRate : 0,
@@ -179,7 +175,7 @@ export function AssetsSection() {
       id: Math.random().toString(36).substr(2, 9),
       date: new Date().toISOString().split('T')[0],
       amount,
-      currency: contribCurrency
+      
     };
 
     setAssets(assets.map(a => 
@@ -231,11 +227,9 @@ export function AssetsSection() {
             <span className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">Portfolio valuation</span>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl md:text-3xl text-zinc-900 dark:text-zinc-100 tracking-tighter font-bold">
-                ₹{totalPortfolioValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                ${totalPortfolioValue.toLocaleString("en-CA", { maximumFractionDigits: 0 })}
               </span>
-              <span className="text-[10px] md:text-sm text-zinc-500 font-medium uppercase tracking-tight opacity-70">
-                (CAD ${convertToCAD(totalPortfolioValue).toLocaleString('en-US', { maximumFractionDigits: 0 })})
-              </span>
+              
             </div>
           </div>
 
@@ -307,7 +301,7 @@ export function AssetsSection() {
                          <div className="flex flex-col gap-0.5">
                                <div className="flex items-baseline gap-2">
                                 <span className="text-xl font-bold text-zinc-900 dark:text-white tracking-tighter">
-                                    ₹{currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                    ${currentValue.toLocaleString("en-CA", { maximumFractionDigits: 0 })}
                                 </span>
                                 {asset.growthRate !== 0 && (
                                     <span className={`text-[10px] font-bold ${asset.growthRate > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
@@ -315,9 +309,7 @@ export function AssetsSection() {
                                     </span>
                                 )}
                                </div>
-                               <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium opacity-70">
-                                   CAD ${convertToCAD(currentValue).toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                               </span>
+                               
                          </div>
                       </div>
 
@@ -327,8 +319,7 @@ export function AssetsSection() {
                          <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">Compounded Valuation</span>
                          <div className="flex items-baseline gap-2">
                             <span className="text-2xl text-zinc-900 dark:text-zinc-100 tracking-tight">
-                                ₹{currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                                <span className="text-[10px] ml-1.5 text-zinc-500 font-medium">(CAD ${convertToCAD(currentValue).toLocaleString('en-US', { maximumFractionDigits: 0 })})</span>
+                                ${currentValue.toLocaleString("en-CA", { maximumFractionDigits: 0 })}
                             </span>
                             {(asset.contributions || []).length > 0 && asset.growthRate !== 0 && (
                                 <span className={`text-xs ${asset.growthRate > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
@@ -421,19 +412,11 @@ export function AssetsSection() {
                     <div className="flex flex-col gap-2">
                         <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Initial Balance</label>
                         <div className="relative w-full">
-                            <select 
-                                value={formData.initialCurrency}
-                                onChange={e => setFormData({...formData, initialCurrency: e.target.value as 'INR' | 'CAD'})}
-                                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2 py-1 text-[10px] font-bold text-zinc-600 outline-none cursor-pointer z-10"
-                            >
-                                <option value="INR">INR (₹)</option>
-                                <option value="CAD">CAD (C$)</option>
-                            </select>
                             <input 
                                 required type="number" step="0.01" value={formData.initialValue} 
                                 onChange={e => setFormData({...formData, initialValue: e.target.value})} 
                                 placeholder="0.00"
-                                className="w-full min-w-0 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl pl-24 pr-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" 
+                                className="w-full min-w-0 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" 
                             />
                         </div>
                     </div>
@@ -475,22 +458,7 @@ export function AssetsSection() {
               <h3 className="text-2xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter mb-8 text-center">Log Fuel</h3>
               <form onSubmit={handleContribSubmit} className="space-y-6">
                 <div className="flex flex-col gap-4">
-                    <div className="flex gap-2 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-2xl mb-2">
-                        <button 
-                            type="button" 
-                            onClick={() => setContribCurrency('INR')}
-                            className={`flex-1 py-3 text-[10px] uppercase tracking-widest rounded-xl transition-all ${contribCurrency === 'INR' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white' : 'text-zinc-600'}`}
-                        >
-                            ₹ INR
-                        </button>
-                        <button 
-                            type="button" 
-                            onClick={() => setContribCurrency('CAD')}
-                            className={`flex-1 py-3 text-[10px] uppercase tracking-widest rounded-xl transition-all ${contribCurrency === 'CAD' ? 'bg-emerald-600 text-white shadow-lg' : 'text-zinc-600'}`}
-                        >
-                            C$ CAD
-                        </button>
-                    </div>
+
                     <div className="flex flex-col gap-2">
                         <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] text-center">Amount</label>
                         <input 

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
-import { calculateAssetBalance, convertToCAD, convertToINR, getExchangeRate } from '@/lib/finances';
+import { calculateAssetBalance } from '@/lib/finances';
 import { ExpenseMetrics } from './ExpenseMetrics';
 import { MultiSelectDropdown } from '../ui/MultiSelectDropdown';
 import { MONTHS, YEARS } from '@/lib/constants';
@@ -31,7 +31,7 @@ export function ExpenseSection() {
     category: 'food' as ExpenseCategory,
     subcategory: '',
     amount: '',
-    currency: 'INR' as 'INR' | 'CAD',
+    
     date: '', // Initialize empty for SSR
     type: 'need' as ExpenseType,
     assetId: '',
@@ -107,11 +107,7 @@ export function ExpenseSection() {
           try { setEmergencyFund(JSON.parse(val)); } catch (err) {}
         }
       }
-      if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_EXCHANGE_RATE) {
-        // Trigger re-render to update metrics
-        setIsLoaded(false);
-        setTimeout(() => setIsLoaded(true), 0);
-      }
+      
     };
     window.addEventListener('local-storage-change', handleLocal);
     return () => window.removeEventListener('local-storage-change', handleLocal);
@@ -130,7 +126,6 @@ export function ExpenseSection() {
       category: 'food',
       subcategory: '',
       amount: '',
-      currency: 'INR',
       date: new Date().toISOString().split('T')[0],
       type: 'need',
       assetId: '',
@@ -150,7 +145,7 @@ export function ExpenseSection() {
       category: record.category,
       subcategory: record.subcategory,
       amount: record.amount.toString(),
-      currency: record.currency || 'INR',
+      
       date: record.date,
       type: record.type,
       assetId: record.assetId || '',
@@ -164,11 +159,11 @@ export function ExpenseSection() {
     setIsModalOpen(true);
   };
 
-  const updateRecipientContribution = (expenseId: string, paidToType: string, paidToId: string | undefined, amount: number, currency: 'INR' | 'CAD', date: string, isDelete = false) => {
+  const updateRecipientContribution = (expenseId: string, paidToType: string, paidToId: string | undefined, amount: number, date: string, isDelete = false) => {
     // Get exchange rate
-    const savedRate = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_EXCHANGE_RATE));
-    const exchangeRate = savedRate ? parseFloat(savedRate) : 67;
-    const amountInINR = currency === 'CAD' ? amount * exchangeRate : amount;
+    
+    
+    
 
     // 1. Savings Goals
     if (paidToType === 'savings' || !paidToType) {
@@ -182,7 +177,7 @@ export function ExpenseSection() {
             g.contributions = g.contributions.filter((c: any) => c.id !== `expense-${expenseId}`);
             if (g.contributions.length !== initialLen) changed = true;
             if (!isDelete && paidToType === 'savings' && g.id === paidToId) {
-              g.contributions.unshift({ id: `expense-${expenseId}`, date, amount, currency });
+              g.contributions.unshift({ id: `expense-${expenseId}`, date, amount });
               changed = true;
             }
             return g;
@@ -203,7 +198,7 @@ export function ExpenseSection() {
           fund.contributions = fund.contributions.filter((c: any) => c.id !== `expense-${expenseId}`);
           if (fund.contributions.length !== initialLen) changed = true;
           if (!isDelete && paidToType === 'emergency') {
-            fund.contributions.unshift({ id: `expense-${expenseId}`, date, amount, currency });
+            fund.contributions.unshift({ id: `expense-${expenseId}`, date, amount });
             changed = true;
           }
           if (changed) setSyncedItem(SYNC_KEYS.FINANCES_EMERGENCY_FUND, JSON.stringify(fund));
@@ -223,7 +218,7 @@ export function ExpenseSection() {
             asset.contributions = asset.contributions.filter((c: any) => c.id !== `expense-recip-${expenseId}`);
             if (asset.contributions.length !== initialLen) changed = true;
             if (!isDelete && paidToType === 'asset' && asset.id === paidToId) {
-              asset.contributions.unshift({ id: `expense-recip-${expenseId}`, date, amount, currency });
+              asset.contributions.unshift({ id: `expense-recip-${expenseId}`, date, amount });
               changed = true;
             }
             return asset;
@@ -234,13 +229,13 @@ export function ExpenseSection() {
     }
   };
 
-  const updateAssetContribution = (expenseId: string, assetId: string | undefined, amount: number, currency: 'INR' | 'CAD', date: string, isDelete = false) => {
+  const updateAssetContribution = (expenseId: string, assetId: string | undefined, amount: number, date: string, isDelete = false) => {
     const savedAssets = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_ASSETS));
     if (!savedAssets) return;
 
-    const savedRate = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_EXCHANGE_RATE));
-    const exchangeRate = savedRate ? parseFloat(savedRate) : 67;
-    const amountInINR = currency === 'CAD' ? amount * exchangeRate : amount;
+    
+    
+    
 
     try {
       let assetsList = JSON.parse(savedAssets);
@@ -264,8 +259,7 @@ export function ExpenseSection() {
           targetAsset.contributions.unshift({
             id: `expense-${expenseId}`,
             date: date,
-            amount: -amount, // Store original amount (negated)
-            currency: currency
+            amount: -amount // Store original amount (negated)
           });
           targetAsset.lastUpdated = new Date().toISOString().split('T')[0];
           changed = true;
@@ -291,7 +285,6 @@ export function ExpenseSection() {
       category: formData.category,
       subcategory: formData.subcategory,
       amount,
-      currency: formData.currency,
       date: formData.date,
       type: formData.type,
       assetId: formData.assetId || undefined,
@@ -304,10 +297,10 @@ export function ExpenseSection() {
     };
 
     // Update Asset Sync: Subtract from account paid from
-    updateAssetContribution(newRecord.id, newRecord.assetId, newRecord.amount, newRecord.currency || 'INR', newRecord.date);
+    updateAssetContribution(newRecord.id, newRecord.assetId, newRecord.amount,  newRecord.date);
     
     // Update Recipient Sync: Add to savings/emergency/etc if applicable
-    updateRecipientContribution(newRecord.id, newRecord.paidToType, newRecord.paidToId, newRecord.amount, newRecord.currency || 'INR', newRecord.date);
+    updateRecipientContribution(newRecord.id, newRecord.paidToType, newRecord.paidToId, newRecord.amount,  newRecord.date);
 
     if (editingRecord) {
       setRecords(records.map(r => r.id === editingRecord.id ? newRecord : r));
@@ -319,10 +312,10 @@ export function ExpenseSection() {
 
   const deleteRecord = (id: string) => {
     // Update Asset Sync: Remove negative contribution
-    updateAssetContribution(id, undefined, 0, 'INR', '', true);
+    updateAssetContribution(id, undefined, 0, '', true);
     
     // Update Recipient Sync: Remove positive contribution
-    updateRecipientContribution(id, '', undefined, 0, 'INR', '', true);
+    updateRecipientContribution(id, '', undefined, 0, '', true);
 
     setRecords(records.filter(r => r.id !== id));
     if (editingRecord?.id === id) setIsModalOpen(false);
@@ -370,6 +363,26 @@ export function ExpenseSection() {
       <div className="flex flex-col gap-10">
           {/* Top Row: Metrics Integrated into the main flow */}
           <ExpenseMetrics records={records} selectedMonths={selectedMonths} selectedYears={selectedYears} />
+
+          {/* Category Breakdown */}
+          {filteredRecords.length > 0 && (
+            <div className="flex flex-col gap-4">
+               <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-[0.3em] pl-4">Category Breakdown</span>
+               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 px-2">
+                 {Object.entries(
+                    filteredRecords.reduce((acc, r) => {
+                        acc[r.category] = (acc[r.category] || 0) + r.amount;
+                        return acc;
+                    }, {} as Record<string, number>)
+                 ).sort((a, b) => b[1] - a[1]).map(([cat, total]) => (
+                    <div key={cat} className="flex flex-col p-4 bg-rose-50/20 dark:bg-rose-500/5 hover:bg-rose-50/50 dark:hover:bg-rose-500/10 rounded-2xl border border-rose-100/50 dark:border-rose-900/30 transition-colors">
+                       <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 dark:text-zinc-400">{cat}</span>
+                       <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100">${total.toLocaleString('en-CA', {maximumFractionDigits: 0})}</span>
+                    </div>
+                 ))}
+               </div>
+            </div>
+          )}
 
           {/* Table Section */}
           <div className="bg-rose-50/20 dark:bg-rose-500/5 border border-rose-100 dark:border-rose-900/30 rounded-[40px] p-2 overflow-hidden hover:shadow-2xl transition-all flex flex-col pt-8">
@@ -439,14 +452,7 @@ export function ExpenseSection() {
                                       </span>
                                   </td>
                                    <td className="px-4 py-5 text-right">
-                                       <span className="text-base text-zinc-900 dark:text-zinc-100 tracking-tighter">
-                                           {record.currency === 'CAD' ? `C${record.amount.toLocaleString('en-IN')}` : `₹${record.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
-                                       </span>
-                                       <span className="text-[10px] text-zinc-500 uppercase tracking-tighter block text-right">
-                                           {record.currency === 'CAD' 
-                                            ? `(₹${convertToINR(record.amount, 'CAD').toLocaleString('en-IN', { maximumFractionDigits: 0 })})` 
-                                            : `(CAD ${convertToCAD(record.amount).toLocaleString('en-US', { maximumFractionDigits: 0 })})`}
-                                       </span>
+                                       <span className="text-base text-zinc-900 dark:text-zinc-100 tracking-tighter">${record.amount.toLocaleString("en-CA", { minimumFractionDigits: 2 })}</span>
                                    </td>
                                   <td className="px-4 py-5 text-right">
                                       <button 
@@ -526,21 +532,13 @@ export function ExpenseSection() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="flex flex-col gap-2 md:col-span-2">
-                        <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Amount</label>
+                        <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Amount ($)</label>
                         <div className="relative">
-                            <select 
-                                value={formData.currency}
-                                onChange={e => setFormData({...formData, currency: e.target.value as 'INR' | 'CAD'})}
-                                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2 py-1 text-[10px] font-bold text-zinc-600 outline-none"
-                            >
-                                <option value="INR">INR (₹)</option>
-                                <option value="CAD">CAD (C$)</option>
-                            </select>
                             <input 
                                 required type="number" step="0.01" value={formData.amount} 
                                 onChange={e => setFormData({...formData, amount: e.target.value})} 
                                 placeholder="0.00"
-                                className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl pl-24 pr-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" 
+                                className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" 
                             />
                         </div>
                     </div>

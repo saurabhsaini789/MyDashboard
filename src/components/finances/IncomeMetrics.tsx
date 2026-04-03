@@ -2,7 +2,7 @@
 
 import { type IncomeRecord } from '@/lib/finances';
 import { MONTHS } from '@/lib/constants';
-import { getExchangeRate, convertToINR, convertToCAD } from '@/lib/finances';
+
 
 interface IncomeMetricsProps {
   records: IncomeRecord[];
@@ -16,10 +16,9 @@ interface MetricProps {
   subValue?: string;
   icon: React.ReactNode;
   color: 'teal' | 'emerald' | 'amber' | 'indigo' | 'blue';
-  cadValue?: string;
 }
 
-function MetricCard({ label, value, cadValue, subValue, icon, color }: MetricProps) {
+function MetricCard({ label, value, subValue, icon, color }: MetricProps) {
   const iconClasses = {
     teal: "bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-300",
     emerald: "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300",
@@ -51,11 +50,6 @@ function MetricCard({ label, value, cadValue, subValue, icon, color }: MetricPro
           <span className="text-2xl tracking-tight text-zinc-900 dark:text-zinc-100 leading-none font-bold">
             {value}
           </span>
-          {cadValue && (
-            <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider mt-1">
-              ({cadValue})
-            </span>
-          )}
         </div>
       </div>
     </div>
@@ -63,20 +57,18 @@ function MetricCard({ label, value, cadValue, subValue, icon, color }: MetricPro
 }
 
 export function IncomeMetrics({ records, selectedMonths, selectedYears }: IncomeMetricsProps) {
-  const exchangeRate = getExchangeRate();
-
   const filteredRecords = records.filter(r => {
     const d = new Date(r.date);
     return selectedMonths.includes(d.getMonth()) && selectedYears.includes(d.getFullYear());
   });
 
-  // Calculate totals in INR (Base Currency)
-  const totalIncome = filteredRecords.reduce((sum, r) => sum + convertToINR(r.amount, r.currency, exchangeRate), 0);
+  // Calculate totals
+  const totalIncome = filteredRecords.reduce((sum, r) => sum + r.amount, 0);
 
   const typeTotals = {
-    active: filteredRecords.filter(r => r.type === 'active').reduce((sum, r) => sum + convertToINR(r.amount, r.currency, exchangeRate), 0),
-    passive: filteredRecords.filter(r => r.type === 'passive').reduce((sum, r) => sum + convertToINR(r.amount, r.currency, exchangeRate), 0),
-    'one time': filteredRecords.filter(r => r.type === 'one time').reduce((sum, r) => sum + convertToINR(r.amount, r.currency, exchangeRate), 0),
+    active: filteredRecords.filter(r => r.type === 'active').reduce((sum, r) => sum + r.amount, 0),
+    passive: filteredRecords.filter(r => r.type === 'passive').reduce((sum, r) => sum + r.amount, 0),
+    'one time': filteredRecords.filter(r => r.type === 'one time').reduce((sum, r) => sum + r.amount, 0),
   };
 
   const activePct = totalIncome > 0 ? (typeTotals.active / totalIncome) * 100 : 0;
@@ -86,8 +78,7 @@ export function IncomeMetrics({ records, selectedMonths, selectedYears }: Income
   // Find Top Source
   const sourceTotals: Record<string, number> = {};
   filteredRecords.forEach(r => {
-    const amountInINR = convertToINR(r.amount, r.currency, exchangeRate);
-    sourceTotals[r.source] = (sourceTotals[r.source] || 0) + amountInINR;
+    sourceTotals[r.source] = (sourceTotals[r.source] || 0) + r.amount;
   });
   const topSourceEntry = Object.entries(sourceTotals).sort((a, b) => b[1] - a[1])[0];
   const topSourceStr = topSourceEntry ? `${topSourceEntry[0]}` : 'None';
@@ -99,8 +90,7 @@ export function IncomeMetrics({ records, selectedMonths, selectedYears }: Income
     <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-6">
       <MetricCard 
         label="Total Income"
-        value={`₹${totalIncome.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
-        cadValue={`CAD $${convertToCAD(totalIncome).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+        value={`$${totalIncome.toLocaleString('en-CA', { maximumFractionDigits: 0 })}`}
         subValue={selectionLabel}
         color="emerald"
         icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3 1.343 3 3-1.343 3-3 3m0-12c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3m0 12v1m0-18v1" /></svg>}
@@ -108,8 +98,7 @@ export function IncomeMetrics({ records, selectedMonths, selectedYears }: Income
 
       <MetricCard 
         label="Active Income"
-        value={`₹${typeTotals.active.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
-        cadValue={`CAD $${convertToCAD(typeTotals.active).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+        value={`$${typeTotals.active.toLocaleString('en-CA', { maximumFractionDigits: 0 })}`}
         subValue={`${activePct.toFixed(0)}% Total`}
         color="emerald"
         icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
@@ -117,8 +106,7 @@ export function IncomeMetrics({ records, selectedMonths, selectedYears }: Income
 
       <MetricCard 
         label="Passive Income"
-        value={`₹${typeTotals.passive.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
-        cadValue={`CAD $${convertToCAD(typeTotals.passive).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+        value={`$${typeTotals.passive.toLocaleString('en-CA', { maximumFractionDigits: 0 })}`}
         subValue={`${passivePct.toFixed(0)}% Total`}
         color="emerald"
         icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
@@ -126,8 +114,7 @@ export function IncomeMetrics({ records, selectedMonths, selectedYears }: Income
 
       <MetricCard 
         label="One-Time"
-        value={`₹${typeTotals['one time'].toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
-        cadValue={`CAD $${convertToCAD(typeTotals['one time']).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+        value={`$${typeTotals['one time'].toLocaleString('en-CA', { maximumFractionDigits: 0 })}`}
         subValue={`${oneTimePct.toFixed(0)}% Total`}
         color="emerald"
         icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
@@ -136,8 +123,7 @@ export function IncomeMetrics({ records, selectedMonths, selectedYears }: Income
       <MetricCard 
         label="Top Source"
         value={topSourceStr.charAt(0).toUpperCase() + topSourceStr.slice(1)}
-        cadValue={`CAD $${convertToCAD(topSourceVal).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
-        subValue={`₹${topSourceVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
+        subValue={`$${topSourceVal.toLocaleString('en-CA', { maximumFractionDigits: 0 })}`}
         color="emerald"
         icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
       />

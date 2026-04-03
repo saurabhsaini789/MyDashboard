@@ -3,14 +3,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
-import { getExchangeRate, convertToINR, convertToCAD } from '@/lib/finances';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 
 interface Contribution {
   id: string;
   date: string;
   amount: number;
-  currency?: 'INR' | 'CAD';
 }
 
 interface EmergencyFundData {
@@ -26,7 +24,6 @@ export function EmergencyFundSection() {
   const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [contributionAmount, setContributionAmount] = useState('');
-  const [contributionCurrency, setContributionCurrency] = useState<'INR' | 'CAD'>('INR');
   const [isCollapsed, setIsCollapsed] = useState(true);
   
   const [tempData, setTempData] = useState({
@@ -65,10 +62,6 @@ export function EmergencyFundSection() {
           try { setData(JSON.parse(val)); } catch (e) {}
         }
       }
-      if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_EXCHANGE_RATE) {
-        setIsLoaded(false);
-        setTimeout(() => setIsLoaded(true), 0);
-      }
     };
     window.addEventListener('local-storage-change', handleLocal);
     return () => window.removeEventListener('local-storage-change', handleLocal);
@@ -82,8 +75,7 @@ export function EmergencyFundSection() {
 
   if (!isLoaded || !data) return null;
 
-  const exchangeRate = getExchangeRate();
-  const totalSaved = (data.contributions || []).reduce((sum, c) => sum + convertToINR(c.amount, c.currency, exchangeRate), 0);
+  const totalSaved = (data.contributions || []).reduce((sum, c) => sum + c.amount, 0);
   const progressPercent = Math.min(100, (totalSaved / (data.targetAmount || 1)) * 100);
   const monthsCovered = data.monthlyExpenses > 0 ? totalSaved / data.monthlyExpenses : 0;
   const targetMonths = data.monthlyExpenses > 0 ? data.targetAmount / data.monthlyExpenses : 0;
@@ -115,8 +107,7 @@ export function EmergencyFundSection() {
       const newContrib: Contribution = {
         id: Math.random().toString(36).substr(2, 9),
         date: new Date().toISOString().split('T')[0],
-        amount,
-        currency: contributionCurrency
+        amount
       };
       setData({
         ...data,
@@ -133,10 +124,6 @@ export function EmergencyFundSection() {
       contributions: data.contributions.filter(c => c.id !== id)
     });
   };
-
-  const radius = 70;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (progressPercent / 100) * circumference;
 
   return (
     <div className="flex flex-col gap-6 md:gap-8 w-full transition-all duration-700 animate-in fade-in slide-in-from-bottom-8">
@@ -187,7 +174,7 @@ export function EmergencyFundSection() {
                  <span className={`text-[9px] px-2 py-0.5 rounded-full uppercase font-bold ${monthsCovered >= 6 ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
                     {progressPercent.toFixed(0)}% Saved
                  </span>
-                 <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">₹{(totalSaved || 0).toLocaleString('en-IN')}</span>
+                 <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">${(totalSaved || 0).toLocaleString('en-CA', { maximumFractionDigits: 0 })}</span>
             </div>
         </div>
 
@@ -199,7 +186,7 @@ export function EmergencyFundSection() {
                     {monthsCovered < 10 ? monthsCovered.toFixed(1) : Math.floor(monthsCovered)} / {targetMonths < 10 && targetMonths > 0 ? targetMonths.toFixed(1) : Math.floor(targetMonths)} Months Saved
                 </span>
                 <span className="text-xl md:text-2xl text-zinc-500 dark:text-zinc-400 tracking-tighter font-bold">
-                    ₹{(totalSaved || 0).toLocaleString('en-IN')} / ₹{(data.targetAmount || 0).toLocaleString('en-IN')} Saved
+                    ${(totalSaved || 0).toLocaleString('en-CA', { maximumFractionDigits: 0 })} / ${(data.targetAmount || 0).toLocaleString('en-CA', { maximumFractionDigits: 0 })} Saved
                 </span>
             </div>
             
@@ -224,15 +211,13 @@ export function EmergencyFundSection() {
               <div className="flex-1 bg-white/40 dark:bg-zinc-800/20 shadow-sm rounded-3xl p-5 border border-white dark:border-zinc-800/50 flex flex-col justify-center transition-all hover:bg-white/60 dark:hover:bg-zinc-800/40">
                   <span className="text-[10px] lg:text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1 block font-bold">Monthly Expense</span>
                   <div className="flex flex-col">
-                      <span className="text-xl lg:text-3xl text-zinc-900 dark:text-white tracking-tighter font-bold">₹{(data.monthlyExpenses || 0).toLocaleString('en-IN')}</span>
-                      <span className="text-[10px] lg:text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-tight opacity-80 mt-1 font-medium"> (CAD ${convertToCAD(data.monthlyExpenses).toLocaleString('en-US', { maximumFractionDigits: 0 })})</span>
+                      <span className="text-xl lg:text-3xl text-zinc-900 dark:text-white tracking-tighter font-bold">${(data.monthlyExpenses || 0).toLocaleString('en-CA', { maximumFractionDigits: 0 })}</span>
                   </div>
               </div>
               <div className="flex-1 bg-white/40 dark:bg-zinc-800/20 shadow-sm rounded-3xl p-5 border border-white dark:border-zinc-800/50 flex flex-col justify-center transition-all hover:bg-white/60 dark:hover:bg-zinc-800/40">
                   <span className="text-[10px] lg:text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1 block font-bold">Remaining Goal</span>
                   <div className="flex flex-col">
-                      <span className="text-xl lg:text-3xl text-zinc-900 dark:text-white tracking-tighter font-bold">₹{(remaining || 0).toLocaleString('en-IN')}</span>
-                      <span className="text-[10px] lg:text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-tight opacity-80 mt-1 font-medium"> (CAD ${convertToCAD(remaining).toLocaleString('en-US', { maximumFractionDigits: 0 })})</span>
+                      <span className="text-xl lg:text-3xl text-zinc-900 dark:text-white tracking-tighter font-bold">${(remaining || 0).toLocaleString('en-CA', { maximumFractionDigits: 0 })}</span>
                   </div>
               </div>
           </div>
@@ -248,10 +233,10 @@ export function EmergencyFundSection() {
                       <div key={c.id} className="flex items-center justify-between p-3 bg-white dark:bg-zinc-800/50 rounded-2xl border border-zinc-100/50 dark:border-zinc-700/50 shadow-sm">
                           <div className="flex flex-col">
                               <span className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-0.5">Contribution</span>
-                              <span className="text-sm font-bold text-zinc-900 dark:text-white tracking-tight">₹{convertToINR(c.amount, c.currency, exchangeRate).toLocaleString('en-IN')}</span>
+                              <span className="text-sm font-bold text-zinc-900 dark:text-white tracking-tight">${(c.amount || 0).toLocaleString('en-CA', { maximumFractionDigits: 0 })}</span>
                           </div>
                           <span className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-widest font-medium bg-zinc-50 dark:bg-zinc-900/50 px-2 py-1 rounded-lg">
-                            {new Date(c.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+                            {new Date(c.date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
                           </span>
                       </div>
                   )) : (
@@ -276,11 +261,11 @@ export function EmergencyFundSection() {
               </div>
               <form onSubmit={handleUpdateSettings} className="space-y-6">
                 <div className="flex flex-col gap-2">
-                    <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Total Goal Target (₹)</label>
+                    <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Total Goal Target ($)</label>
                     <input required type="number" value={tempData.targetAmount} onChange={e => setTempData({...tempData, targetAmount: e.target.value})} className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" />
                 </div>
                 <div className="flex flex-col gap-2">
-                    <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Ideal Monthly Expenses (₹)</label>
+                    <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Ideal Monthly Expenses ($)</label>
                     <input required type="number" value={tempData.monthlyExpenses} onChange={e => setTempData({...tempData, monthlyExpenses: e.target.value})} className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" />
                 </div>
                 <div className="flex gap-4 pt-6">
@@ -299,14 +284,8 @@ export function EmergencyFundSection() {
             <div className="p-10">
               <h3 className="text-2xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter mb-8 text-center text-amber-500">Fuel the Fund</h3>
               <form onSubmit={handleAddContribution} className="space-y-6">
-                <div className="flex flex-col gap-4">
-                    <div className="flex gap-2 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-2xl mb-2">
-                        <button type="button" onClick={() => setContributionCurrency('INR')} className={`flex-1 py-3 text-[10px] uppercase tracking-widest rounded-xl transition-all ${contributionCurrency === 'INR' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white font-bold' : 'text-zinc-500'}`}>₹ INR</button>
-                        <button type="button" onClick={() => setContributionCurrency('CAD')} className={`flex-1 py-3 text-[10px] uppercase tracking-widest rounded-xl transition-all ${contributionCurrency === 'CAD' ? 'bg-amber-500 text-white shadow-lg font-bold' : 'text-zinc-500'}`}>C$ CAD</button>
-                    </div>
-                    <div className="relative">
-                        <input required autoFocus type="number" step="0.01" value={contributionAmount} onChange={e => setContributionAmount(e.target.value)} placeholder="0.00" className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-6 text-center text-3xl text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all font-bold" />
-                    </div>
+                <div className="relative">
+                    <input required autoFocus type="number" step="0.01" value={contributionAmount} onChange={e => setContributionAmount(e.target.value)} placeholder="0.00" className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-6 text-center text-3xl text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all font-bold" />
                 </div>
                 <button type="submit" className="w-full px-8 py-5 rounded-3xl bg-amber-500 text-white hover:scale-105 transition-all uppercase tracking-widest text-xs shadow-xl shadow-amber-200/50 dark:shadow-none font-bold">Log</button>
                 <button type="button" onClick={() => setIsContributionModalOpen(false)} className="w-full py-2 text-xs text-zinc-500 hover:text-zinc-900 uppercase tracking-widest font-medium">Nevermind</button>
@@ -331,12 +310,12 @@ export function EmergencyFundSection() {
                   {(data.contributions || []).map(c => (
                     <div key={c.id} className="flex justify-between items-center p-5 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-zinc-100 dark:border-zinc-800/50 group">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 font-bold">₹</div>
+                        <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 font-bold">$</div>
                         <div className="flex flex-col">
                             <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
-                                {c.currency === 'CAD' ? 'C$' : '₹'}{c.amount.toLocaleString('en-IN')}
+                                ${(c.amount || 0).toLocaleString('en-CA', { maximumFractionDigits: 0 })}
                             </span>
-                            <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">{new Date(c.date).toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                            <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">{new Date(c.date).toLocaleDateString('en-CA', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                         </div>
                       </div>
                       <button onClick={() => deleteContribution(c.id)} className="p-2 text-zinc-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all">

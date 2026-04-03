@@ -5,7 +5,7 @@ import { ExpenseRecord, ExpenseItem, ExpenseCategory, Asset, PaymentMethod, Entr
 import { getPrefixedKey } from '@/lib/keys';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 import { setSyncedItem } from '@/lib/storage';
-import { calculateAssetBalance, updateAssetFromExpense, updateRecipientFromExpense, convertToINR, convertToCAD, getExchangeRate } from '@/lib/finances';
+import { calculateAssetBalance, updateAssetFromExpense, updateRecipientFromExpense } from '@/lib/finances';
 
 interface PantryEntryModalProps {
   isOpen: boolean;
@@ -34,7 +34,6 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [notes, setNotes] = useState('');
-  const [currency, setCurrency] = useState<'INR' | 'CAD'>('INR');
   
   // Grocery Items (for Bills)
   const [items, setItems] = useState<ExpenseItem[]>([]);
@@ -87,7 +86,6 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
     setType(record.type === 'want' ? 'want' : 'need');
     setTags(record.tags || []);
     setNotes(record.notes || '');
-    setCurrency(record.currency || 'INR');
     setSgst(record.sgst?.toString() || '');
     setCgst(record.cgst?.toString() || '');
     
@@ -163,7 +161,6 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
       date,
       amount: totalAmount,
       subcategory: category === 'Bills' ? singleItem.billType : (singleItem.name || category),
-      currency,
       paidToType: 'other',
       
       // Category Specifics
@@ -183,7 +180,7 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
     };
 
     // Cleanup for finance sync
-    updateAssetFromExpense(newRecord.id, newRecord.assetId, newRecord.amount, currency, newRecord.date, !!editingRecord);
+    updateAssetFromExpense(newRecord.id, newRecord.assetId, newRecord.amount, newRecord.date, !!editingRecord);
     
     let updated;
     if (editingRecord) {
@@ -198,8 +195,7 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
 
   const deleteRecord = (id: string) => {
     const recordToDelete = allRecords.find(r => r.id === id);
-    const delCurrency = recordToDelete?.currency || 'INR';
-    updateAssetFromExpense(id, undefined, 0, delCurrency, '', true);
+    updateAssetFromExpense(id, undefined, 0, '', true);
     onUpdateRecords(allRecords.filter(r => r.id !== id));
     onClose();
   };
@@ -257,10 +253,7 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
                            </div>
                            <div className="flex flex-col items-end gap-1">
                               <span className="text-2xl font-bold tracking-tighter text-zinc-900 dark:text-white flex items-baseline gap-1">
-                                 ₹{convertToINR(record.amount, record.currency, getExchangeRate()).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                                 <span className="text-sm text-zinc-400 font-medium ml-2">
-                                   (C${convertToCAD(record.amount, record.currency, 1/getExchangeRate()).toLocaleString('en-CA', { maximumFractionDigits: 1 })})
-                                 </span>
+                                 ${record.amount.toLocaleString('en-CA', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                               </span>
                               <span className={`text-[10px] uppercase font-bold tracking-widest ${record.type === 'need' ? 'text-emerald-500' : 'text-amber-500'}`}>{record.type}</span>
                            </div>
@@ -306,17 +299,11 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
                      <label className="text-sm text-zinc-400 uppercase tracking-widest font-bold ml-2">Paid From (Linked Account)</label>
                      <select value={paidFromId} onChange={e => setPaidFromId(e.target.value)} className="w-full bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-xl px-4 py-2.5 text-zinc-800 dark:text-white focus:ring-4 focus:ring-zinc-500/5 transition-all appearance-none cursor-pointer">
                         <option value="">Manual Entry (No Asset)</option>
-                        {assets.map(a => <option key={a.id} value={a.id}>{a.name} ({a.initialCurrency === 'CAD' ? 'C$' : '₹'}{calculateAssetBalance(a).toLocaleString(a.initialCurrency === 'CAD' ? 'en-CA' : 'en-IN', { maximumFractionDigits: 0 })})</option>)}
+                        {assets.map(a => <option key={a.id} value={a.id}>{a.name} (${calculateAssetBalance(a).toLocaleString('en-CA', { maximumFractionDigits: 0 })})</option>)}
                      </select>
                   </div>
 
-                  <div className="flex flex-col gap-3">
-                     <label className="text-sm text-zinc-400 uppercase tracking-widest font-bold ml-2">Currency</label>
-                     <div className="flex bg-white dark:bg-zinc-900 rounded-xl p-1.5 border border-zinc-100 dark:border-zinc-800">
-                        <button type="button" onClick={() => setCurrency('INR')} className={`flex-1 py-2 rounded-lg text-sm uppercase font-bold tracking-widest transition-all ${currency === 'INR' ? 'bg-zinc-900 text-white dark:bg-zinc-800 shadow-md scale-105' : 'text-zinc-400 hover:text-zinc-600'}`}>INR (₹)</button>
-                        <button type="button" onClick={() => setCurrency('CAD')} className={`flex-1 py-2 rounded-lg text-sm uppercase font-bold tracking-widest transition-all ${currency === 'CAD' ? 'bg-zinc-900 text-white dark:bg-zinc-800 shadow-md scale-105' : 'text-zinc-400 hover:text-zinc-600'}`}>CAD ($)</button>
-                     </div>
-                  </div>
+
 
                   <div className="flex flex-col gap-3">
                      <label className="text-sm text-zinc-400 uppercase tracking-widest font-bold ml-2">Priority</label>
@@ -378,15 +365,15 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
                                         <input type="text" placeholder="e.g. Milk 3%" value={item.name} onChange={e => updateItem(item.id, 'name', e.target.value)} className="bg-white dark:bg-zinc-950 p-2 px-3 rounded-lg text-sm outline-none" />
                                      </div>
                                      <div className="flex flex-col gap-2">
-                                        <label className="text-[10px] uppercase font-bold tracking-widest text-zinc-400 ml-4">Price</label>
+                                        <label className="text-[10px] uppercase font-bold tracking-widest text-zinc-400 ml-4">Unit Price</label>
                                         <input type="number" placeholder="0.00" value={item.unitPrice} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value))} className="bg-white dark:bg-zinc-950 p-2 px-3 rounded-lg text-sm outline-none font-bold" />
                                      </div>
                                      <div className="flex flex-col gap-2">
-                                        <label className="text-[10px] uppercase font-bold tracking-widest text-zinc-400 ml-4">Quantity</label>
-                                        <input type="number" min="1" placeholder="e.g. 1, 2" value={item.quantity} onChange={e => updateItem(item.id, 'quantity', e.target.value)} className="bg-white dark:bg-zinc-950 p-2 px-3 rounded-lg text-sm outline-none" />
+                                        <label className="text-[10px] uppercase font-bold tracking-widest text-zinc-400 ml-4">Quantity (No. of units)</label>
+                                        <input type="number" min="0" step="any" placeholder="e.g. 1, 2" value={item.quantity} onChange={e => updateItem(item.id, 'quantity', e.target.value)} className="bg-white dark:bg-zinc-950 p-2 px-3 rounded-lg text-sm outline-none" />
                                      </div>
                                      <div className="flex flex-col gap-2">
-                                        <label className="text-[10px] uppercase font-bold tracking-widest text-zinc-400 ml-4">Size/Wt</label>
+                                        <label className="text-[10px] uppercase font-bold tracking-widest text-zinc-400 ml-4">Size/Weight (Unit Wt)</label>
                                         <input type="text" placeholder="e.g. 3L, 2kg" value={item.size || ''} onChange={e => updateItem(item.id, 'size', e.target.value)} className="bg-white dark:bg-zinc-950 p-2 px-3 rounded-lg text-sm outline-none" />
                                      </div>
                                      <div className="flex flex-col gap-2">
@@ -445,9 +432,9 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
                         {category === 'Grocery' && (
                           <>
                             <div className="flex flex-col gap-2"><input type="text" placeholder="Item Name" value={singleItem.name} onChange={e => setSingleItem({...singleItem, name: e.target.value})} className="p-3 rounded-lg bg-white dark:bg-zinc-950 text-sm outline-none" /></div>
-                            <div className="flex flex-col gap-2"><input type="number" placeholder="Price" value={singleItem.price} onChange={e => setSingleItem({...singleItem, price: e.target.value})} className="p-3 rounded-lg bg-white dark:bg-zinc-950 text-sm outline-none font-bold" /></div>
-                            <div className="flex flex-col gap-2"><input type="number" min="1" placeholder="Quantity (e.g. 1)" value={singleItem.quantity} onChange={e => setSingleItem({...singleItem, quantity: e.target.value})} className="p-3 rounded-lg bg-white dark:bg-zinc-950 text-sm outline-none" /></div>
-                            <div className="flex flex-col gap-2"><input type="text" placeholder="Size/Weight (e.g. 3L)" value={singleItem.size} onChange={e => setSingleItem({...singleItem, size: e.target.value})} className="p-3 rounded-lg bg-white dark:bg-zinc-950 text-sm outline-none" /></div>
+                            <div className="flex flex-col gap-2"><input type="number" placeholder="Total Price" value={singleItem.price} onChange={e => setSingleItem({...singleItem, price: e.target.value})} className="p-3 rounded-lg bg-white dark:bg-zinc-950 text-sm outline-none font-bold" /></div>
+                            <div className="flex flex-col gap-2"><input type="number" min="0" step="any" placeholder="Quantity (No. of units)" value={singleItem.quantity} onChange={e => setSingleItem({...singleItem, quantity: e.target.value})} className="p-3 rounded-lg bg-white dark:bg-zinc-950 text-sm outline-none" /></div>
+                            <div className="flex flex-col gap-2"><input type="text" placeholder="Size/Weight (Unit wt)" value={singleItem.size} onChange={e => setSingleItem({...singleItem, size: e.target.value})} className="p-3 rounded-lg bg-white dark:bg-zinc-950 text-sm outline-none" /></div>
                             <div className="flex flex-col gap-2"><input type="text" placeholder="Brand" value={singleItem.brand} onChange={e => setSingleItem({...singleItem, brand: e.target.value})} className="p-3 rounded-lg bg-white dark:bg-zinc-950 text-sm outline-none" /></div>
                           </>
                         )}
@@ -520,10 +507,7 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
                   <div className="flex flex-col">
                      <span className="text-sm uppercase tracking-widest text-zinc-400 font-bold">Total Bill Amount</span>
                      <span className="text-3xl font-bold tracking-tighter text-zinc-900 dark:text-white flex items-baseline gap-2">
-                        ₹{convertToINR(totalAmount, currency, getExchangeRate()).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                        <span className="text-lg text-zinc-400 font-medium ml-2">
-                          (C${convertToCAD(totalAmount, currency, 1/getExchangeRate()).toLocaleString('en-CA', { maximumFractionDigits: 1 })})
-                        </span>
+                        ${totalAmount.toLocaleString('en-CA', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                      </span>
                   </div>
                   <div className="flex gap-3">

@@ -29,10 +29,9 @@ export interface GroceryPlanItem {
   frequency: 'Daily' | 'Weekly' | 'Bi-Weekly' | 'Monthly' | 'As Needed';
   idealTiming: string; // e.g. "Start of month", "Every Sunday"
   expectedPrice: number;
-  currency: 'INR' | 'CAD';
-  // Checkbox state mapping where index corresponds to the tracked unit out of plannedQuantity.
-  // true = manually checked, false = unchecked, undefined = uninitialized
-  checkedUnits?: boolean[]; 
+  checkedUnits?: ('bought' | 'skipped' | 'pending')[]; 
+  skippedMonths?: string[]; // Array of 'YYYY-MM' strings where this item was skipped
+  consumptionDays?: number; // How many days it takes to consume 1 unit
 }
 
 export interface ExpenseRecord {
@@ -40,7 +39,6 @@ export interface ExpenseRecord {
   category: ExpenseCategory;
   subcategory: string;
   amount: number;
-  currency?: 'INR' | 'CAD';
   date: string;
   type: ExpenseType; // Need vs Want
   assetId?: string; // Account used for payment
@@ -77,7 +75,6 @@ export interface IncomeRecord {
   id: string;
   source: 'salary' | 'bonus' | 'freelance' | 'business' | 'investment' | 'Govt Benefits' | 'tax refund' | 'gift' | 'sale' | 'refund' | 'other';
   amount: number;
-  currency?: 'INR' | 'CAD';
   date: string;
   type: 'active' | 'passive' | 'one time';
   assetId?: string;
@@ -89,7 +86,6 @@ export interface Contribution {
   id: string;
   date: string;
   amount: number;
-  currency?: 'INR' | 'CAD';
 }
 
 export interface Asset {
@@ -97,7 +93,6 @@ export interface Asset {
   name: string;
   type: string;
   initialValue: number;
-  initialCurrency?: 'INR' | 'CAD';
   startDate: string;
   contributions: Contribution[];
   growthRate: number;
@@ -109,7 +104,6 @@ export interface PaymentLog {
   id: string;
   date: string;
   amount: number;
-  currency?: 'INR' | 'CAD';
   type: 'Regular EMI' | 'Prepayment';
 }
 
@@ -118,12 +112,9 @@ export interface Liability {
   name: string;
   type: string;
   totalAmount: number;
-  totalAmountCurrency?: 'INR' | 'CAD';
   remainingBalance: number;
-  remainingBalanceCurrency?: 'INR' | 'CAD';
   interestRate: number;
   emi: number;
-  emiCurrency?: 'INR' | 'CAD';
   tenureRemaining: number;
   paymentLogs: PaymentLog[];
   lastUpdated: string;
