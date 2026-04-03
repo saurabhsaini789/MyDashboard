@@ -312,63 +312,125 @@ export function GroceryPlan({ records, viewingDate }: GroceryPlanProps) {
             </button>
          </div>
 
-         {/* Add/Edit Item Form */}
+         {/* Add/Edit Item Modal */}
          {isFormOpen && (
-           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 p-4 bg-zinc-50 dark:bg-zinc-950/50 rounded-3xl border border-zinc-100 dark:border-zinc-800 animate-in slide-in-from-top-4 duration-300">
-              <div className="col-span-full">
-                 <h4 className="text-xs font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400 mb-2">
-                    {editingItem ? 'Edit Grocery Item' : 'Add New Item to Plan'}
-                 </h4>
-              </div>
-              <div className="lg:col-span-2 flex flex-col gap-1.5">
-                 <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-2">Item Name</label>
-                 <input required type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Milk" className="w-full bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20" />
-              </div>
-              <div className="lg:col-span-1 flex flex-col gap-1.5">
-                 <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-2">Category</label>
-                 <select value={category} onChange={e => setCategory(e.target.value)} className="w-full bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm appearance-none focus:ring-2 focus:ring-teal-500/20">
-                    {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                 </select>
-              </div>
-              
-              <div className="lg:col-span-2 flex flex-col gap-1.5">
-                 <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-2">Unit Expected Price</label>
-                 <input required type="number" step="0.01" value={expectedPrice} onChange={e => setExpectedPrice(e.target.value)} placeholder="0.00" className="w-full bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20" />
-              </div>
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+               {/* Backdrop */}
+               <div 
+                 className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
+                 onClick={() => {
+                   setEditingItem(null);
+                   setIsFormOpen(false);
+                 }}
+               />
+               
+               {/* Modal Content */}
+               <form 
+                 onSubmit={handleSubmit} 
+                 className="relative w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-[40px] shadow-2xl border border-zinc-200 dark:border-zinc-800 p-8 md:p-10 animate-in zoom-in-95 duration-300 flex flex-col gap-6"
+               >
+                  <div className="flex justify-between items-start">
+                     <div>
+                        <h3 className="text-xl font-bold uppercase tracking-[0.2em] text-zinc-900 dark:text-white">
+                           {editingItem ? 'Edit Grocery Item' : 'Add New Item'}
+                        </h3>
+                        <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-1">
+                           Configure your monthly grocery plan
+                        </p>
+                     </div>
+                     <button 
+                        type="button"
+                        onClick={() => {
+                           setEditingItem(null);
+                           setIsFormOpen(false);
+                        }}
+                        className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-zinc-400"
+                     >
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                     </button>
+                  </div>
 
-              <div className="lg:col-span-1 flex flex-col gap-1.5">
-                 <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-2">Total Units (Planned)</label>
-                 <input required type="number" min="0" step="0.1" value={plannedQuantity} onChange={e => setPlannedQuantity(e.target.value)} placeholder="e.g. 1.5" className="w-full bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20" />
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div className="flex flex-col gap-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-2">Item Name</label>
+                        <input required type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Milk" className="w-full bg-zinc-50 dark:bg-zinc-950/50 p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20 transition-all font-medium" />
+                     </div>
+                     <div className="flex flex-col gap-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-2">Category</label>
+                        <select value={category} onChange={e => setCategory(e.target.value)} className="w-full bg-zinc-50 dark:bg-zinc-950/50 p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm appearance-none focus:ring-2 focus:ring-teal-500/20 transition-all font-medium">
+                           {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                     </div>
+                     
+                     <div className="flex flex-col gap-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-2">Unit Expected Price ($)</label>
+                        <input required type="number" step="0.01" value={expectedPrice} onChange={e => setExpectedPrice(e.target.value)} placeholder="0.00" className="w-full bg-zinc-50 dark:bg-zinc-950/50 p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20 transition-all font-medium" />
+                     </div>
 
-              <div className="lg:col-span-1 flex flex-col gap-1.5">
-                 <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-2">Unit Size</label>
-                 <input type="text" value={unitSize} onChange={e => setUnitSize(e.target.value)} placeholder="e.g. 1kg" className="w-full bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20" />
-              </div>
+                     <div className="flex flex-col gap-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-2">Total Units (Planned)</label>
+                        <input required type="number" min="0" step="0.1" value={plannedQuantity} onChange={e => setPlannedQuantity(e.target.value)} placeholder="e.g. 1.5" className="w-full bg-zinc-50 dark:bg-zinc-950/50 p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20 transition-all font-medium" />
+                     </div>
 
-              <div className="lg:col-span-1 flex flex-col gap-1.5">
-                 <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-2">Consumption (Days)</label>
-                 <input type="number" value={consumptionDays} onChange={e => setConsumptionDays(e.target.value)} placeholder="e.g. 7 (for 1 week)" className="w-full bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20" />
-              </div>
+                     <div className="flex flex-col gap-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-2">Unit Size</label>
+                        <input type="text" value={unitSize} onChange={e => setUnitSize(e.target.value)} placeholder="e.g. 1kg or 4L" className="w-full bg-zinc-50 dark:bg-zinc-950/50 p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20 transition-all font-medium" />
+                     </div>
 
-              <div className="lg:col-span-1 flex flex-col gap-1.5">
-                 <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-2">Frequency</label>
-                 <select value={frequency} onChange={e => setFrequency(e.target.value as any)} className="w-full bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm appearance-none focus:ring-2 focus:ring-teal-500/20">
-                    <option value="Daily">Daily</option><option value="Weekly">Weekly</option><option value="Bi-Weekly">Bi-Weekly</option><option value="Monthly">Monthly</option><option value="As Needed">As Needed</option>
-                 </select>
-              </div>
+                     <div className="flex flex-col gap-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-2">Consumption Days (Per Unit)</label>
+                        <input type="number" value={consumptionDays} onChange={e => setConsumptionDays(e.target.value)} placeholder="How many days 1 unit lasts" className="w-full bg-zinc-50 dark:bg-zinc-950/50 p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20 transition-all font-medium" />
+                     </div>
 
-              <div className="lg:col-span-2 flex flex-col gap-1.5">
-                 <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-2">Ideal Timing</label>
-                 <input type="text" value={idealTiming} onChange={e => setIdealTiming(e.target.value)} placeholder="e.g. Every Sunday" className="w-full bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20" />
-              </div>
+                     <div className="flex flex-col gap-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-2">Frequency</label>
+                        <select value={frequency} onChange={e => setFrequency(e.target.value as any)} className="w-full bg-zinc-50 dark:bg-zinc-950/50 p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm appearance-none focus:ring-2 focus:ring-teal-500/20 transition-all font-medium">
+                           <option value="Daily">Daily</option><option value="Weekly">Weekly</option><option value="Bi-Weekly">Bi-Weekly</option><option value="Monthly">Monthly</option><option value="As Needed">As Needed</option>
+                        </select>
+                     </div>
 
-              <div className="col-span-full flex justify-end mt-1">
-                 <button type="submit" className="px-6 py-2.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl text-xs font-bold uppercase tracking-widest shadow-md hover:-translate-y-0.5 transition-all">
-                    Save Plan Item
-                 </button>
-              </div>
-           </form>
+                     <div className="flex flex-col gap-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-2">Ideal Timing</label>
+                        <input type="text" value={idealTiming} onChange={e => setIdealTiming(e.target.value)} placeholder="e.g. Every Sunday" className="w-full bg-zinc-50 dark:bg-zinc-950/50 p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20 transition-all font-medium" />
+                     </div>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-4">
+                     {editingItem ? (
+                        <button 
+                           type="button"
+                           onClick={() => {
+                              deleteItem(editingItem.id);
+                              setIsFormOpen(false);
+                           }}
+                           className="px-6 py-3 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all flex items-center gap-2"
+                        >
+                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                           Delete Item
+                        </button>
+                     ) : <div />}
+
+                     <div className="flex gap-3">
+                        <button 
+                           type="button"
+                           onClick={() => {
+                              setEditingItem(null);
+                              setIsFormOpen(false);
+                           }}
+                           className="px-6 py-3 text-zinc-400 dark:text-zinc-500 rounded-2xl text-xs font-bold uppercase tracking-widest hover:text-zinc-600 dark:hover:text-zinc-300 transition-all"
+                        >
+                           Cancel
+                        </button>
+                        <button 
+                           type="submit" 
+                           className="px-10 py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl text-xs font-bold uppercase tracking-widest shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all"
+                        >
+                           {editingItem ? 'Save Changes' : 'Create Item'}
+                        </button>
+                     </div>
+                  </div>
+               </form>
+            </div>
          )}
 
          {/* Compact Grouped Table */}
@@ -467,27 +529,9 @@ export function GroceryPlan({ records, viewingDate }: GroceryPlanProps) {
                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                           <button 
                                              onClick={() => handleEdit(item)}
-                                             className="p-2 text-zinc-400 hover:text-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition-all"
-                                             title="Edit Item"
+                                             className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-900 dark:hover:bg-white hover:text-white dark:hover:text-zinc-900 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm"
                                           >
-                                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                          </button>
-                                          <button 
-                                             onClick={() => toggleSkipMonth(item.id)}
-                                             className="p-2 text-zinc-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-all"
-                                             title={isSkipped ? 'Unskip' : 'Skip for this month'}
-                                          >
-                                             {isSkipped ? (
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg> // Undo
-                                             ) : (
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg> // Cross
-                                             )}
-                                          </button>
-                                          <button 
-                                             onClick={() => deleteItem(item.id)}
-                                             className="p-2 text-zinc-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-all"
-                                          >
-                                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                             Edit Item
                                           </button>
                                        </div>
                                     </td>
