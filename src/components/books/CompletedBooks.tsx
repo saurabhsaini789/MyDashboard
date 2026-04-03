@@ -17,7 +17,8 @@ import {
   List as ListIcon,
   ChevronDown,
   BookCheck,
-  Library
+  Library,
+  Tag
 } from 'lucide-react';
 
 import { CompletedBook } from '@/types/books';
@@ -162,8 +163,8 @@ export function CompletedBooks() {
           </button>
         </div>
       ) : (
-        <div className="max-h-[600px] lg:max-h-[800px] overflow-y-auto pr-2 pb-4 -mr-2 custom-scrollbar">
-          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
+        <div className="max-h-[600px] overflow-y-auto pr-2 pb-2 custom-scrollbar">
+          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-3 pb-2'}>
             {filteredBooks.map((book) => (
               <BookCard 
                 key={book.id} 
@@ -195,6 +196,29 @@ export function CompletedBooks() {
         </div>
       )}
 
+      {/* Custom Scrollbar Styles */}
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #e4e4e7;
+          border-radius: 10px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #27272a;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #d4d4d8;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #3f3f46;
+        }
+      `}</style>
+
       {/* Modals */}
       {(selectedBook || isAdding) && (
         <CompletedBookModal
@@ -208,6 +232,7 @@ export function CompletedBooks() {
             rating: 5,
             notes: '',
             wouldRecommend: true,
+            category: 'Self-help',
             createdAt: new Date().toISOString()
           }}
           onClose={() => {
@@ -227,29 +252,51 @@ function BookCard({ book, viewMode, onEdit }: { book: CompletedBook, viewMode: '
     return (
       <div 
         onClick={onEdit}
-        className="group flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-3xl hover:border-teal-500/30 transition-all cursor-pointer shadow-sm hover:shadow-md"
+        className="group flex items-center gap-4 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl transition-all hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-700 cursor-pointer"
       >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h4 className="font-black text-lg text-zinc-900 dark:text-white truncate tracking-tight">{book.name}</h4>
-            <span className="text-[10px] font-black uppercase text-zinc-400 bg-zinc-100 dark:bg-zinc-900 px-2 py-0.5 rounded-md tracking-wider">
+        {/* Rating Badge - Matches "Pos" box in ReadingQueue style but without label */}
+        <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded-xl text-amber-500 group-hover:bg-amber-50 dark:group-hover:bg-amber-500/10 transition-colors">
+          <div className="flex items-center gap-1">
+            <span className="text-lg font-black leading-none">{book.rating}</span>
+            <Star size={14} fill="currentColor" className="mb-0.5" />
+          </div>
+        </div>
+
+        {/* Content Section - Single Line Layout */}
+        <div className="flex-1 min-w-0 flex items-center gap-4">
+          <h4 className="text-base font-bold text-zinc-900 dark:text-white truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors shrink-0 max-w-[40%]">
+            {book.name}
+          </h4>
+          
+          <div className="flex items-center gap-4 border-l-2 border-zinc-100 dark:border-zinc-800/50 pl-4 overflow-x-auto no-scrollbar">
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+              {book.author || 'Unknown Author'}
+            </span>
+            <span className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-zinc-400 tracking-wider whitespace-nowrap">
+              <Languages size={12} className="text-zinc-300 dark:text-zinc-700" />
               {book.language}
             </span>
-          </div>
-          <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-2">
-            {book.author || 'Unknown Author'}
-          </div>
-          <div className="flex items-center gap-3 text-xs font-bold text-zinc-400">
-            <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(book.completionDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-            <span className="flex items-center gap-1">
-              {book.wouldRecommend ? <ThumbsUp size={12} className="text-teal-500" /> : <ThumbsDown size={12} className="text-rose-500" />}
-              {book.wouldRecommend ? 'Recommended' : 'Mixed'}
+            <span className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-zinc-400 tracking-wider whitespace-nowrap">
+              <Calendar size={12} className="text-zinc-300 dark:text-zinc-700" />
+              {new Date(book.completionDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+            </span>
+            <span className="flex items-center gap-1.5 text-[10px] uppercase font-black text-zinc-400 tracking-wider whitespace-nowrap">
+              <Tag size={12} className="text-teal-500/30" />
+              {book.category || 'Other'}
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-500/10 px-3 py-1.5 rounded-2xl group-hover:scale-110 transition-transform">
-          <Star size={14} className="text-amber-500" fill="currentColor" />
-          <span className="text-sm font-black text-amber-600 dark:text-amber-400">{book.rating}</span>
+
+        {/* Status Badge */}
+        <div 
+          className={`px-3 py-1.5 rounded-full text-[11px] font-bold border flex items-center gap-1.5 transition-colors ${
+            book.wouldRecommend 
+              ? 'bg-teal-50 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-100 dark:border-teal-500/20' 
+              : 'bg-zinc-50 dark:bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-100 dark:border-zinc-500/20'
+          }`}
+        >
+          {book.wouldRecommend ? <ThumbsUp size={12} /> : <ThumbsDown size={12} />}
+          {book.wouldRecommend ? 'Highly Recommended' : 'Mixed Opinion'}
         </div>
       </div>
     );
@@ -269,6 +316,10 @@ function BookCard({ book, viewMode, onEdit }: { book: CompletedBook, viewMode: '
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1.5">
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 opacity-60">{book.language}</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 dark:text-teal-400 opacity-80 flex items-center gap-1">
+                <Tag size={10} />
+                {book.category || 'Other'}
+              </span>
               {book.wouldRecommend && <ThumbsUp size={10} className="text-teal-500" />}
             </div>
             <h4 className="font-black text-2xl text-zinc-900 dark:text-white tracking-tight leading-tight group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">

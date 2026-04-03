@@ -33,14 +33,20 @@ const STATUS_ICONS: Record<Status, React.ReactNode> = {
 
 const STATUS_OPTIONS: Status[] = ['None', 'Planned', 'Reading', 'Completed'];
 
-export function YearlyReadingLog({ onPromote }: { onPromote?: (name: string, author: string, language: 'English' | 'Hindi') => void }) {
+export function YearlyReadingLog({ onPromote }: { onPromote?: (book: LogBookEntry, language: 'English' | 'Hindi') => void }) {
   const [data, setData] = useState<MultiYearLogData>({});
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const dataRef = React.useRef(data);
-  const [modalState, setModalState] = useState<{ isOpen: boolean; month: string; type: 'english' | 'hindi' } | null>(null);
+  const [modalState, setModalState] = useState<{ 
+    isOpen: boolean; 
+    month: string; 
+    type: 'english' | 'hindi'; 
+    category?: string; 
+    originalQueueId?: string; 
+  } | null>(null);
 
   useEffect(() => {
     dataRef.current = data;
@@ -148,7 +154,7 @@ export function YearlyReadingLog({ onPromote }: { onPromote?: (name: string, aut
           const updatedBook = { ...book, ...updates };
           // Trigger promotion if status changed to Completed
           if (updates.status === 'Completed' && book.status !== 'Completed' && onPromote) {
-            onPromote(updatedBook.title, updatedBook.author, type === 'english' ? 'English' : 'Hindi');
+            onPromote(updatedBook, type === 'english' ? 'English' : 'Hindi');
           }
           return updatedBook;
         }
@@ -177,7 +183,9 @@ export function YearlyReadingLog({ onPromote }: { onPromote?: (name: string, aut
         id: crypto.randomUUID(),
         title,
         author,
-        status
+        category: modalState.category,
+        status,
+        originalQueueId: modalState.originalQueueId
       };
       
       monthData[key] = [...monthData[key], newBook];
@@ -449,7 +457,10 @@ export function YearlyReadingLog({ onPromote }: { onPromote?: (name: string, aut
           month={modalState.month}
           type={modalState.type}
           onClose={() => setModalState(null)}
-          onSave={handleModalSave}
+          onSave={(title, author, status, category, qId) => {
+            setModalState(s => s ? { ...s, category, originalQueueId: qId } : null);
+            handleModalSave(title, author, status);
+          }}
         />
       )}
     </div>
@@ -575,16 +586,41 @@ function AddLogBookModal({
   month: string;
   type: 'english' | 'hindi';
   onClose: () => void;
-  onSave: (title: string, author: string, status: Status) => void;
+  onSave: (title: string, author: string, status: Status, category?: string, originalQueueId?: string) => void;
 }) {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [status, setStatus] = useState<Status>('Planned');
+  const [category, setCategory] = useState<string | undefined>(undefined);
+  const [originalQueueId, setOriginalQueueId] = useState<string | undefined>(undefined);
+  const [queueBooks, setQueueBooks] = useState<any[]>([]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(getPrefixedKey('os_books_queue'));
+    if (stored) {
+      try {
+        setQueueBooks(JSON.parse(stored));
+      } catch (e) {}
+    }
+  }, []);
+
+  const handleSelectFromQueue = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const bookId = e.target.value;
+    if (!bookId) return;
+    
+    const selected = queueBooks.find(b => b.id === bookId);
+    if (selected) {
+      setTitle(selected.name);
+      setAuthor(selected.author || '');
+      setCategory(selected.category);
+      setOriginalQueueId(selected.id);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    onSave(title.trim(), author.trim(), status);
+    onSave(title.trim(), author.trim(), status, category, originalQueueId);
   };
 
   return (
@@ -605,6 +641,23 @@ function AddLogBookModal({
               <Plus size={16} className="rotate-45" />
             </button>
           </div>
+
+          {queueBooks.length > 0 && (
+            <div className="mb-6 p-4 bg-teal-500/5 border border-teal-500/10 rounded-2xl">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-teal-600 dark:text-teal-400 mb-2">
+                Quick Add: Pick from Reading Plan
+              </label>
+              <select 
+                onChange={handleSelectFromQueue}
+                className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/50"
+              >
+                <option value="">Select a book...</option>
+                {queueBooks.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>

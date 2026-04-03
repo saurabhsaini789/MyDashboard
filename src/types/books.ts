@@ -3,7 +3,7 @@ export interface Book {
   order: number;
   name: string;
   author: string;
-  language: 'English' | 'Hindi';
+  language: 'English' | 'Hindi' | 'Urdu' | 'Punjabi' | 'Sanskrit' | 'Other';
   category: string;
   status: 'Planned' | 'Reading' | 'Completed';
   createdAt: string;
@@ -11,7 +11,11 @@ export interface Book {
 
 export const BOOK_CATEGORIES = [
   'Fiction',
-  'Non-Fiction',
+  'Science',
+  'Psychology',
+  'Education',
+  'Politics',
+  'Literature',
   'Self-help',
   'Technical',
   'Finance',
@@ -27,7 +31,9 @@ export interface LogBookEntry {
   id: string;
   title: string;
   author: string;
+  category?: string;
   status: 'Completed' | 'Reading' | 'Planned' | 'None';
+  originalQueueId?: string;
 }
 
 export interface MonthlyEntry {
@@ -43,7 +49,8 @@ export interface CompletedBook {
   id: string;
   name: string;
   author: string;
-  language: 'English' | 'Hindi';
+  language: 'English' | 'Hindi' | 'Urdu' | 'Punjabi' | 'Sanskrit' | 'Other';
+  category: string;
   completionDate: string; // YYYY-MM-DD
   rating: number; // 1-5
   notes: string;

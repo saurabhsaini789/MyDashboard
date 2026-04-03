@@ -13,8 +13,10 @@ import {
   ThumbsDown,
   Globe,
   BookOpen,
-  User
+  User,
+  Tag
 } from 'lucide-react';
+import { BOOK_CATEGORIES } from '@/types/books';
 
 interface CompletedBookModalProps {
   book: CompletedBook;
@@ -32,6 +34,7 @@ export function CompletedBookModal({ book, onClose, onUpdateBook, onDeleteBook, 
   const [rating, setRating] = useState(book.rating);
   const [notes, setNotes] = useState(book.notes);
   const [wouldRecommend, setWouldRecommend] = useState(book.wouldRecommend);
+  const [category, setCategory] = useState(book.category || 'Self-help');
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +49,7 @@ export function CompletedBookModal({ book, onClose, onUpdateBook, onDeleteBook, 
       rating,
       notes: notes.trim(),
       wouldRecommend,
+      category,
     });
     onClose();
   };
@@ -141,6 +145,23 @@ export function CompletedBookModal({ book, onClose, onUpdateBook, onDeleteBook, 
                     className="w-full bg-zinc-50 dark:bg-zinc-900/50 border-2 border-zinc-100 dark:border-zinc-800 rounded-2xl pl-12 pr-4 py-3.5 text-zinc-900 dark:text-white focus:outline-none focus:border-teal-500/50 focus:ring-4 focus:ring-teal-500/5 transition-all font-bold"
                     required
                   />
+                </div>
+              </div>
+
+              {/* Category */}
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase font-black text-zinc-400 tracking-[0.2em] ml-1">Category</label>
+                <div className="relative">
+                  <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full bg-zinc-50 dark:bg-zinc-900/50 border-2 border-zinc-100 dark:border-zinc-800 rounded-2xl pl-12 pr-4 py-3.5 text-zinc-900 dark:text-white focus:outline-none focus:border-teal-500/50 focus:ring-4 focus:ring-teal-500/5 transition-all font-bold appearance-none"
+                  >
+                    {BOOK_CATEGORIES.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>

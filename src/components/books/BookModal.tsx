@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import type { Book } from '@/types/books';
 import { BOOK_CATEGORIES } from '@/types/books';
-import { X, Save, Trash2, Globe, BookOpen, Clock, CheckCircle2, User } from 'lucide-react';
+import { X, Save, Trash2, Globe, BookOpen, Clock, CheckCircle2, User, Hash } from 'lucide-react';
 
 interface BookModalProps {
   book: Book;
@@ -19,6 +19,7 @@ export function BookModal({ book, onClose, onUpdateBook, onDeleteBook, mode = 'e
   const [language, setLanguage] = useState<Book['language']>(book.language);
   const [category, setCategory] = useState(book.category);
   const [status, setStatus] = useState<Book['status']>(book.status);
+  const [order, setOrder] = useState<number>(book.order);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +32,7 @@ export function BookModal({ book, onClose, onUpdateBook, onDeleteBook, mode = 'e
       language,
       category,
       status,
+      order,
     });
     onClose();
   };
@@ -92,7 +94,7 @@ export function BookModal({ book, onClose, onUpdateBook, onDeleteBook, mode = 'e
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Language */}
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Language</label>
@@ -105,6 +107,10 @@ export function BookModal({ book, onClose, onUpdateBook, onDeleteBook, mode = 'e
                   >
                     <option value="English">English</option>
                     <option value="Hindi">Hindi</option>
+                    <option value="Urdu">Urdu</option>
+                    <option value="Punjabi">Punjabi</option>
+                    <option value="Sanskrit">Sanskrit</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
               </div>
@@ -125,6 +131,23 @@ export function BookModal({ book, onClose, onUpdateBook, onDeleteBook, mode = 'e
                     <option value="Reading">Reading</option>
                     <option value="Completed">Completed</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Priority */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Priority</label>
+                <div className="relative">
+                  <Hash className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="Order"
+                    value={order}
+                    onChange={(e) => setOrder(parseInt(e.target.value) || 0)}
+                    className="w-full bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl pl-10 pr-4 py-2.5 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 font-medium"
+                    required
+                  />
                 </div>
               </div>
             </div>

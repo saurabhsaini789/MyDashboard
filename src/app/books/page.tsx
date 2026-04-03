@@ -22,15 +22,16 @@ export default function BooksPage() {
     setPromotedBook(book);
   };
 
-  const handleLogPromote = (name: string, author: string, language: 'English' | 'Hindi') => {
-    const dummyBook: Book = {
-      id: `log-${crypto.randomUUID()}`,
+  const handleLogPromote = (logBook: any, language: 'English' | 'Hindi') => {
+    const dummyBook: any = {
+      id: logBook.id,
       order: 0,
-      name,
-      author,
+      name: logBook.title,
+      author: logBook.author,
       language,
-      category: 'Other',
+      category: logBook.category || 'Other',
       status: 'Completed',
+      originalQueueId: logBook.originalQueueId,
       createdAt: new Date().toISOString()
     };
     setPromotedBook(dummyBook);
@@ -49,12 +50,15 @@ export default function BooksPage() {
     setSyncedItem('os_books_completed', JSON.stringify(completedBooks));
 
     // 2. Remove from Queue (only if it came from the queue)
-    if (promotedBook && !promotedBook.id.startsWith('log-')) {
+    // 2. Remove from Queue (if it has an originalQueueId or its own ID is in queue)
+    const queueToRemoveFromId = (promotedBook as any)?.originalQueueId || promotedBook?.id;
+    
+    if (queueToRemoveFromId && !queueToRemoveFromId.toString().startsWith('log-')) {
       const storedQueue = localStorage.getItem(getPrefixedKey('os_books_queue'));
       if (storedQueue) {
         try {
           const queue: Book[] = JSON.parse(storedQueue);
-          const updatedQueue = queue.filter(b => b.id !== promotedBook?.id);
+          const updatedQueue = queue.filter(b => b.id !== queueToRemoveFromId);
           // Re-index
           const reindexed = updatedQueue.map((b, i) => ({ ...b, order: i + 1 }));
           setSyncedItem('os_books_queue', JSON.stringify(reindexed));
@@ -132,6 +136,7 @@ export default function BooksPage() {
             name: promotedBook.name,
             author: promotedBook.author,
             language: promotedBook.language,
+            category: promotedBook.category,
             completionDate: new Date().toISOString().split('T')[0],
             rating: 5,
             notes: '',

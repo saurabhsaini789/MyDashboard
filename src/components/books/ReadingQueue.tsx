@@ -1,32 +1,14 @@
 "use client";
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  DndContext, 
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  useSortable
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { 
-  GripVertical, 
   Plus, 
   Search, 
   Languages, 
   Tag, 
   Clock,
   CheckCircle2,
-  Book as BookIcon
+  Book as BookIcon,
+  Hash
 } from 'lucide-react';
 
 import { Book } from '@/types/books';
@@ -34,30 +16,14 @@ import { BookModal } from './BookModal';
 import { setSyncedItem } from '@/lib/storage';
 import { getPrefixedKey } from '@/lib/keys';
 
-// --- Sortable Item Component ---
+// --- Book Item Component ---
 
-interface SortableItemProps {
+interface BookItemProps {
   book: Book;
   onEdit: (book: Book) => void;
 }
 
-function SortableItem({ book, onEdit }: SortableItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging
-  } = useSortable({ id: book.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 50 : 'auto',
-    opacity: isDragging ? 0.5 : 1,
-  };
-
+function BookItem({ book, onEdit }: BookItemProps) {
   const getStatusStyle = (status: Book['status']) => {
     switch (status) {
       case 'Planned': return 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-500/20';
@@ -78,42 +44,32 @@ function SortableItem({ book, onEdit }: SortableItemProps) {
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      className={`group flex items-center gap-4 p-4 mb-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl transition-all ${
-        isDragging ? 'shadow-2xl border-teal-500/50 scale-[1.02]' : 'hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-700'
-      }`}
+      className="group flex items-center gap-4 p-4 mb-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl transition-all hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-700 pointer-events-auto cursor-pointer"
+      onClick={() => onEdit(book)}
     >
-      {/* Drag Handle */}
-      <div 
-        {...attributes} 
-        {...listeners}
-        className="cursor-grab active:cursor-grabbing p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
-      >
-        <GripVertical size={20} />
+      {/* Priority Number */}
+      <div className="flex-shrink-0 w-10 h-10 flex flex-col items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded-xl text-zinc-500 dark:text-zinc-400 group-hover:bg-teal-50 dark:group-hover:bg-teal-500/10 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+        <span className="text-[10px] font-bold uppercase opacity-50 mb-0.5">Pos</span>
+        <span className="text-sm font-black leading-none">{book.order}</span>
       </div>
 
-      {/* Order Number */}
-      <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded-lg text-sm font-bold text-zinc-500 dark:text-zinc-400">
-        {book.order}
-      </div>
-
-      {/* Name & Details */}
-      <div className="flex-1 min-w-0 pointer-events-auto" onClick={() => onEdit(book)}>
-        <h4 className="font-bold text-zinc-900 dark:text-white truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors cursor-pointer">
+      {/* Name & Details - Single Line Layout */}
+      <div className="flex-1 min-w-0 flex items-center gap-4">
+        <h4 className="text-base font-bold text-zinc-900 dark:text-white truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors shrink-0 max-w-[40%]">
           {book.name}
         </h4>
-        <div className="flex flex-wrap items-center gap-3 mt-1.5">
-          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+        
+        <div className="flex items-center gap-4 border-l-2 border-zinc-100 dark:border-zinc-800/50 pl-4 overflow-x-auto no-scrollbar">
+          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
             {book.author || 'Unknown Author'}
           </span>
-          <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-zinc-400 tracking-wider">
-            <Languages size={10} />
+          <span className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-zinc-400 tracking-wider whitespace-nowrap">
+            <Languages size={12} className="text-zinc-300 dark:text-zinc-700" />
             {book.language}
           </span>
           {book.category && (
-            <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-zinc-400 tracking-wider">
-              <Tag size={10} />
+            <span className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-zinc-400 tracking-wider whitespace-nowrap">
+              <Tag size={12} className="text-zinc-300 dark:text-zinc-700" />
               {book.category}
             </span>
           )}
@@ -146,17 +102,6 @@ export function ReadingQueue({ onPromote }: ReadingQueueProps) {
   useEffect(() => {
     booksRef.current = books;
   }, [books]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   // Load data
   useEffect(() => {
@@ -196,29 +141,12 @@ export function ReadingQueue({ onPromote }: ReadingQueueProps) {
     }
   }, [books, isLoaded]);
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      setBooks((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        
-        const newArray = arrayMove(items, oldIndex, newIndex);
-        
-        return newArray.map((book, index) => ({
-          ...book,
-          order: index + 1
-        }));
-      });
-    }
-  };
-
   const handleAddBook = (newBook: Book) => {
     const bookWithId = {
       ...newBook,
       id: crypto.randomUUID(),
-      order: books.length + 1,
+      // Use provided order if it's not the default or if we want to honor it
+      order: newBook.order || (books.length + 1),
       createdAt: new Date().toISOString()
     };
     setBooks([...books, bookWithId]);
@@ -233,15 +161,19 @@ export function ReadingQueue({ onPromote }: ReadingQueueProps) {
   };
 
   const handleDeleteBook = (id: string) => {
-    const remaining = books.filter(b => b.id !== id);
-    setBooks(remaining.map((b, i) => ({ ...b, order: i + 1 })));
+    setBooks(books.filter(b => b.id !== id));
   };
 
-  const filteredBooks = books.filter(b => 
-    b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (b.author || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (b.category && b.category.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const sortedAndFilteredBooks = useMemo(() => {
+    return [...books]
+      .filter(b => 
+        b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (b.author || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (b.category && b.category.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        b.language.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+  }, [books, searchQuery]);
 
   if (!isLoaded) return <div className="h-40 animate-pulse bg-zinc-100 dark:bg-zinc-800 rounded-3xl" />;
 
@@ -253,7 +185,7 @@ export function ReadingQueue({ onPromote }: ReadingQueueProps) {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
           <input
             type="text"
-            placeholder="Search books, authors or categories..."
+            placeholder="Search books, authors, categories or languages..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl pl-11 pr-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/50 shadow-sm transition-all"
@@ -268,50 +200,63 @@ export function ReadingQueue({ onPromote }: ReadingQueueProps) {
         </button>
       </div>
 
-      {/* Queue List */}
-      {books.length === 0 ? (
-        <div className="text-center py-20 bg-white dark:bg-zinc-900 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl flex flex-col items-center gap-4">
-          <div className="w-16 h-16 bg-zinc-50 dark:bg-zinc-800/50 rounded-full flex items-center justify-center text-zinc-400">
-            <BookIcon size={32} />
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-zinc-900 dark:text-white">Your queue is empty</h3>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-xs mx-auto">
-              Start your intentional reading journey by adding books you plan to read.
-            </p>
-          </div>
-          <button
-            onClick={() => setIsAdding(true)}
-            className="mt-2 text-sm font-bold text-teal-600 dark:text-teal-400 hover:underline"
-          >
-            Add your first book
-          </button>
-        </div>
-      ) : (
-        <DndContext 
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext 
-            items={books.map(b => b.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="fade-in">
-              {filteredBooks.map((book) => (
-                <SortableItem 
-                  key={book.id} 
-                  book={book} 
-                  onEdit={setSelectedBook}
-                />
-              ))}
-              {filteredBooks.length === 0 && (
-                <p className="text-center py-10 text-zinc-500 italic">No books match your search.</p>
-              )}
+      {/* Queue List Container with Scrolling */}
+      <div className="relative">
+        {books.length === 0 ? (
+          <div className="text-center py-20 bg-white dark:bg-zinc-900 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl flex flex-col items-center gap-4">
+            <div className="w-16 h-16 bg-zinc-50 dark:bg-zinc-800/50 rounded-full flex items-center justify-center text-zinc-400">
+              <BookIcon size={32} />
             </div>
-          </SortableContext>
-        </DndContext>
-      )}
+            <div>
+              <h3 className="text-xl font-bold text-zinc-900 dark:text-white">Your queue is empty</h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-xs mx-auto">
+                Start your intentional reading journey by adding books you plan to read.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsAdding(true)}
+              className="mt-2 text-sm font-bold text-teal-600 dark:text-teal-400 hover:underline"
+            >
+              Add your first book
+            </button>
+          </div>
+        ) : (
+          <div className="max-h-[600px] overflow-y-auto pr-2 custom-scrollbar fade-in">
+            {sortedAndFilteredBooks.map((book) => (
+              <BookItem 
+                key={book.id} 
+                book={book} 
+                onEdit={setSelectedBook}
+              />
+            ))}
+            {sortedAndFilteredBooks.length === 0 && (
+              <p className="text-center py-10 text-zinc-500 italic">No books match your search.</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #e4e4e7;
+          border-radius: 10px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #27272a;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #d4d4d8;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #3f3f46;
+        }
+      `}</style>
 
       {/* Modals */}
       {(selectedBook || isAdding) && (
