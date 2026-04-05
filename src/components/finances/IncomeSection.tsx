@@ -78,8 +78,6 @@ export function IncomeSection() {
   }, []);
 
   useEffect(() => {
-    if (!isLoaded) return;
-
     const handleLocal = (e: any) => {
       if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_INCOME) {
         const val = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_INCOME));
@@ -97,13 +95,9 @@ export function IncomeSection() {
     };
     window.addEventListener('local-storage-change', handleLocal);
     return () => window.removeEventListener('local-storage-change', handleLocal);
-  }, [isLoaded]);
+  }, []);
 
-  useEffect(() => {
-    if (isLoaded) {
-      setSyncedItem(SYNC_KEYS.FINANCES_INCOME, JSON.stringify(records));
-    }
-  }, [records, isLoaded]);
+
 
 
   const openAddModal = () => {
@@ -201,9 +195,13 @@ export function IncomeSection() {
     updateAssetContribution(newRecord.id, newRecord.assetId, newRecord.amount,  newRecord.date);
 
     if (editingRecord) {
-      setRecords(records.map(r => r.id === editingRecord.id ? newRecord : r));
+      const updated = records.map(r => r.id === editingRecord.id ? newRecord : r);
+      setRecords(updated);
+      setSyncedItem(SYNC_KEYS.FINANCES_INCOME, JSON.stringify(updated));
     } else {
-      setRecords([newRecord, ...records]);
+      const updated = [newRecord, ...records];
+      setRecords(updated);
+      setSyncedItem(SYNC_KEYS.FINANCES_INCOME, JSON.stringify(updated));
     }
     setIsModalOpen(false);
   };
@@ -212,7 +210,9 @@ export function IncomeSection() {
     // Update Asset Sync: Remove contribution
     updateAssetContribution(id, undefined, 0, '', true);
     
-    setRecords(records.filter(r => r.id !== id));
+    const updated = records.filter(r => r.id !== id);
+    setRecords(updated);
+    setSyncedItem(SYNC_KEYS.FINANCES_INCOME, JSON.stringify(updated));
     if (editingRecord?.id === id) setIsModalOpen(false);
   };
 

@@ -150,4 +150,93 @@ export const updateRecipientFromExpense = (expenseId: string, paidToType: string
     }
   }
 };
+/**
+ * Updates asset contributions based on an income record.
+ */
+export const updateAssetFromIncome = (incomeId: string, assetId: string | undefined, amount: number, date: string, isDelete = false) => {
+  if (typeof window === 'undefined') return;
+  const savedAssets = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_ASSETS));
+  if (!savedAssets) return;
+
+  try {
+    let assetsList: Asset[] = JSON.parse(savedAssets);
+    let changed = false;
+
+    // 1. Remove old contribution from any asset that might have it
+    assetsList = assetsList.map((asset) => {
+      const initialLen = asset.contributions.length;
+      asset.contributions = asset.contributions.filter((c) => c.id !== `income-${incomeId}`);
+      if (asset.contributions.length !== initialLen) {
+          changed = true;
+          asset.lastUpdated = new Date().toISOString().split('T')[0];
+      }
+      return asset;
+    });
+
+    // 2. Add new positive contribution if not deleting and assetId is present
+    if (!isDelete && assetId) {
+      const targetAsset = assetsList.find((a) => a.id === assetId);
+      if (targetAsset) {
+        targetAsset.contributions.unshift({
+          id: `income-${incomeId}`,
+          date: date,
+          amount: amount
+        });
+        targetAsset.lastUpdated = new Date().toISOString().split('T')[0];
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      setSyncedItem(SYNC_KEYS.FINANCES_ASSETS, JSON.stringify(assetsList));
+    }
+  } catch (e) {
+    console.error("Failed to update asset contributions from income", e);
+  }
+};
+
+/**
+ * Updates liability balance and logs based on an expense.
+ */
+export const updateLiabilityFromExpense = (expenseId: string, liabilityId: string | undefined, amount: number, date: string, isDelete = false) => {
+  if (typeof window === 'undefined') return;
+  const saved = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_LIABILITIES));
+  if (!saved) return;
+
+  try {
+    let liabilities: Liability[] = JSON.parse(saved);
+    let changed = false;
+
+    liabilities = liabilities.map((l) => {
+      const initialLen = l.paymentLogs.length;
+      l.paymentLogs = l.paymentLogs.filter((p) => p.id !== `expense-${expenseId}`);
+      if (l.paymentLogs.length !== initialLen) {
+        changed = true;
+      }
+      
+      if (!isDelete && l.id === liabilityId) {
+        l.remainingBalance = Math.max(0, l.remainingBalance - amount);
+        l.paymentLogs.unshift({
+          id: `expense-${expenseId}`,
+          date,
+          amount,
+          type: 'Prepayment' 
+        });
+        l.lastUpdated = new Date().toISOString().split('T')[0];
+        changed = true;
+      } else if (isDelete && l.id === liabilityId) {
+          l.remainingBalance += amount;
+          l.lastUpdated = new Date().toISOString().split('T')[0];
+          changed = true;
+      }
+      return l;
+    });
+
+    if (changed) {
+      setSyncedItem(SYNC_KEYS.FINANCES_LIABILITIES, JSON.stringify(liabilities));
+    }
+  } catch (e) {
+    console.error("Failed to update liability from expense", e);
+  }
+};
 

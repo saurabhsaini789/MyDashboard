@@ -80,8 +80,6 @@ export function ExpenseSection() {
   }, []); // Run only once
 
   useEffect(() => {
-    if (!isLoaded) return;
-    
     const handleLocal = (e: any) => {
       if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_EXPENSES) {
         const val = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_EXPENSES));
@@ -113,11 +111,7 @@ export function ExpenseSection() {
     return () => window.removeEventListener('local-storage-change', handleLocal);
   }, []);
 
-  useEffect(() => {
-    if (isLoaded) {
-      setSyncedItem(SYNC_KEYS.FINANCES_EXPENSES, JSON.stringify(records));
-    }
-  }, [records, isLoaded]);
+
 
 
   const openAddModal = () => {
@@ -303,9 +297,13 @@ export function ExpenseSection() {
     updateRecipientContribution(newRecord.id, newRecord.paidToType, newRecord.paidToId, newRecord.amount,  newRecord.date);
 
     if (editingRecord) {
-      setRecords(records.map(r => r.id === editingRecord.id ? newRecord : r));
+      const updated = records.map(r => r.id === editingRecord.id ? newRecord : r);
+      setRecords(updated);
+      setSyncedItem(SYNC_KEYS.FINANCES_EXPENSES, JSON.stringify(updated));
     } else {
-      setRecords([newRecord, ...records]);
+      const updated = [newRecord, ...records];
+      setRecords(updated);
+      setSyncedItem(SYNC_KEYS.FINANCES_EXPENSES, JSON.stringify(updated));
     }
     setIsModalOpen(false);
   };
@@ -317,7 +315,9 @@ export function ExpenseSection() {
     // Update Recipient Sync: Remove positive contribution
     updateRecipientContribution(id, '', undefined, 0, '', true);
 
-    setRecords(records.filter(r => r.id !== id));
+    const updated = records.filter(r => r.id !== id);
+    setRecords(updated);
+    setSyncedItem(SYNC_KEYS.FINANCES_EXPENSES, JSON.stringify(updated));
     if (editingRecord?.id === id) setIsModalOpen(false);
   };
 

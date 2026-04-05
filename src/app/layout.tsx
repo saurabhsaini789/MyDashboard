@@ -26,6 +26,7 @@ import { SyncProvider } from "@/context/SyncContext";
 import { FloatingNavbar } from "@/components/FloatingNavbar";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { AIAssistant } from "@/components/AIAssistant";
 
 export default function RootLayout({
   children,
@@ -52,6 +53,7 @@ export default function RootLayout({
                 {children}
               </div>
               <FloatingNavbar />
+              <AIAssistant />
               
               <footer className="w-full flex justify-center pb-40 pt-8 border-t border-zinc-200/50 dark:border-zinc-800/50 mt-auto">
                 <ThemeToggle />

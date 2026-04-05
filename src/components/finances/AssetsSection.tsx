@@ -83,7 +83,7 @@ export function AssetsSection() {
     const handleLocal = (e: any) => {
       if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_ASSETS) {
         const val = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_ASSETS));
-        if (val && val !== JSON.stringify(assetsRef.current)) {
+        if (val) {
           try { 
             const parsed = JSON.parse(val);
              const migrated = parsed.map((a: any) => ({
@@ -93,21 +93,19 @@ export function AssetsSection() {
                 contributions: a.contributions || [],
                 growthRate: a.growthRate ?? 0
               }));
-            setAssets(migrated); 
+            // Update state ONLY if it actually differs from current ref to prevent infinite loops
+            if (val !== JSON.stringify(assetsRef.current)) {
+                setAssets(migrated); 
+            }
           } catch (e) {}
         }
       }
-      
     };
     window.addEventListener('local-storage-change', handleLocal);
     return () => window.removeEventListener('local-storage-change', handleLocal);
   }, []);
 
-  useEffect(() => {
-    if (isLoaded) {
-      setSyncedItem(SYNC_KEYS.FINANCES_ASSETS, JSON.stringify(assets));
-    }
-  }, [assets, isLoaded]);
+
 
 
   const openAddModal = () => {
@@ -154,17 +152,24 @@ export function AssetsSection() {
     };
 
     if (editingAsset) {
-      setAssets(assets.map(a => a.id === editingAsset.id ? newAsset : a));
+      const updated = assets.map(a => a.id === editingAsset.id ? newAsset : a);
+      setAssets(updated);
+      setSyncedItem(SYNC_KEYS.FINANCES_ASSETS, JSON.stringify(updated));
     } else {
-      setAssets([...assets, newAsset]);
+      const updated = [...assets, newAsset];
+      setAssets(updated);
+      setSyncedItem(SYNC_KEYS.FINANCES_ASSETS, JSON.stringify(updated));
     }
     setIsModalOpen(false);
   };
 
   const deleteAsset = (id: string) => {
-    setAssets(assets.filter(a => a.id !== id));
+    const updated = assets.filter(a => a.id !== id);
+    setAssets(updated);
+    setSyncedItem(SYNC_KEYS.FINANCES_ASSETS, JSON.stringify(updated));
     if (editingAsset?.id === id) setIsModalOpen(false);
   };
+
 
   const handleContribSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,11 +183,13 @@ export function AssetsSection() {
       
     };
 
-    setAssets(assets.map(a => 
+    const updated = assets.map(a => 
       a.id === activeAssetId 
         ? { ...a, contributions: [newContrib, ...(a.contributions || [])], lastUpdated: new Date().toISOString().split('T')[0] } 
         : a
-    ));
+    );
+    setAssets(updated);
+    setSyncedItem(SYNC_KEYS.FINANCES_ASSETS, JSON.stringify(updated));
     setIsContribModalOpen(false);
     setContribAmount('');
   };
@@ -192,11 +199,13 @@ export function AssetsSection() {
     const rate = parseFloat(rateValue);
     if (isNaN(rate) || !activeAssetId) return;
 
-    setAssets(assets.map(a => 
+    const updated = assets.map(a => 
       a.id === activeAssetId 
         ? { ...a, growthRate: rate, lastUpdated: new Date().toISOString().split('T')[0] } 
         : a
-    ));
+    );
+    setAssets(updated);
+    setSyncedItem(SYNC_KEYS.FINANCES_ASSETS, JSON.stringify(updated));
     setIsRateModalOpen(false);
     setRateValue('');
   };

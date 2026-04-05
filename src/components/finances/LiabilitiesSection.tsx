@@ -101,8 +101,6 @@ export function LiabilitiesSection() {
       setMonthlyIncome(6200); // Mock fallback
     }
 
-    setIsLoaded(true);
-
     const handleLocal = (e: any) => {
       if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_LIABILITIES) {
         const val = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_LIABILITIES));
@@ -110,17 +108,14 @@ export function LiabilitiesSection() {
           try { setLiabilities(JSON.parse(val)); } catch (e) {}
         }
       }
-      
     };
     window.addEventListener('local-storage-change', handleLocal);
+    setIsLoaded(true);
     return () => window.removeEventListener('local-storage-change', handleLocal);
   }, []);
 
-  useEffect(() => {
-    if (isLoaded) {
-      setSyncedItem(SYNC_KEYS.FINANCES_LIABILITIES, JSON.stringify(liabilities));
-    }
-  }, [liabilities, isLoaded]);
+
+
 
 
   const openAddModal = () => {
@@ -176,17 +171,25 @@ export function LiabilitiesSection() {
     };
 
     if (editingLiability) {
-      setLiabilities(liabilities.map(l => l.id === editingLiability.id ? newLiability : l));
+      const updated = liabilities.map(l => l.id === editingLiability.id ? newLiability : l);
+      setLiabilities(updated);
+      setSyncedItem(SYNC_KEYS.FINANCES_LIABILITIES, JSON.stringify(updated));
     } else {
-      setLiabilities([...liabilities, newLiability]);
+      const updated = [...liabilities, newLiability];
+      setLiabilities(updated);
+      setSyncedItem(SYNC_KEYS.FINANCES_LIABILITIES, JSON.stringify(updated));
     }
     setIsModalOpen(false);
   };
 
+
   const deleteLiability = (id: string) => {
-    setLiabilities(liabilities.filter(l => l.id !== id));
+    const updated = liabilities.filter(l => l.id !== id);
+    setLiabilities(updated);
+    setSyncedItem(SYNC_KEYS.FINANCES_LIABILITIES, JSON.stringify(updated));
     setIsModalOpen(false);
   };
+
 
   const handleRepaySubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,7 +204,7 @@ export function LiabilitiesSection() {
       type: repayType
     };
 
-    setLiabilities(liabilities.map(l => {
+    const updated = liabilities.map(l => {
       if (l.id === activeLiabilityId) {
         const newBalance = Math.max(0, l.remainingBalance - amount);
         return {
@@ -212,10 +215,13 @@ export function LiabilitiesSection() {
         };
       }
       return l;
-    }));
+    });
+    setLiabilities(updated);
+    setSyncedItem(SYNC_KEYS.FINANCES_LIABILITIES, JSON.stringify(updated));
     setIsRepayModalOpen(false);
     setRepayAmount('');
   };
+
 
   // Prepayment Simulation Logic
   const calculateSim = (liability: Liability, extra: number) => {
