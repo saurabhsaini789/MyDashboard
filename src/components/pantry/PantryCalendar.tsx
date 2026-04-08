@@ -16,6 +16,9 @@ export function PantryCalendar({ records, onUpdateRecords, viewingDate, setViewi
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<ExpenseRecord | null>(null);
+  const [preferredTab, setPreferredTab] = useState<'list' | 'form' | undefined>(undefined);
+  const [isMobilePopupOpen, setIsMobilePopupOpen] = useState(false);
+  const [popupDateStr, setPopupDateStr] = useState<string | null>(null);
 
   const month = viewingDate.getMonth();
   const year = viewingDate.getFullYear();
@@ -59,8 +62,17 @@ export function PantryCalendar({ records, onUpdateRecords, viewingDate, setViewi
 
   const handleDateClick = (dateStr: string) => {
     setSelectedDate(dateStr);
-    setEditingRecord(null);
-    setIsModalOpen(true);
+    
+    // On mobile, show the lightweight details popup first
+    if (window.innerWidth < 768) {
+      setPopupDateStr(dateStr);
+      setIsMobilePopupOpen(true);
+    } else {
+      // On desktop, directly open the entry modal
+      setEditingRecord(null);
+      setPreferredTab(undefined);
+      setIsModalOpen(true);
+    }
   };
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -76,39 +88,43 @@ export function PantryCalendar({ records, onUpdateRecords, viewingDate, setViewi
   return (
     <div className="flex flex-col gap-8 w-full">
       {/* Monthly Summary */}
-      <div className="flex items-center justify-between px-6 py-8 bg-zinc-900 dark:bg-zinc-800 rounded-[40px] text-white shadow-2xl">
-        <div className="flex flex-col gap-1">
-          <span className="text-xs uppercase tracking-[0.3em] opacity-60">Monthly Spend</span>
-          <span className="text-4xl font-bold tracking-tighter">
+      <div className="flex flex-row items-center justify-between px-4 md:px-10 py-6 md:py-10 bg-zinc-900 dark:bg-zinc-800 rounded-[32px] md:rounded-[40px] text-white shadow-2xl relative overflow-hidden">
+        <div className="flex flex-col items-start gap-1">
+          <span className="text-[10px] md:text-xs uppercase tracking-[0.3em] opacity-60">Monthly Spend</span>
+          <span className="text-4xl md:text-5xl font-black tracking-tighter">
             ${monthlyTotal.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
           </span>
         </div>
-        <div className="flex items-center gap-4">
-          <button onClick={prevMonth} className="p-3 hover:bg-white/10 rounded-2xl transition-all">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+        
+        <div className="flex items-center gap-3 md:gap-4">
+          <button onClick={prevMonth} className="p-2 md:p-3 hover:bg-white/10 rounded-xl md:rounded-2xl transition-all">
+            <svg className="w-4 h-4 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" /></svg>
           </button>
           <div className="flex flex-col items-center">
-             <span className="text-sm font-bold uppercase tracking-widest">
-                {new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(viewingDate)}
+             <span className="text-[10px] md:text-sm font-black uppercase tracking-widest text-teal-400 leading-none">
+                {new Intl.DateTimeFormat('en-US', { month: 'short' }).format(viewingDate)}
+             </span>
+             <span className="text-[8px] md:text-[11px] font-bold opacity-40 uppercase tracking-[0.1em] mt-0.5 md:mt-1">
+                {viewingDate.getFullYear()}
              </span>
           </div>
-          <button onClick={nextMonth} className="p-3 hover:bg-white/10 rounded-2xl transition-all">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+          <button onClick={nextMonth} className="p-2 md:p-3 hover:bg-white/10 rounded-xl md:rounded-2xl transition-all">
+            <svg className="w-4 h-4 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
           </button>
         </div>
       </div>
 
       {/* Calendar Grid */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-[40px] p-6 md:p-10 shadow-xl overflow-hidden">
-        <div className="grid grid-cols-7 gap-2 md:gap-4">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-[30px] md:rounded-[40px] p-4 md:p-10 shadow-xl overflow-hidden">
+        <div className="grid grid-cols-7 gap-1 md:gap-4">
           {dayNames.map(day => (
-            <div key={day} className="text-center text-[10px] uppercase tracking-[0.3em] text-zinc-400 py-4">
+            <div key={day} className="text-center text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] text-zinc-400 py-2 md:py-4">
               {day}
             </div>
           ))}
 
           {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-            <div key={`empty-${i}`} className="h-24 md:h-32 rounded-3xl" />
+            <div key={`empty-${i}`} className="h-10 md:h-32 rounded-xl md:rounded-3xl" />
           ))}
 
           {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -123,17 +139,17 @@ export function PantryCalendar({ records, onUpdateRecords, viewingDate, setViewi
               <div 
                 key={day}
                 onClick={() => handleDateClick(dateStr)}
-                className={`group relative h-24 md:h-32 rounded-3xl border transition-all cursor-pointer hover:shadow-lg hover:-translate-y-1 flex flex-col p-3 md:p-4 overflow-hidden
+                className={`group relative h-10 md:h-32 rounded-xl md:rounded-3xl border transition-all cursor-pointer hover:shadow-lg hover:-translate-y-1 flex flex-col p-1 md:p-4 overflow-hidden
                   ${totalOnDay > 0 ? getDayColor(totalOnDay) : 'border-zinc-50 dark:border-zinc-800/50 hover:border-zinc-200 dark:hover:border-zinc-700'}
                   ${isToday ? 'ring-2 ring-zinc-900 dark:ring-zinc-100' : ''}
                 `}
               >
-                <div className="flex justify-between items-start">
-                  <span className={`text-sm font-bold ${totalOnDay > 0 ? '' : 'text-zinc-600 dark:text-zinc-400'}`}>
+                <div className="flex justify-center md:justify-between items-center md:items-start">
+                  <span className={`text-xs md:text-sm ${totalOnDay > 0 ? 'font-black text-zinc-900 dark:text-zinc-100' : 'font-medium text-zinc-400 dark:text-zinc-600'}`}>
                     {day}
                   </span>
                   {totalOnDay > 0 && (
-                    <div className="flex flex-col items-end">
+                    <div className="hidden md:flex flex-col items-end">
                       <span className="text-[10px] md:text-xs font-bold tracking-tight">
                         ${totalOnDay.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
                       </span>
@@ -141,7 +157,7 @@ export function PantryCalendar({ records, onUpdateRecords, viewingDate, setViewi
                   )}
                 </div>
 
-                <div className="mt-2 flex flex-col gap-1 overflow-hidden">
+                <div className="mt-2 hidden md:flex flex-col gap-1 overflow-hidden">
                    {recordsOnDay.slice(0, 2).map((r, idx) => (
                      <div key={idx} className="text-[10px] truncate uppercase tracking-tighter text-zinc-500">
                         {r.vendor ? `${r.vendor}${r.entryType === 'Bill' ? ' Bill' : ''}` : (r.subcategory || r.category)}
@@ -152,13 +168,13 @@ export function PantryCalendar({ records, onUpdateRecords, viewingDate, setViewi
                    )}
                 </div>
                 
-                {/* Plus Icon on Hover as explicit trigger */}
+                {/* Plus Icon on Hover as explicit trigger - Desktop only */}
                 <div 
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDateClick(dateStr);
                   }}
-                  className="absolute bottom-2 right-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all hover:scale-110 active:scale-90"
+                  className="absolute bottom-2 right-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all hover:scale-110 active:scale-90 hidden md:block"
                 >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
                 </div>
@@ -173,10 +189,86 @@ export function PantryCalendar({ records, onUpdateRecords, viewingDate, setViewi
           isOpen={isModalOpen}
           date={selectedDate}
           recordsOnDate={selectedDate ? recordsByDate[selectedDate] || [] : []}
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingRecord(null);
+            setPreferredTab(undefined);
+          }}
           onUpdateRecords={onUpdateRecords}
           allRecords={records}
+          initialRecord={editingRecord}
+          initialTab={preferredTab}
         />
+      )}
+
+      {/* Mobile Details Popover */}
+      {isMobilePopupOpen && popupDateStr && (
+        <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 md:p-4 bg-zinc-950/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div onClick={() => setIsMobilePopupOpen(false)} className="absolute inset-0" />
+          <div className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-t-[32px] md:rounded-[32px] p-6 shadow-2xl animate-in slide-in-from-bottom-10 md:zoom-in duration-300">
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex flex-col">
+                   <span className="text-xs uppercase tracking-[0.2em] text-zinc-400 font-bold">Details for</span>
+                   <span className="text-lg font-black text-zinc-900 dark:text-white uppercase tracking-tight">
+                      {new Date(popupDateStr).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                   </span>
+                </div>
+                <button onClick={() => setIsMobilePopupOpen(false)} className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-full">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto pr-1">
+                 {recordsByDate[popupDateStr]?.length > 0 ? (
+                   recordsByDate[popupDateStr].map(record => (
+                     <div 
+                        key={record.id} 
+                        onClick={() => {
+                          setEditingRecord(record);
+                          setPreferredTab('form');
+                          setIsMobilePopupOpen(false);
+                          setIsModalOpen(true);
+                        }}
+                        className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 active:scale-[0.98] transition-all cursor-pointer"
+                     >
+                        <div className="flex items-center gap-4">
+                           <div className="w-10 h-10 rounded-xl bg-zinc-900 dark:bg-white flex items-center justify-center text-white dark:text-zinc-900 text-xs font-black">
+                              {record.category.charAt(0)}
+                           </div>
+                           <div className="flex flex-col">
+                              <span className="text-sm font-bold text-zinc-900 dark:text-white">{record.vendor || record.subcategory}</span>
+                              <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">{record.category}</span>
+                           </div>
+                        </div>
+                        <div className="flex flex-col items-end">
+                           <span className="text-lg font-black text-zinc-900 dark:text-white">${record.amount.toLocaleString('en-CA', { maximumFractionDigits: 0 })}</span>
+                           <span className={`text-[10px] uppercase font-black ${record.type === 'need' ? 'text-emerald-500' : 'text-amber-500'}`}>{record.type}</span>
+                        </div>
+                     </div>
+                   ))
+                 ) : (
+                   <div className="py-12 flex flex-col items-center opacity-30 gap-3">
+                      <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-3-3v6m9-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      <span className="text-xs uppercase tracking-widest font-bold">No records found</span>
+                   </div>
+                 )}
+              </div>
+
+              <div className="mt-8 flex gap-3">
+                 <button 
+                  onClick={() => {
+                    setEditingRecord(null);
+                    setPreferredTab('form');
+                    setIsMobilePopupOpen(false);
+                    setIsModalOpen(true);
+                  }}
+                  className="flex-1 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl active:scale-95 transition-all"
+                 >
+                    Add New Entry
+                 </button>
+              </div>
+          </div>
+        </div>
       )}
     </div>
   );

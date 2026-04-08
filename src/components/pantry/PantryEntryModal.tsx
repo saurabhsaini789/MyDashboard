@@ -12,17 +12,18 @@ interface PantryEntryModalProps {
   date: string | null;
   recordsOnDate: ExpenseRecord[];
   onClose: () => void;
-  onUpdateRecords: (records: ExpenseRecord[]) => void;
   allRecords: ExpenseRecord[];
+  initialRecord?: ExpenseRecord | null;
+  initialTab?: 'list' | 'form';
 }
 
 const CATEGORIES: ExpenseCategory[] = ['Grocery', 'Clothing', 'Transport', 'Dining', 'Bills', 'Other'];
 const PAYMENT_METHODS: PaymentMethod[] = ['Cash', 'Debit Card', 'Credit Card', 'UPI / Wallet', 'Bank Transfer'];
 const PAID_FROM_OPTIONS = ['Cash Wallet', 'Bank Account', 'Credit Card'];
 
-export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdateRecords, allRecords }: PantryEntryModalProps) {
-  const [activeTab, setActiveTab] = useState<'list' | 'form'>('list');
-  const [editingRecord, setEditingRecord] = useState<ExpenseRecord | null>(null);
+export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdateRecords, allRecords, initialRecord, initialTab }: PantryEntryModalProps) {
+  const [activeTab, setActiveTab] = useState<'list' | 'form'>(initialTab || (initialRecord ? 'form' : 'list'));
+  const [editingRecord, setEditingRecord] = useState<ExpenseRecord | null>(initialRecord || null);
   
   // Date overriding within modal
   const [internalDate, setInternalDate] = useState(date || new Date().toISOString().split('T')[0]);
@@ -63,13 +64,46 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
   const [assets, setAssets] = useState<Asset[]>([]);
 
   useEffect(() => {
-    if (recordsOnDate.length === 0) setActiveTab('form');
+    if (initialRecord) {
+       startEdit(initialRecord);
+    } else if (initialTab === 'form' || recordsOnDate.length === 0) {
+       setActiveTab('form');
+       resetForm();
+    } else {
+       setActiveTab('list');
+    }
     
     const savedAssets = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_ASSETS));
     if (savedAssets) {
       try { setAssets(JSON.parse(savedAssets)); } catch (e) {}
     }
-  }, [recordsOnDate]);
+  }, [recordsOnDate, initialRecord]);
+
+  const resetForm = () => {
+    setEditingRecord(null);
+    setVendor('');
+    setPaidFromId('');
+    setNotes('');
+    setItems([]);
+    setSgst('');
+    setCgst('');
+    setSingleItem({
+      name: '',
+      price: '',
+      quantity: '',
+      brand: '',
+      notes: '',
+      itemType: '',
+      color: '',
+      size: '',
+      person: '',
+      quality: '',
+      transportType: 'Ride',
+      occasion: '',
+      peopleCount: 1,
+      billType: ''
+    });
+  };
 
   // Load editing record
   const startEdit = (record: ExpenseRecord) => {

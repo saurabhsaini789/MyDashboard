@@ -264,23 +264,23 @@ export function GroceryPlan({ records, viewingDate }: GroceryPlanProps) {
     <div className="flex flex-col gap-6 animate-in fade-in duration-700 delay-100">
       
       {/* Header & Metrics */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 p-6 md:p-8 bg-zinc-900 dark:bg-zinc-800 rounded-[40px] text-white shadow-xl relative overflow-hidden">
+      <div className="flex flex-col md:flex-row justify-between items-center md:items-center gap-6 p-6 md:p-8 bg-zinc-900 dark:bg-zinc-800 rounded-[32px] md:rounded-[40px] text-white shadow-xl relative overflow-hidden">
          <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/20 rounded-full blur-3xl -mr-10 -mt-20 pointer-events-none" />
          
-         <div className="flex flex-col gap-2 relative z-10">
-            <h2 className="text-2xl font-bold uppercase tracking-[0.2em]">Monthly Grocery Plan</h2>
-            <p className="text-sm text-zinc-400 font-medium max-w-sm">Compact table tracking for planned food budget vs actual spending.</p>
+         <div className="flex flex-col gap-1 relative z-10 w-full md:w-auto text-center md:text-left">
+            <h2 className="text-sm md:text-xl lg:text-2xl font-black uppercase tracking-[0.2em] whitespace-nowrap">Monthly Grocery Plan</h2>
+            <p className="hidden md:block text-sm text-zinc-400 font-medium max-w-sm">Compact table tracking for planned food budget vs actual spending.</p>
          </div>
 
-         <div className="flex gap-4 md:gap-8 relative z-10">
-            <div className="flex flex-col items-start md:items-end">
+         <div className="flex w-full md:w-auto gap-0 md:gap-8 relative z-10">
+            <div className="flex-1 flex flex-col items-center md:items-end gap-1 md:gap-0">
                <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Planned Cost</span>
                <span className="text-2xl md:text-3xl font-bold tracking-tight">
                   ${plannedTotalCAD.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
                </span>
             </div>
-            <div className="w-px h-12 bg-zinc-800 hidden md:block" />
-            <div className="flex flex-col items-start md:items-end">
+            <div className="w-px h-10 bg-zinc-800/50 md:block hidden mx-4" />
+            <div className="flex-1 flex flex-col items-center md:items-end gap-1 md:gap-0">
                <span className="text-xs uppercase tracking-widest text-teal-500/80 font-bold">Projected</span>
                <span className="text-2xl md:text-3xl font-bold tracking-tight text-teal-400">
                   ${projectedTotalCAD.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
@@ -433,116 +433,206 @@ export function GroceryPlan({ records, viewingDate }: GroceryPlanProps) {
             </div>
          )}
 
-         {/* Compact Grouped Table */}
-         <div className="overflow-x-auto overflow-y-auto max-h-[800px] border border-zinc-100 dark:border-zinc-800 rounded-3xl custom-scrollbar relative">
-            <table className="w-full text-left border-collapse min-w-[800px]">
-               <thead className="bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur-md sticky top-0 z-20 shadow-sm border-b border-zinc-100 dark:border-zinc-800">
-                  <tr>
-                     <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Grocery Item</th>
-                     <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Freq & Size</th>
-                     <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Est. Price ea</th>
-                     <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-zinc-400 w-48">Tracker Progress</th>
-                     <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-zinc-400 text-right">Total Est.</th>
-                     <th className="p-4"></th>
-                  </tr>
-               </thead>
-               <tbody>
-                  {Object.entries(groupedItems).map(([categoryName, catItems]) => {
-                     if (catItems.length === 0) return null;
-                     return (
-                        <React.Fragment key={categoryName}>
-                           {/* Category Header Row */}
-                           <tr className="bg-zinc-100/50 dark:bg-zinc-800/30 border-b border-zinc-100 dark:border-zinc-800">
-                              <td colSpan={6} className="px-5 py-3 text-xs font-bold uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-300">
-                                 {categoryName}
-                              </td>
-                           </tr>
-                           
-                           {/* Items */}
+         {/* Scrollable Content Container */}
+         <div className="overflow-y-auto max-h-[500px] md:max-h-[600px] pr-2 -mr-2 custom-scrollbar flex flex-col gap-8">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto border border-zinc-100 dark:border-zinc-800 rounded-3xl relative">
+               <table className="w-full text-left border-collapse min-w-[800px]">
+                  <thead className="bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur-md sticky top-0 z-20 shadow-sm border-b border-zinc-100 dark:border-zinc-800">
+                     <tr>
+                        <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Grocery Item</th>
+                        <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Freq & Size</th>
+                        <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Est. Price ea</th>
+                        <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-zinc-400 w-48">Tracker Progress</th>
+                        <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-zinc-400 text-right">Total Est.</th>
+                        <th className="p-4"></th>
+                     </tr>
+                  </thead>
+                  <tbody>
+                     {Object.entries(groupedItems).map(([categoryName, catItems]) => {
+                        if (catItems.length === 0) return null;
+                        return (
+                           <React.Fragment key={categoryName}>
+                              {/* Category Header Row */}
+                              <tr className="bg-zinc-100/50 dark:bg-zinc-800/30 border-b border-zinc-100 dark:border-zinc-800">
+                                 <td colSpan={6} className="px-5 py-3 text-xs font-bold uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-300">
+                                    {categoryName}
+                                 </td>
+                              </tr>
+                              
+                              {/* Items */}
+                              {catItems.map((item) => {
+                                  const isSkipped = item.skippedMonths?.includes(currentMonthKey);
+                                  const loggedQty = loggedQuantitiesByName[item.name.toLowerCase()] || 0;
+                                  const isExceeded = loggedQty > item.plannedQuantity && !isSkipped;
+                                  
+                                  const localCost = item.expectedPrice * item.plannedQuantity;
+                                  
+                                  return (
+                                     <tr key={item.id} className={`group hover:bg-zinc-50 dark:hover:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800/50 transition-all ${isSkipped ? 'opacity-50 grayscale' : isExceeded ? 'bg-rose-50/30 dark:bg-rose-900/10' : ''}`}>
+                                        <td className="p-4 max-w-[200px]">
+                                           <div className="flex flex-col gap-0.5">
+                                              <span className={`font-bold text-sm truncate ${isSkipped ? 'line-through text-zinc-500' : 'text-zinc-900 dark:text-zinc-100'}`}>{item.name}</span>
+                                              {item.consumptionDays ? <span className="text-[10px] text-teal-600 dark:text-teal-400 font-medium truncate">Consumes in {item.consumptionDays} days</span> : <span className="text-[10px] text-zinc-400 font-medium">No limit</span>}
+                                           </div>
+                                        </td>
+                                        <td className="p-4">
+                                           <div className="flex flex-col gap-0.5">
+                                              <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{item.plannedQuantity} × {item.unitSize || '1 Unit'}</span>
+                                              <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-400">{item.frequency}</span>
+                                           </div>
+                                        </td>
+                                        <td className="p-4 text-xs font-bold text-zinc-600 dark:text-zinc-400">
+                                           {"$"}{item.expectedPrice.toLocaleString("en-CA")}
+                                        </td>
+                                   <td className="p-4">
+                                           {isSkipped ? (
+                                              <span className="text-[10px] font-bold uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-lg text-zinc-500">Skipped for {viewingDate.toLocaleString('default', { month: 'short' })}</span>
+                                           ) : (
+                                              <div className="flex flex-wrap gap-1.5 items-center">
+                                                 <span className={`text-[10px] font-bold w-6 mr-1 ${isExceeded ? 'text-rose-500' : 'text-zinc-400'}`}>
+                                                    {loggedQty} / {item.plannedQuantity}
+                                                 </span>
+                                                 {Array.from({ length: Math.ceil(item.plannedQuantity) }).map((_, i) => {
+                                                    const autoFilled = loggedQty > i;
+                                                    const status = (item.checkedUnits || [])[i] || 'pending';
+                                                    const isBought = status === 'bought' || autoFilled;
+                                                    const isSkippedUnit = status === 'skipped';
+    
+                                                    return (
+                                                       <button 
+                                                          key={i} type="button" 
+                                                          onClick={() => toggleCheckboxGrid(item.id, i)}
+                                                          className={`w-5 h-5 rounded flex items-center justify-center transition-all 
+                                                             ${isBought ? (autoFilled ? 'bg-teal-500 shadow text-white' : 'bg-zinc-800 text-white shadow-sm') : 
+                                                               isSkippedUnit ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-500 border border-rose-200 dark:border-rose-800' :
+                                                               'bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200/50 dark:border-zinc-700/50'}`}
+                                                       >
+                                                          {isBought && <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                                          {isSkippedUnit && <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>}
+                                                       </button>
+                                                    );
+                                                 })}
+                                              </div>
+                                           )}
+                                        </td>
+                                        <td className="p-4 text-right">
+                                           <div className="flex flex-col items-end gap-0.5">
+                                              <span className={`text-sm font-bold tracking-tight ${isSkipped ? 'text-zinc-400 line-through' : 'text-zinc-900 dark:text-white'}`}>
+                                                     ${localCost.toLocaleString("en-CA", { maximumFractionDigits: 1 })}
+                                              </span>
+                                           </div>
+                                        </td>
+                                        <td className="p-4 text-right">
+                                           <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                              <button 
+                                                 onClick={() => handleEdit(item)}
+                                                 className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-900 dark:hover:bg-white hover:text-white dark:hover:text-zinc-900 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm"
+                                              >
+                                                 Edit Item
+                                              </button>
+                                           </div>
+                                        </td>
+                                     </tr>
+                                  );
+                               })}
+                           </React.Fragment>
+                        );
+                     })}
+                  </tbody>
+               </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden flex flex-col gap-6">
+               {Object.entries(groupedItems).map(([categoryName, catItems]) => {
+                  if (catItems.length === 0) return null;
+                  return (
+                     <div key={categoryName} className="flex flex-col gap-4">
+                        <div className="flex items-center gap-3 px-2">
+                           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">{categoryName}</span>
+                           <div className="flex-1 h-px bg-zinc-100 dark:bg-zinc-800" />
+                        </div>
+                        <div className="grid gap-4">
                            {catItems.map((item) => {
                               const isSkipped = item.skippedMonths?.includes(currentMonthKey);
                               const loggedQty = loggedQuantitiesByName[item.name.toLowerCase()] || 0;
                               const isExceeded = loggedQty > item.plannedQuantity && !isSkipped;
-                              
                               const localCost = item.expectedPrice * item.plannedQuantity;
-                              
-                              const progressPct = Math.min(100, (loggedQty / item.plannedQuantity) * 100);
 
                               return (
-                                 <tr key={item.id} className={`group hover:bg-zinc-50 dark:hover:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800/50 transition-all ${isSkipped ? 'opacity-50 grayscale' : isExceeded ? 'bg-rose-50/30 dark:bg-rose-900/10' : ''}`}>
-                                    <td className="p-4 max-w-[200px]">
-                                       <div className="flex flex-col gap-0.5">
-                                          <span className={`font-bold text-sm truncate ${isSkipped ? 'line-through text-zinc-500' : 'text-zinc-900 dark:text-zinc-100'}`}>{item.name}</span>
-                                          {item.consumptionDays ? <span className="text-[10px] text-teal-600 dark:text-teal-400 font-medium truncate">Consumes in {item.consumptionDays} days</span> : <span className="text-[10px] text-zinc-400 font-medium">No limit</span>}
+                                 <div 
+                                    key={item.id} 
+                                    className={`p-5 rounded-3xl border transition-all flex flex-col gap-4 shadow-sm ${isSkipped ? 'opacity-50 grayscale bg-zinc-50 dark:bg-zinc-900/40 border-zinc-100 dark:border-zinc-800' : isExceeded ? 'bg-rose-50/50 dark:bg-rose-900/10 border-rose-100 dark:border-rose-900/30' : 'bg-white dark:bg-zinc-900 border-zinc-100 dark:border-zinc-800'}`}
+                                 >
+                                    <div className="flex justify-between items-start">
+                                       <div className="flex flex-col gap-1">
+                                          <span className={`text-base font-black tracking-tight ${isSkipped ? 'line-through text-zinc-400' : 'text-zinc-900 dark:text-white'}`}>
+                                             {item.name}
+                                          </span>
+                                          <div className="flex items-center gap-2">
+                                             <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                                                {item.plannedQuantity} × {item.unitSize || 'Unit'} • {item.frequency}
+                                             </span>
+                                          </div>
                                        </div>
-                                    </td>
-                                    <td className="p-4">
-                                       <div className="flex flex-col gap-0.5">
-                                          <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{item.plannedQuantity} × {item.unitSize || '1 Unit'}</span>
-                                          <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-400">{item.frequency}</span>
+                                       <div className="flex flex-col items-end">
+                                          <span className="text-lg font-black tracking-tighter text-teal-600 dark:text-teal-400">
+                                             ${localCost.toLocaleString("en-CA", { maximumFractionDigits: 1 })}
+                                          </span>
+                                          <span className="text-[8px] font-bold uppercase tracking-widest text-zinc-400">Total Est.</span>
                                        </div>
-                                    </td>
-                                    <td className="p-4 text-xs font-bold text-zinc-600 dark:text-zinc-400">
-                                       {"$"}{item.expectedPrice.toLocaleString("en-CA")}
-                                    </td>
-                               <td className="p-4">
-                                       {isSkipped ? (
-                                          <span className="text-[10px] font-bold uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-lg text-zinc-500">Skipped for {viewingDate.toLocaleString('default', { month: 'short' })}</span>
-                                       ) : (
-                                          <div className="flex flex-wrap gap-1.5 items-center">
-                                             <span className={`text-[10px] font-bold w-6 mr-1 ${isExceeded ? 'text-rose-500' : 'text-zinc-400'}`}>
+                                    </div>
+
+                                    {!isSkipped && (
+                                       <div className="bg-zinc-50/50 dark:bg-zinc-800/20 p-4 rounded-2xl flex flex-col gap-3">
+                                          <div className="flex justify-between items-center">
+                                             <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Tracker Progress</span>
+                                             <span className={`text-[10px] font-bold ${isExceeded ? 'text-rose-500' : 'text-teal-500'}`}>
                                                 {loggedQty} / {item.plannedQuantity}
                                              </span>
+                                          </div>
+                                          <div className="flex flex-wrap gap-2">
                                              {Array.from({ length: Math.ceil(item.plannedQuantity) }).map((_, i) => {
                                                 const autoFilled = loggedQty > i;
-                                                const unitStatuses = item.checkedUnits || [];
-                                                const status = unitStatuses[i] || 'pending';
-                                                
+                                                const status = (item.checkedUnits || [])[i] || 'pending';
                                                 const isBought = status === 'bought' || autoFilled;
                                                 const isSkippedUnit = status === 'skipped';
-
+                                                
                                                 return (
                                                    <button 
-                                                      key={i} type="button" 
+                                                      key={i} 
                                                       onClick={() => toggleCheckboxGrid(item.id, i)}
-                                                      className={`w-5 h-5 rounded flex items-center justify-center transition-all 
-                                                         ${isBought ? (autoFilled ? 'bg-teal-500 shadow text-white' : 'bg-zinc-800 text-white shadow-sm') : 
-                                                           isSkippedUnit ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-500 border border-rose-200 dark:border-rose-800' :
-                                                           'bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200/50 dark:border-zinc-700/50'}`}
+                                                      className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${isBought ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-md scale-105' : isSkippedUnit ? 'bg-rose-100 dark:bg-rose-950/30 text-rose-500 border border-rose-200 dark:border-rose-900' : 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800'}`}
                                                    >
-                                                      {isBought && <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                                                      {isSkippedUnit && <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>}
+                                                      {isBought && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                                      {isSkippedUnit && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>}
                                                    </button>
                                                 );
                                              })}
                                           </div>
-                                       )}
-                                    </td>
-                                    <td className="p-4 text-right">
-                                       <div className="flex flex-col items-end gap-0.5">
-                                          <span className={`text-sm font-bold tracking-tight ${isSkipped ? 'text-zinc-400 line-through' : 'text-zinc-900 dark:text-white'}`}>
-                                                 ${localCost.toLocaleString("en-CA", { maximumFractionDigits: 1 })}
-                                          </span>
                                        </div>
-                                    </td>
-                                    <td className="p-4 text-right">
-                                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                          <button 
-                                             onClick={() => handleEdit(item)}
-                                             className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-900 dark:hover:bg-white hover:text-white dark:hover:text-zinc-900 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm"
-                                          >
-                                             Edit Item
-                                          </button>
-                                       </div>
-                                    </td>
-                                 </tr>
+                                    )}
+
+                                    <div className="flex justify-between items-center pt-2">
+                                       {item.consumptionDays ? (
+                                          <span className="text-[10px] text-teal-600 dark:text-teal-400 font-bold uppercase tracking-wide italic">Consumes in {item.consumptionDays} days</span>
+                                       ) : <div />}
+                                       <button 
+                                          onClick={() => handleEdit(item)}
+                                          className="px-6 py-2.5 bg-zinc-100 dark:bg-zinc-800 active:bg-zinc-200 dark:active:bg-zinc-700 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-300 transition-all border border-zinc-200/50 dark:border-zinc-700/50"
+                                       >
+                                          Edit
+                                       </button>
+                                    </div>
+                                 </div>
                               );
                            })}
-                        </React.Fragment>
-                     );
-                  })}
-               </tbody>
-            </table>
+                        </div>
+                     </div>
+                  );
+               })}
+            </div>
          </div>
       </div>
     </div>
