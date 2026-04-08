@@ -12,6 +12,7 @@ interface PantryEntryModalProps {
   date: string | null;
   recordsOnDate: ExpenseRecord[];
   onClose: () => void;
+  onUpdateRecords: (records: ExpenseRecord[]) => void;
   allRecords: ExpenseRecord[];
   initialRecord?: ExpenseRecord | null;
   initialTab?: 'list' | 'form';
