@@ -125,6 +125,83 @@ class OneNoteService {
             return response;
         }
     }
+
+    async getNotebooks() {
+        const client = await this.getClient();
+        // Including shared notebooks directly in the URL and reducing payload for speed
+        const notebooks = await client.api("/me/onenote/notebooks?includeSharedNotebooks=true")
+            .select("id,displayName,lastModifiedDateTime")
+            .orderby("displayName")
+            .get();
+        return notebooks.value;
+    }
+
+    async getSections(notebookId: string) {
+        const client = await this.getClient();
+        const sections = await client.api(`/me/onenote/notebooks/${notebookId}/sections`)
+            .select("id,displayName")
+            .orderby("displayName")
+            .get();
+        return sections.value;
+    }
+
+    async getPages(sectionId: string) {
+        const client = await this.getClient();
+        const pages = await client.api(`/me/onenote/sections/${sectionId}/pages`)
+            .select("id,title,lastModifiedDateTime")
+            .orderby("lastModifiedDateTime desc")
+            .get();
+        return pages.value;
+    }
+
+    async createPage(sectionId: string, title: string, content: string) {
+        const client = await this.getClient();
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        const pageHtml = `
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <title>${title}</title>
+                    <meta name="created" content="${new Date().toISOString()}" />
+                </head>
+                <body>
+                    <h2 style="color: #0d9488; font-size: 18pt;">${title}</h2>
+                    <h3 style="color: #0d9488; font-size: 14pt; margin-top: 10pt;">Entry at ${timestamp}</h3>
+                    ${content}
+                </body>
+            </html>
+        `;
+
+        const response = await client.api(`/me/onenote/sections/${sectionId}/pages`)
+            .header("Content-Type", "text/html")
+            .post(pageHtml);
+
+        return response;
+    }
+
+    async appendContent(pageId: string, content: string) {
+        const client = await this.getClient();
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        const patchCommands = [
+            {
+                target: "body",
+                action: "append",
+                position: "after",
+                content: `
+                    <hr />
+                    <h3 style="color: #0d9488; font-size: 14pt; margin-top: 20pt;">New Entry at ${timestamp}</h3>
+                    ${content}
+                `
+            }
+        ];
+
+        await client.api(`/me/onenote/pages/${pageId}/content`)
+            .patch(patchCommands);
+        
+        return { id: pageId };
+    }
 }
 
 export const onenoteService = new OneNoteService();

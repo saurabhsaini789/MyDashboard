@@ -10,7 +10,8 @@ import {
   ShoppingBasket,
   BookMarked,
   Rocket,
-  ChevronUp
+  ChevronUp,
+  FileText
 } from 'lucide-react';
 
 export function FloatingNavbar() {
@@ -66,6 +67,7 @@ export function FloatingNavbar() {
     { name: 'Finances', href: '/finances', icon: CircleDollarSign },
     { name: 'Businesses', href: '/businesses', icon: Rocket },
     { name: 'Expenses', href: '/pantry', icon: ShoppingBasket },
+    { name: 'OneNote', href: '/onenote', icon: FileText },
   ];
 
 
@@ -78,7 +80,7 @@ export function FloatingNavbar() {
 
   return (
     <div 
-      className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[999] transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${
+      className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[999] w-max max-w-[92vw] transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${
         isVisible && !isModalOpen 
           ? 'opacity-100 translate-y-0 scale-100' 
           : 'opacity-0 translate-y-12 scale-90 pointer-events-none'
@@ -114,10 +116,10 @@ export function FloatingNavbar() {
         })}
 
         {/* Scroll to Top Button */}
-        <div className="w-px h-6 bg-zinc-200/50 dark:bg-zinc-800/50 mx-0.5" />
+        <div className="hidden sm:block w-px h-6 bg-zinc-200/50 dark:bg-zinc-800/50 mx-0.5" />
         <button
           onClick={scrollToTop}
-          className="flex items-center justify-center p-2.5 rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-300 group"
+          className="hidden sm:flex items-center justify-center p-2.5 rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-300 group"
           aria-label="Scroll to top"
         >
           <ChevronUp size={22} className="group-hover:-translate-y-1 transition-transform duration-300" />
