@@ -10,7 +10,7 @@ export function useSync() {
   const [session, setSession] = useState<any>(null);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error' | 'unauthenticated' | 'connected' | 'initializing' | 'local'>('initializing');
   const isSyncingFromRemote = useRef(false);
-  const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const isDevelopment = process.env.NODE_ENV === 'development' || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
 
   // Diagnostic Log (Runs once)
   useEffect(() => {
@@ -53,8 +53,8 @@ export function useSync() {
       return;
     }
 
-    if (isLocalhost) {
-      console.log(`[Sync] Localhost: Skipping push for ${key} to protect cloud data.`);
+    if (isDevelopment) {
+      console.log(`[Sync] Development: Skipping push for ${key} to protect cloud data.`);
       setSyncStatus('local');
       setTimeout(() => setSyncStatus('idle'), 2000);
       return;
@@ -126,22 +126,26 @@ export function useSync() {
         }
       }
       
-      const { data: remoteData, error } = session 
-        ? await supabase.from('dashboard_data').select('*')
-        : { data: null, error: null };
+      // 1. Pull from Supabase (Skipped in development)
+      let projectRemoteData: any[] = [];
+      if (session && !isDevelopment) {
+        const { data: remoteData, error } = await supabase.from('dashboard_data').select('*');
 
-      if (error) {
-        console.error('[Sync] Error loading initial cloud data:', error.message || error);
-        setSyncStatus('error');
-        setIsReady(true);
-        return;
+        if (error) {
+          console.error('[Sync] Error loading initial cloud data:', error.message || error);
+          setSyncStatus('error');
+          setIsReady(true);
+          return;
+        }
+
+        // Filter for keys that belong to this project
+        const projectID = process.env.NEXT_PUBLIC_DASHBOARD_ID;
+        projectRemoteData = remoteData?.filter(r => 
+          projectID ? r.key.startsWith(`${projectID}:`) : !r.key.includes(':')
+        ) || [];
+      } else if (isDevelopment) {
+        console.log('[Sync] Development mode: Skipping initial cloud pull.');
       }
-
-      // Filter for keys that belong to this project
-      const projectID = process.env.NEXT_PUBLIC_DASHBOARD_ID;
-      const projectRemoteData = remoteData?.filter(r => 
-        projectID ? r.key.startsWith(`${projectID}:`) : !r.key.includes(':')
-      ) || [];
 
       const remoteKeysMap = new Map(projectRemoteData.map(r => [r.key, r.value]));
 
@@ -167,8 +171,8 @@ export function useSync() {
         console.log(`[Sync] Synchronized ${projectRemoteData.length} records from Supabase.`);
       }
 
-      // b) Push local data that isn't on remote yet (Migration)
-      if (session && !isLocalhost) {
+      // c) Push local data that isn't on remote yet (Migration) (Skipped in development)
+      if (session && !isDevelopment) {
         for (const baseKey of ALL_SYNC_KEYS) {
           const prefixedKey = getPrefixedKey(baseKey);
           if (!remoteKeysMap.has(prefixedKey)) {
@@ -179,8 +183,8 @@ export function useSync() {
             }
           }
         }
-      } else if (session && isLocalhost) {
-        console.log('[Sync] Localhost detected: Initial push/migrations skipped to protect cloud data.');
+      } else if (session && isDevelopment) {
+        console.log('[Sync] Development mode: Initial push/migrations skipped.');
       }
 
       setIsReady(true);
@@ -226,7 +230,7 @@ export function useSync() {
 
   // --- 4. Listen for Remote Changes (Realtime) ---
   useEffect(() => {
-    if (!session) return;
+    if (!session || isDevelopment) return;
 
     const channel = supabase
       .channel('dashboard-changes')
@@ -283,5 +287,5 @@ export function useSync() {
     };
   }, [session]);
 
-  return { isReady, syncStatus, isLocalhost };
+  return { isReady, syncStatus, isDevelopment };
 }

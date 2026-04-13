@@ -8,6 +8,9 @@ import type { IncomeRecord } from '@/types/finance';
 import { IncomeMetrics } from './IncomeMetrics';
 import { MultiSelectDropdown } from '../ui/MultiSelectDropdown';
 import { MONTHS, YEARS } from '@/lib/constants';
+import { Modal } from '../ui/Modal';
+import { DynamicForm, FormSchemaSection, FormSchemaField } from '../ui/DynamicForm';
+import { FormField } from '../ui/FormField';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 
 export type IncomeSource = IncomeRecord['source'];
@@ -331,131 +334,108 @@ export function IncomeSection() {
           </div>
       </div>
 
-      {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[40px] w-full max-w-xl shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300">
-            <div className="p-10">
-              <div className="flex justify-between items-center mb-10">
-                <h3 className="text-3xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter">
-                  {editingRecord ? 'Edit Income' : 'Add Income'}
-                </h3>
-                <button onClick={() => setIsModalOpen(false)} className="text-zinc-600 hover:text-zinc-900 dark:hover:text-white transition-colors">
-                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Source</label>
-                        <select 
-                            value={formData.source} 
-                            onChange={e => setFormData({...formData, source: e.target.value as IncomeSource})}
-                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all appearance-none"
-                        >
-                            {SOURCES.map(source => (
-                                <option key={source} value={source}>{source.charAt(0).toUpperCase() + source.slice(1)}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Type</label>
-                        <select 
-                            value={formData.type} 
-                            onChange={e => setFormData({...formData, type: e.target.value as IncomeType})}
-                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all appearance-none"
-                        >
-                            {TYPES.map(type => (
-                                <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-
-                {formData.source === 'other' && (
-                    <div className="flex flex-col gap-2">
-                        <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Specify Custom Source</label>
-                        <input 
-                            type="text" value={formData.customSource} 
-                            onChange={e => setFormData({...formData, customSource: e.target.value})} 
-                            placeholder="e.g. Sold old bicycle..."
-                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all" 
-                        />
-                    </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="flex flex-col gap-2 md:col-span-2">
-                        <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Amount ($)</label>
-                        <div className="relative">
-                            <input 
-                                required type="number" step="0.01" value={formData.amount} 
-                                onChange={e => setFormData({...formData, amount: e.target.value})} 
-                                placeholder="0.00"
-                                className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" 
-                            />
-                        </div>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Date</label>
-                        <input 
-                            required type="date" value={formData.date} 
-                            onChange={e => setFormData({...formData, date: e.target.value})} 
-                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all h-[60px]" 
-                        />
-                    </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                    <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Deposit to Bank Account (Optional)</label>
+      {/* Schema-Driven Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingRecord ? 'Edit Income' : 'Add Income'}
+        onSubmit={handleSubmit}
+        submitText={editingRecord ? 'Update Record' : 'Save Record'}
+        accentColor="emerald"
+      >
+        <DynamicForm
+          sections={[
+            {
+              id: 'basic',
+              title: 'Income Basics',
+              fields: [
+                { 
+                  name: 'source', 
+                  label: 'Source', 
+                  type: 'select', 
+                  options: SOURCES.map(c => ({ label: c.charAt(0).toUpperCase() + c.slice(1), value: c }))
+                },
+                { 
+                  name: 'type', 
+                  label: 'Type', 
+                  type: 'select', 
+                  options: TYPES.map(t => ({ label: t.charAt(0).toUpperCase() + t.slice(1), value: t }))
+                },
+                ...(formData.source === 'other' ? [{
+                  name: 'customSource',
+                  label: 'Specify Custom Source',
+                  type: 'text' as const,
+                  fullWidth: true,
+                  placeholder: "e.g. Sold old bicycle..."
+                }] : []),
+              ]
+            },
+            {
+              id: 'amount_date',
+              title: 'Amount & Date',
+              fields: [
+                { name: 'amount', label: 'Amount ($)', type: 'number', required: true, step: "0.01", placeholder: "0.00", fullWidth: true },
+                { name: 'date', label: 'Date', type: 'date', required: true, fullWidth: true }
+              ]
+            },
+            {
+              id: 'accounts',
+              title: 'Accounts',
+              fields: [
+                {
+                  name: 'assetId',
+                  label: 'Deposit to Bank Account (Optional)',
+                  fullWidth: true,
+                  render: ({ name, value, onChange }) => (
                     <select 
-                        value={formData.assetId} 
-                        onChange={e => setFormData({...formData, assetId: e.target.value})}
-                        className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all appearance-none cursor-pointer"
+                      id="field-assetId"
+                      value={value} 
+                      onChange={e => onChange(name, e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                        <option value="">No linked account</option>
-                        {assets.filter(a => a.type === 'Bank Balance' || a.type === 'Cash').map(asset => (
+                      <option value="">No linked account</option>
+                      {assets.filter(a => a.type === 'Bank Balance' || a.type === 'Cash').map(asset => (
+                        <option key={asset.id} value={asset.id}>{asset.name}</option>
+                      ))}
+                      {assets.filter(a => a.type !== 'Bank Balance' && a.type !== 'Cash').length > 0 && (
+                        <optgroup label="Other Assets">
+                          {assets.filter(a => a.type !== 'Bank Balance' && a.type !== 'Cash').map(asset => (
                             <option key={asset.id} value={asset.id}>{asset.name}</option>
-                        ))}
-                        {assets.filter(a => a.type !== 'Bank Balance' && a.type !== 'Cash').length > 0 && (
-                            <optgroup label="Other Assets">
-                                {assets.filter(a => a.type !== 'Bank Balance' && a.type !== 'Cash').map(asset => (
-                                    <option key={asset.id} value={asset.id}>{asset.name}</option>
-                                ))}
-                            </optgroup>
-                        )}
+                          ))}
+                        </optgroup>
+                      )}
                     </select>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                    <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Quick Notes</label>
-                    <textarea 
-                        value={formData.notes} 
-                        onChange={e => setFormData({...formData, notes: e.target.value})} 
-                        placeholder="Any additional details or context..."
-                        className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all resize-none h-24" 
-                    />
-                </div>
-
-                <div className="flex gap-4 pt-6">
-                  {editingRecord && (
-                    <button type="button" onClick={() => deleteRecord(editingRecord.id)} className="px-6 py-4 rounded-2xl bg-rose-50 text-rose-500 text-xs uppercase hover:bg-rose-100 transition-all">
-                        Delete
-                    </button>
-                  )}
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-8 py-5 rounded-3xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 hover:text-zinc-900 transition-all">
-                    Cancel
-                  </button>
-                  <button type="submit" className="flex-1 px-8 py-5 rounded-3xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black hover:scale-105 transition-all uppercase tracking-widest text-xs">
-                    {editingRecord ? 'Update Record' : 'Save Record'}
-                  </button>
-                </div>
-              </form>
-            </div>
+                  )
+                }
+              ]
+            },
+            {
+              id: 'notes',
+              title: 'Additional Info',
+              isAdvanced: true,
+              fields: [
+                { name: 'notes', label: 'Quick Notes', type: 'textarea', fullWidth: true, placeholder: "Any additional details or context..." }
+              ]
+            }
+          ]}
+          formData={formData}
+          onChange={(name, value) => {
+            setFormData(prev => ({ ...prev, [name]: value }));
+          }}
+          accentColor="emerald"
+        />
+        {editingRecord && (
+          <div className="mt-4 flex justify-start w-full">
+            <button 
+              type="button" 
+              onClick={() => deleteRecord(editingRecord.id)} 
+              className="text-red-500 text-sm font-medium hover:text-red-600 transition-colors"
+            >
+              Delete Record
+            </button>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 }

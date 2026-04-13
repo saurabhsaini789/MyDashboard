@@ -242,7 +242,7 @@ export default function WardrobePage() {
             {filteredItems.map(item => (
               <div 
                 key={item.id} 
-                className={`p-4 rounded-xl border relative shadow-sm transition-all hover:shadow-md ${
+                className={`group p-4 rounded-xl border relative shadow-sm transition-all hover:shadow-md ${
                   item.status === 'Inactive' || item.status === 'Discarded'
                     ? 'bg-zinc-50/50 border-zinc-200/50 dark:bg-zinc-900/20 dark:border-zinc-800/50 opacity-70'
                     : 'bg-white border-zinc-200 dark:bg-zinc-900/60 dark:border-zinc-800'

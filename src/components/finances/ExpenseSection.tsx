@@ -7,6 +7,9 @@ import { calculateAssetBalance } from '@/lib/finances';
 import { ExpenseMetrics } from './ExpenseMetrics';
 import { MultiSelectDropdown } from '../ui/MultiSelectDropdown';
 import { MONTHS, YEARS } from '@/lib/constants';
+import { Modal } from '../ui/Modal';
+import { DynamicForm, FormSchemaSection, FormSchemaField } from '../ui/DynamicForm';
+import { FormField } from '../ui/FormField';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 import { ExpenseRecord, ExpenseCategory, ExpenseType } from '@/types/finance';
 
@@ -476,181 +479,153 @@ export function ExpenseSection() {
           </div>
       </div>
 
-      {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[40px] w-full max-w-xl shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300">
-            <div className="p-10">
-              <div className="flex justify-between items-center mb-10">
-                <h3 className="text-3xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter">
-                  {editingRecord ? 'Edit Expense' : 'Add Expense'}
-                </h3>
-                <button onClick={() => setIsModalOpen(false)} className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors">
-                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-2">
-                        <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Category</label>
-                        <select 
-                            value={formData.category} 
-                            onChange={e => setFormData({...formData, category: e.target.value as ExpenseCategory})}
-                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all appearance-none"
-                        >
-                            {CATEGORIES.map(category => (
-                                <option key={category} value={category}>{category.charAt(0).toUpperCase() + category.slice(1)}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Type</label>
-                        <select 
-                            value={formData.type} 
-                            onChange={e => setFormData({...formData, type: e.target.value as ExpenseType})}
-                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all appearance-none"
-                        >
-                            {TYPES.map(type => (
-                                <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                    <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">
-                        {formData.category === 'Other' ? 'Specify Category' : 'Subcategory'}
-                    </label>
-                    <input 
-                        type="text" value={formData.subcategory} 
-                        onChange={e => setFormData({...formData, subcategory: e.target.value})} 
-                        placeholder={formData.category === 'Other' ? "e.g. Pet supplies, Maintenance..." : "e.g. Groceries, Rent, Netflix..."}
-                        className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all" 
-                    />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="flex flex-col gap-2 md:col-span-2">
-                        <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Amount ($)</label>
-                        <div className="relative">
-                            <input 
-                                required type="number" step="0.01" value={formData.amount} 
-                                onChange={e => setFormData({...formData, amount: e.target.value})} 
-                                placeholder="0.00"
-                                className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" 
-                            />
-                        </div>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Date</label>
-                        <input 
-                            required type="date" value={formData.date} 
-                            onChange={e => setFormData({...formData, date: e.target.value})} 
-                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all h-[60px]" 
-                        />
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-2">
-                        <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Paid From (Source Account)</label>
-                        <select 
-                            value={formData.assetId} 
-                            onChange={e => setFormData({...formData, assetId: e.target.value})}
-                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all appearance-none cursor-pointer"
-                        >
-                            <option value="">No linked account</option>
-                            {assets.filter(a => a.type === 'Bank Balance' || a.type === 'Cash').map(asset => (
-                                <option key={asset.id} value={asset.id}>{asset.name}</option>
-                            ))}
-                            {assets.filter(a => a.type !== 'Bank Balance' && a.type !== 'Cash').length > 0 && (
-                                <optgroup label="Other Assets">
-                                    {assets.filter(a => a.type !== 'Bank Balance' && a.type !== 'Cash').map(asset => (
-                                        <option key={asset.id} value={asset.id}>{asset.name}</option>
-                                    ))}
-                                </optgroup>
-                            )}
-                        </select>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Paid To (Recipient)</label>
-                        <select 
-                            value={formData.paidToId ? `${formData.paidToType}:${formData.paidToId}` : formData.paidToType} 
-                            onChange={e => {
-                                const val = e.target.value;
-                                if (val.includes(':')) {
-                                    const [type, id] = val.split(':');
-                                    setFormData({...formData, paidToType: type as any, paidToId: id, paidToName: ''});
-                                } else {
-                                    setFormData({...formData, paidToType: val as any, paidToId: '', paidToName: ''});
-                                }
-                            }}
-                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all appearance-none cursor-pointer"
-                        >
-                            <option value="other">Other / Manual Entry</option>
-                            <option value="emergency">Emergency Fund</option>
-                            {savingsGoals.length > 0 && <optgroup label="Savings Goals">
-                                {savingsGoals.map(goal => (
-                                    <option key={goal.id} value={`savings:${goal.id}`}>Goal: {goal.name}</option>
-                                ))}
-                            </optgroup>}
-                            {assets.length > 0 && <optgroup label="Assets">
-                                {assets.map(asset => (
-                                    <option key={asset.id} value={`asset:${asset.id}`}>{asset.name}</option>
-                                ))}
-                            </optgroup>}
-                        </select>
-                    </div>
-                </div>
-
-                {formData.paidToType === 'other' ? (
-                    <div className="flex flex-col gap-2">
-                        <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Recipient Name</label>
-                        <input 
-                            type="text" value={formData.paidToName} 
-                            onChange={e => setFormData({...formData, paidToName: e.target.value})} 
-                            placeholder="e.g. Walmart, Tim Hortons, Netflix..."
-                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all" 
-                        />
-                    </div>
-                ) : formData.paidToType === 'savings' || formData.paidToType.startsWith('savings:') ? (
-                    /* The ID is already handled by the combined value in dropdown for simplicity, 
-                       but let's make it cleaner */
-                    null
-                ) : null}
-
-                {/* Helper to parse the combined value if needed, or just adjust the onChange */}
-                {/* I'll adjust the onChange in the next step if this gets complex, but for now let's refine the value handling */}
-
-                <div className="flex flex-col gap-2">
-                    <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Quick Notes</label>
-                    <textarea 
-                        value={formData.notes} 
-                        onChange={e => setFormData({...formData, notes: e.target.value})} 
-                        placeholder="Any additional details or context..."
-                        className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all resize-none h-24" 
-                    />
-                </div>
-
-                <div className="flex gap-4 pt-6">
-                  {editingRecord && (
-                    <button type="button" onClick={() => deleteRecord(editingRecord.id)} className="px-6 py-4 rounded-2xl bg-rose-50 text-rose-500 text-xs uppercase hover:bg-rose-100 transition-all">
-                        Delete
-                    </button>
-                  )}
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-8 py-5 rounded-3xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 hover:text-zinc-900 transition-all">
-                    Cancel
-                  </button>
-                  <button type="submit" className="flex-1 px-8 py-5 rounded-3xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black hover:scale-105 transition-all uppercase tracking-widest text-xs">
-                    {editingRecord ? 'Update Expense' : 'Save Expense'}
-                  </button>
-                </div>
-              </form>
-            </div>
+      {/* Schema-Driven Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingRecord ? 'Edit Expense' : 'Add Expense'}
+        onSubmit={handleSubmit}
+        submitText={editingRecord ? 'Update Expense' : 'Save Expense'}
+        accentColor="rose"
+      >
+        <DynamicForm
+          sections={[
+            {
+              id: 'basic',
+              title: 'Transaction Basics',
+              fields: [
+                { 
+                  name: 'category', 
+                  label: 'Category', 
+                  type: 'select', 
+                  options: CATEGORIES.map(c => ({ label: c.charAt(0).toUpperCase() + c.slice(1), value: c }))
+                },
+                { 
+                  name: 'type', 
+                  label: 'Type', 
+                  type: 'select', 
+                  options: TYPES.map(t => ({ label: t.charAt(0).toUpperCase() + t.slice(1), value: t }))
+                },
+                { 
+                  name: 'subcategory', 
+                  label: formData.category === 'Other' ? 'Specify Category' : 'Subcategory', 
+                  type: 'text', 
+                  fullWidth: true,
+                  placeholder: formData.category === 'Other' ? "e.g. Pet supplies, Maintenance..." : "e.g. Groceries, Rent, Netflix..."
+                },
+              ]
+            },
+            {
+              id: 'amount_date',
+              title: 'Amount & Date',
+              fields: [
+                { name: 'amount', label: 'Amount ($)', type: 'number', required: true, step: "0.01", placeholder: "0.00", fullWidth: true },
+                { name: 'date', label: 'Date', type: 'date', required: true, fullWidth: true }
+              ]
+            },
+            {
+              id: 'accounts',
+              title: 'Accounts',
+              fields: [
+                {
+                  name: 'assetId',
+                  label: 'Paid From (Source)',
+                  render: ({ name, value, onChange }) => (
+                    <select 
+                      id="field-assetId"
+                      value={value} 
+                      onChange={e => onChange(name, e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">No linked account</option>
+                      {assets.filter(a => a.type === 'Bank Balance' || a.type === 'Cash').map(asset => (
+                        <option key={asset.id} value={asset.id}>{asset.name}</option>
+                      ))}
+                      {assets.filter(a => a.type !== 'Bank Balance' && a.type !== 'Cash').length > 0 && (
+                        <optgroup label="Other Assets">
+                          {assets.filter(a => a.type !== 'Bank Balance' && a.type !== 'Cash').map(asset => (
+                            <option key={asset.id} value={asset.id}>{asset.name}</option>
+                          ))}
+                        </optgroup>
+                      )}
+                    </select>
+                  )
+                },
+                {
+                  name: 'paidToCombined',
+                  label: 'Paid To (Recipient)',
+                  render: ({ name, value, onChange }) => (
+                    <select 
+                      id="field-paidToCombined"
+                      value={value} 
+                      onChange={e => onChange(name, e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="other">Other / Manual Entry</option>
+                      <option value="emergency">Emergency Fund</option>
+                      {savingsGoals.length > 0 && <optgroup label="Savings Goals">
+                        {savingsGoals.map(goal => (
+                          <option key={goal.id} value={`savings:${goal.id}`}>Goal: {goal.name}</option>
+                        ))}
+                      </optgroup>}
+                      {assets.length > 0 && <optgroup label="Assets">
+                        {assets.map(asset => (
+                          <option key={asset.id} value={`asset:${asset.id}`}>{asset.name}</option>
+                        ))}
+                      </optgroup>}
+                    </select>
+                  )
+                },
+                ...(formData.paidToType === 'other' ? [{
+                  name: 'paidToName',
+                  label: 'Recipient Name',
+                  type: 'text' as const,
+                  fullWidth: true,
+                  placeholder: "e.g. Walmart, Tim Hortons..."
+                }] : [])
+              ]
+            },
+            {
+              id: 'notes',
+              title: 'Additional Info',
+              isAdvanced: true,
+              fields: [
+                { name: 'notes', label: 'Quick Notes', type: 'textarea', fullWidth: true, placeholder: "Any additional details or context..." }
+              ]
+            }
+          ]}
+          formData={{
+            ...formData,
+            paidToCombined: formData.paidToId ? `${formData.paidToType}:${formData.paidToId}` : formData.paidToType
+          }}
+          onChange={(name, value) => {
+            setFormData(prev => {
+              let updated = { ...prev, [name]: value };
+              if (name === 'paidToCombined') {
+                if (value.includes(':')) {
+                  const [type, id] = value.split(':');
+                  updated = { ...updated, paidToType: type as any, paidToId: id, paidToName: '' };
+                } else {
+                  updated = { ...updated, paidToType: value as any, paidToId: '', paidToName: '' };
+                }
+              }
+              return updated;
+            });
+          }}
+          accentColor="rose"
+        />
+        {editingRecord && (
+          <div className="mt-4 flex justify-start w-full">
+            <button 
+              type="button" 
+              onClick={() => deleteRecord(editingRecord.id)} 
+              className="text-red-500 text-sm font-medium hover:text-red-600 transition-colors"
+            >
+              Delete Expense
+            </button>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 }

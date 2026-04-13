@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { ExpenseRecord, ExpenseItem } from '@/types/finance';
+import { Modal } from '../ui/Modal';
 
 
 interface PriceIntelligenceProps {
@@ -322,21 +323,16 @@ export function PriceIntelligence({ records }: PriceIntelligenceProps) {
 
       {/* Pop-up Modal for Detailed Tracking */}
       {activeItemStats && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-zinc-950/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[40px] w-full max-w-2xl shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300 flex flex-col max-h-[85vh]">
-            <div className="p-8 pb-6 flex justify-between items-start border-b border-zinc-100 dark:border-zinc-800">
-               <div>
-                  <h3 className="text-3xl font-bold text-zinc-900 dark:text-white truncate">{activeItemStats.name}</h3>
-                  <p className="text-sm text-zinc-500 mt-2 font-medium">Detailed Price Tracking History</p>
-               </div>
-               <button onClick={() => setActiveItemStats(null)} className="p-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full text-zinc-500 transition-all">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-               </button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8">
+        <Modal
+          isOpen={!!activeItemStats}
+          onClose={() => setActiveItemStats(null)}
+          title={activeItemStats.name}
+          cancelText="Close"
+          isReadonly={true}
+        >
+            <div className="flex-1 custom-scrollbar space-y-8">
                {/* Summary Header inside Modal */}
-               <div className="grid grid-cols-3 gap-4">
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="p-5 rounded-3xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-100 dark:border-zinc-800 flex flex-col gap-2">
                      <span className="text-[11px] uppercase font-bold tracking-widest text-zinc-400">Lowest</span>
                      <span className="text-2xl font-bold text-teal-600 dark:text-teal-400">${activeItemStats.lowestPrice.price.toLocaleString("en-CA", {maximumFractionDigits:2})}</span>
@@ -411,8 +407,7 @@ export function PriceIntelligence({ records }: PriceIntelligenceProps) {
                   </div>
                </div>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

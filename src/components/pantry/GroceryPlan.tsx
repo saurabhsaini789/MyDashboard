@@ -5,9 +5,8 @@ import { GroceryPlanItem, ExpenseRecord } from '@/types/finance';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
-
-
-interface GroceryPlanProps {
+import { Modal } from '../ui/Modal';
+import { DynamicForm } from '../ui/DynamicForm';interface GroceryPlanProps {
   records: ExpenseRecord[];
   viewingDate: Date;
 }
@@ -33,15 +32,16 @@ export function GroceryPlan({ records, viewingDate }: GroceryPlanProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
-  // Form State
-  const [name, setName] = useState('');
-  const [category, setCategory] = useState<string>(DEFAULT_CATEGORIES[0]);
-  const [plannedQuantity, setPlannedQuantity] = useState('');
-  const [unitSize, setUnitSize] = useState('');
-  const [frequency, setFrequency] = useState<GroceryPlanItem['frequency']>('Weekly');
-  const [idealTiming, setIdealTiming] = useState('');
-  const [expectedPrice, setExpectedPrice] = useState('');
-  const [consumptionDays, setConsumptionDays] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    category: DEFAULT_CATEGORIES[0],
+    plannedQuantity: '',
+    unitSize: '',
+    frequency: 'Weekly',
+    idealTiming: '',
+    expectedPrice: '',
+    consumptionDays: ''
+  });
   const [editingItem, setEditingItem] = useState<GroceryPlanItem | null>(null);
 
   const currentMonthKey = useMemo(() => {
@@ -147,34 +147,36 @@ export function GroceryPlan({ records, viewingDate }: GroceryPlanProps) {
 
   const handleEdit = (item: GroceryPlanItem) => {
     setEditingItem(item);
-    setName(item.name);
-    setCategory(item.category || DEFAULT_CATEGORIES[0]);
-    setPlannedQuantity(item.plannedQuantity.toString());
-    setUnitSize(item.unitSize);
-    setFrequency(item.frequency);
-    setIdealTiming(item.idealTiming || '');
-    setExpectedPrice(item.expectedPrice.toString());
-    setConsumptionDays(item.consumptionDays?.toString() || '');
+    setFormData({
+      name: item.name,
+      category: item.category || DEFAULT_CATEGORIES[0],
+      plannedQuantity: item.plannedQuantity.toString(),
+      unitSize: item.unitSize || '',
+      frequency: item.frequency || 'Weekly',
+      idealTiming: item.idealTiming || '',
+      expectedPrice: item.expectedPrice.toString(),
+      consumptionDays: item.consumptionDays?.toString() || ''
+    });
     setIsFormOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const qty = parseFloat(plannedQuantity) || 1;
+    const qty = parseFloat(formData.plannedQuantity) || 1;
     
     if (editingItem) {
       const updatedItems = items.map(i => {
         if (i.id === editingItem.id) {
           return {
             ...i,
-            name: name.trim(),
-            category,
+            name: formData.name.trim(),
+            category: formData.category,
             plannedQuantity: qty,
-            unitSize,
-            frequency,
-            idealTiming,
-            expectedPrice: parseFloat(expectedPrice) || 0,
-            consumptionDays: parseInt(consumptionDays) || 0,
+            unitSize: formData.unitSize,
+            frequency: formData.frequency as any,
+            idealTiming: formData.idealTiming,
+            expectedPrice: parseFloat(formData.expectedPrice) || 0,
+            consumptionDays: parseInt(formData.consumptionDays) || 0,
           };
         }
         return i;
@@ -184,27 +186,30 @@ export function GroceryPlan({ records, viewingDate }: GroceryPlanProps) {
     } else {
       const newItem: GroceryPlanItem = {
         id: Math.random().toString(36).substr(2, 9),
-        name: name.trim(),
-        category,
+        name: formData.name.trim(),
+        category: formData.category,
         plannedQuantity: qty,
-        unitSize,
-        frequency,
-        idealTiming,
-        expectedPrice: parseFloat(expectedPrice) || 0,
+        unitSize: formData.unitSize,
+        frequency: formData.frequency as any,
+        idealTiming: formData.idealTiming,
+        expectedPrice: parseFloat(formData.expectedPrice) || 0,
         checkedUnits: new Array(Math.ceil(qty)).fill('pending'),
-        consumptionDays: parseInt(consumptionDays) || 0,
+        consumptionDays: parseInt(formData.consumptionDays) || 0,
         skippedMonths: []
       };
       saveItems([...items, newItem]);
     }
     
-    setName('');
-    setPlannedQuantity('');
-    setUnitSize('');
-    setFrequency('Weekly');
-    setIdealTiming('');
-    setExpectedPrice('');
-    setConsumptionDays('');
+    setFormData({
+      name: '',
+      category: DEFAULT_CATEGORIES[0],
+      plannedQuantity: '',
+      unitSize: '',
+      frequency: 'Weekly',
+      idealTiming: '',
+      expectedPrice: '',
+      consumptionDays: ''
+    });
     setIsFormOpen(false);
   };
 
@@ -274,7 +279,7 @@ export function GroceryPlan({ records, viewingDate }: GroceryPlanProps) {
 
          <div className="flex w-full md:w-auto gap-0 md:gap-8 relative z-10">
             <div className="flex-1 flex flex-col items-center md:items-end gap-1 md:gap-0">
-               <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Planned Cost</span>
+               <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold whitespace-nowrap">Planned Cost</span>
                <span className="text-2xl md:text-3xl font-bold tracking-tight">
                   ${plannedTotalCAD.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
                </span>
@@ -296,13 +301,16 @@ export function GroceryPlan({ records, viewingDate }: GroceryPlanProps) {
               onClick={() => {
                 if (isFormOpen) {
                   setEditingItem(null);
-                  setName('');
-                  setPlannedQuantity('');
-                  setUnitSize('');
-                  setFrequency('Weekly');
-                  setIdealTiming('');
-                  setExpectedPrice('');
-                  setConsumptionDays('');
+                  setFormData({
+                    name: '',
+                    category: DEFAULT_CATEGORIES[0],
+                    plannedQuantity: '',
+                    unitSize: '',
+                    frequency: 'Weekly',
+                    idealTiming: '',
+                    expectedPrice: '',
+                    consumptionDays: ''
+                  });
                 }
                 setIsFormOpen(!isFormOpen);
               }}
@@ -313,125 +321,69 @@ export function GroceryPlan({ records, viewingDate }: GroceryPlanProps) {
          </div>
 
          {/* Add/Edit Item Modal */}
-         {isFormOpen && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-               {/* Backdrop */}
-               <div 
-                 className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
-                 onClick={() => {
-                   setEditingItem(null);
-                   setIsFormOpen(false);
-                 }}
-               />
-               
-               {/* Modal Content */}
-               <form 
-                 onSubmit={handleSubmit} 
-                 className="relative w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-[40px] shadow-2xl border border-zinc-200 dark:border-zinc-800 p-8 md:p-10 animate-in zoom-in-95 duration-300 flex flex-col gap-6"
-               >
-                  <div className="flex justify-between items-start">
-                     <div>
-                        <h3 className="text-xl font-bold uppercase tracking-[0.2em] text-zinc-900 dark:text-white">
-                           {editingItem ? 'Edit Grocery Item' : 'Add New Item'}
-                        </h3>
-                        <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-1">
-                           Configure your monthly grocery plan
-                        </p>
-                     </div>
-                     <button 
-                        type="button"
-                        onClick={() => {
-                           setEditingItem(null);
-                           setIsFormOpen(false);
-                        }}
-                        className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-zinc-400"
-                     >
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                     </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                     <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-2">Item Name</label>
-                        <input required type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Milk" className="w-full bg-zinc-50 dark:bg-zinc-950/50 p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20 transition-all font-medium" />
-                     </div>
-                     <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-2">Category</label>
-                        <select value={category} onChange={e => setCategory(e.target.value)} className="w-full bg-zinc-50 dark:bg-zinc-950/50 p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm appearance-none focus:ring-2 focus:ring-teal-500/20 transition-all font-medium">
-                           {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                     </div>
-                     
-                     <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-2">Unit Expected Price ($)</label>
-                        <input required type="number" step="0.01" value={expectedPrice} onChange={e => setExpectedPrice(e.target.value)} placeholder="0.00" className="w-full bg-zinc-50 dark:bg-zinc-950/50 p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20 transition-all font-medium" />
-                     </div>
-
-                     <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-2">Total Units (Planned)</label>
-                        <input required type="number" min="0" step="0.1" value={plannedQuantity} onChange={e => setPlannedQuantity(e.target.value)} placeholder="e.g. 1.5" className="w-full bg-zinc-50 dark:bg-zinc-950/50 p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20 transition-all font-medium" />
-                     </div>
-
-                     <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-2">Unit Size</label>
-                        <input type="text" value={unitSize} onChange={e => setUnitSize(e.target.value)} placeholder="e.g. 1kg or 4L" className="w-full bg-zinc-50 dark:bg-zinc-950/50 p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20 transition-all font-medium" />
-                     </div>
-
-                     <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-2">Consumption Days (Per Unit)</label>
-                        <input type="number" value={consumptionDays} onChange={e => setConsumptionDays(e.target.value)} placeholder="How many days 1 unit lasts" className="w-full bg-zinc-50 dark:bg-zinc-950/50 p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20 transition-all font-medium" />
-                     </div>
-
-                     <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-2">Frequency</label>
-                        <select value={frequency} onChange={e => setFrequency(e.target.value as any)} className="w-full bg-zinc-50 dark:bg-zinc-950/50 p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm appearance-none focus:ring-2 focus:ring-teal-500/20 transition-all font-medium">
-                           <option value="Daily">Daily</option><option value="Weekly">Weekly</option><option value="Bi-Weekly">Bi-Weekly</option><option value="Monthly">Monthly</option><option value="As Needed">As Needed</option>
-                        </select>
-                     </div>
-
-                     <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-2">Ideal Timing</label>
-                        <input type="text" value={idealTiming} onChange={e => setIdealTiming(e.target.value)} placeholder="e.g. Every Sunday" className="w-full bg-zinc-50 dark:bg-zinc-950/50 p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 outline-none text-sm focus:ring-2 focus:ring-teal-500/20 transition-all font-medium" />
-                     </div>
-                  </div>
-
-                  <div className="flex items-center justify-between mt-4">
-                     {editingItem ? (
-                        <button 
-                           type="button"
-                           onClick={() => {
-                              deleteItem(editingItem.id);
-                              setIsFormOpen(false);
-                           }}
-                           className="px-6 py-3 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all flex items-center gap-2"
-                        >
-                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                           Delete Item
-                        </button>
-                     ) : <div />}
-
-                     <div className="flex gap-3">
-                        <button 
-                           type="button"
-                           onClick={() => {
-                              setEditingItem(null);
-                              setIsFormOpen(false);
-                           }}
-                           className="px-6 py-3 text-zinc-400 dark:text-zinc-500 rounded-2xl text-xs font-bold uppercase tracking-widest hover:text-zinc-600 dark:hover:text-zinc-300 transition-all"
-                        >
-                           Cancel
-                        </button>
-                        <button 
-                           type="submit" 
-                           className="px-10 py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl text-xs font-bold uppercase tracking-widest shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all"
-                        >
-                           {editingItem ? 'Save Changes' : 'Create Item'}
-                        </button>
-                     </div>
-                  </div>
-               </form>
-            </div>
-         )}
+         <Modal
+            isOpen={isFormOpen}
+            onClose={() => {
+               setEditingItem(null);
+               setIsFormOpen(false);
+               setFormData({
+                  name: '',
+                  category: DEFAULT_CATEGORIES[0],
+                  plannedQuantity: '',
+                  unitSize: '',
+                  frequency: 'Weekly',
+                  idealTiming: '',
+                  expectedPrice: '',
+                  consumptionDays: ''
+               });
+            }}
+            title={editingItem ? 'Edit Grocery Item' : 'Add New Item'}
+            onSubmit={handleSubmit}
+            submitText={editingItem ? 'Save Changes' : 'Create Item'}
+            accentColor="amber"
+         >
+            <DynamicForm
+               sections={[
+                  {
+                     id: 'details',
+                     title: 'Item Details',
+                     fields: [
+                        { name: 'name', label: 'Item Name', type: 'text', required: true, fullWidth: true, placeholder: 'e.g. Milk' },
+                        {
+                           name: 'category', label: 'Category', type: 'select',
+                           options: DEFAULT_CATEGORIES.map(c => ({ value: c, label: c }))
+                        },
+                        { name: 'expectedPrice', label: 'Unit Expected Price ($)', type: 'number', step: '0.01', required: true, placeholder: '0.00' },
+                        { name: 'plannedQuantity', label: 'Total Units (Planned)', type: 'number', step: '0.1', required: true, placeholder: 'e.g. 1.5' },
+                        { name: 'unitSize', label: 'Unit Size', type: 'text', placeholder: 'e.g. 1kg or 4L' },
+                        { name: 'consumptionDays', label: 'Consumption Days (Per Unit)', type: 'number', placeholder: 'How many days 1 unit lasts' },
+                        {
+                           name: 'frequency', label: 'Frequency', type: 'select',
+                           options: ['Daily', 'Weekly', 'Bi-Weekly', 'Monthly', 'As Needed'].map(f => ({ value: f, label: f }))
+                        },
+                        { name: 'idealTiming', label: 'Ideal Timing', type: 'text', placeholder: 'e.g. Every Sunday' }
+                     ]
+                  }
+               ]}
+               formData={formData}
+               accentColor="amber"
+               onChange={(name, value) => setFormData(prev => ({ ...prev, [name]: value }))}
+            />
+            {editingItem && (
+               <div className="mt-4 flex justify-start w-full">
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                       deleteItem(editingItem.id);
+                       setIsFormOpen(false);
+                    }}
+                    className="text-red-500 text-sm font-medium hover:text-red-600 transition-colors"
+                  >
+                    Delete Item
+                  </button>
+               </div>
+            )}
+         </Modal>
 
          {/* Scrollable Content Container */}
          <div className="overflow-y-auto max-h-[500px] md:max-h-[600px] pr-2 -mr-2 custom-scrollbar flex flex-col gap-8">

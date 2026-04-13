@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { ExpenseRecord } from '@/types/finance';
 import { PantryEntryModal } from './PantryEntryModal';
+import { Modal } from '../ui/Modal';
 
 
 interface PantryCalendarProps {
@@ -202,74 +203,63 @@ export function PantryCalendar({ records, onUpdateRecords, viewingDate, setViewi
       )}
 
       {/* Mobile Details Popover */}
-      {isMobilePopupOpen && popupDateStr && (
-        <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 md:p-4 bg-zinc-950/40 backdrop-blur-sm animate-in fade-in duration-300">
-          <div onClick={() => setIsMobilePopupOpen(false)} className="absolute inset-0" />
-          <div className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-t-[32px] md:rounded-[32px] p-6 shadow-2xl animate-in slide-in-from-bottom-10 md:zoom-in duration-300">
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex flex-col">
-                   <span className="text-xs uppercase tracking-[0.2em] text-zinc-400 font-bold">Details for</span>
-                   <span className="text-lg font-black text-zinc-900 dark:text-white uppercase tracking-tight">
-                      {new Date(popupDateStr).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                   </span>
-                </div>
-                <button onClick={() => setIsMobilePopupOpen(false)} className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-full">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-
-              <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto pr-1">
-                 {recordsByDate[popupDateStr]?.length > 0 ? (
-                   recordsByDate[popupDateStr].map(record => (
-                     <div 
-                        key={record.id} 
-                        onClick={() => {
-                          setEditingRecord(record);
-                          setPreferredTab('form');
-                          setIsMobilePopupOpen(false);
-                          setIsModalOpen(true);
-                        }}
-                        className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 active:scale-[0.98] transition-all cursor-pointer"
-                     >
-                        <div className="flex items-center gap-4">
-                           <div className="w-10 h-10 rounded-xl bg-zinc-900 dark:bg-white flex items-center justify-center text-white dark:text-zinc-900 text-xs font-black">
-                              {record.category.charAt(0)}
-                           </div>
-                           <div className="flex flex-col">
-                              <span className="text-sm font-bold text-zinc-900 dark:text-white">{record.vendor || record.subcategory}</span>
-                              <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">{record.category}</span>
-                           </div>
-                        </div>
-                        <div className="flex flex-col items-end">
-                           <span className="text-lg font-black text-zinc-900 dark:text-white">${record.amount.toLocaleString('en-CA', { maximumFractionDigits: 0 })}</span>
-                           <span className={`text-[10px] uppercase font-black ${record.type === 'need' ? 'text-emerald-500' : 'text-amber-500'}`}>{record.type}</span>
-                        </div>
-                     </div>
-                   ))
-                 ) : (
-                   <div className="py-12 flex flex-col items-center opacity-30 gap-3">
-                      <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-3-3v6m9-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                      <span className="text-xs uppercase tracking-widest font-bold">No records found</span>
-                   </div>
-                 )}
-              </div>
-
-              <div className="mt-8 flex gap-3">
-                 <button 
+      <Modal
+        isOpen={isMobilePopupOpen && !!popupDateStr}
+        onClose={() => setIsMobilePopupOpen(false)}
+        title={popupDateStr ? `Details for ${new Date(popupDateStr).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : 'Details'}
+        cancelText="Close"
+        isReadonly={true}
+      >
+        <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto pr-1">
+           {popupDateStr && recordsByDate[popupDateStr]?.length > 0 ? (
+             recordsByDate[popupDateStr].map(record => (
+               <div 
+                  key={record.id} 
                   onClick={() => {
-                    setEditingRecord(null);
+                    setEditingRecord(record);
                     setPreferredTab('form');
                     setIsMobilePopupOpen(false);
                     setIsModalOpen(true);
                   }}
-                  className="flex-1 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl active:scale-95 transition-all"
-                 >
-                    Add New Entry
-                 </button>
-              </div>
-          </div>
+                  className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 active:scale-[0.98] transition-all cursor-pointer"
+               >
+                  <div className="flex items-center gap-4">
+                     <div className="w-10 h-10 rounded-xl bg-zinc-900 dark:bg-white flex items-center justify-center text-white dark:text-zinc-900 text-xs font-black">
+                        {record.category.charAt(0)}
+                     </div>
+                     <div className="flex flex-col">
+                        <span className="text-sm font-bold text-zinc-900 dark:text-white">{record.vendor || record.subcategory}</span>
+                        <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">{record.category}</span>
+                     </div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                     <span className="text-lg font-black text-zinc-900 dark:text-white">${record.amount.toLocaleString('en-CA', { maximumFractionDigits: 0 })}</span>
+                     <span className={`text-[10px] uppercase font-black ${record.type === 'need' ? 'text-emerald-500' : 'text-amber-500'}`}>{record.type}</span>
+                  </div>
+               </div>
+             ))
+           ) : (
+             <div className="py-12 flex flex-col items-center opacity-30 gap-3">
+                <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-3-3v6m9-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span className="text-xs uppercase tracking-widest font-bold">No records found</span>
+             </div>
+           )}
         </div>
-      )}
+
+        <div className="mt-8 flex gap-3">
+           <button 
+            onClick={() => {
+              setEditingRecord(null);
+              setPreferredTab('form');
+              setIsMobilePopupOpen(false);
+              setIsModalOpen(true);
+            }}
+            className="flex-1 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl active:scale-95 transition-all"
+           >
+              Add New Entry
+           </button>
+        </div>
+      </Modal>
     </div>
   );
 }

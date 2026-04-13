@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
+import { Modal } from '../ui/Modal';
+import { DynamicForm } from '../ui/DynamicForm';
 import { calculateAssetBalance, type Asset, type Contribution } from '@/lib/finances';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 
@@ -380,146 +382,98 @@ export function AssetsSection() {
         })}
       </div>
 
-      {/* Asset Add/Edit Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[32px] w-full max-w-2xl shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300">
-            <div className="p-8 md:p-10">
-              <div className="flex justify-between items-center mb-8 md:mb-10">
-                <h3 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter">
-                  {editingAsset ? 'Modify Asset' : 'New Asset'}
-                </h3>
-                <button onClick={() => setIsModalOpen(false)} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors">
-                  <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="flex flex-col gap-2">
-                    <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Asset Name</label>
-                    <input 
-                      required type="text" value={formData.name} 
-                      onChange={e => setFormData({...formData, name: e.target.value})} 
-                      placeholder="e.g. Primary Residence..."
-                      className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" 
-                    />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Asset Type</label>
-                        <select 
-                            value={formData.type} 
-                            onChange={e => setFormData({...formData, type: e.target.value as AssetType})}
-                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all appearance-none cursor-pointer"
-                        >
-                            {ASSET_TYPES.map(type => (
-                                <option key={type} value={type}>{type}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Initial Balance</label>
-                        <div className="relative w-full">
-                            <input 
-                                required type="number" step="0.01" value={formData.initialValue} 
-                                onChange={e => setFormData({...formData, initialValue: e.target.value})} 
-                                placeholder="0.00"
-                                className="w-full min-w-0 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" 
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                    <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Asset Acquisition (Start Date)</label>
-                    <input 
-                        required type="date" value={formData.startDate} 
-                        onChange={e => setFormData({...formData, startDate: e.target.value})} 
-                        className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all" 
-                    />
-                </div>
-
-                <div className="flex gap-4 pt-6">
-                  {editingAsset && (
-                    <button type="button" onClick={() => deleteAsset(editingAsset.id)} className="px-5 py-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 text-rose-500 text-[10px] uppercase tracking-widest font-bold hover:bg-rose-100 transition-all">
-                        Delete
-                    </button>
-                  )}
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-4 md:py-5 rounded-2xl md:rounded-3xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 transition-all font-bold">
-                    Cancel
-                  </button>
-                  <button type="submit" className="flex-1 px-6 py-4 md:py-5 rounded-2xl md:rounded-3xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black hover:scale-105 transition-all uppercase tracking-widest text-[10px] sm:text-xs font-bold">
-                    {editingAsset ? 'Update' : 'Save'}
-                  </button>
-                </div>
-              </form>
-            </div>
+      {/* Schema-Driven Asset Add/Edit Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingAsset ? 'Modify Asset' : 'New Asset'}
+        onSubmit={handleSubmit}
+        submitText={editingAsset ? 'Update' : 'Save'}
+        accentColor="emerald"
+      >
+        <DynamicForm
+          sections={[
+            {
+              id: 'basic',
+              title: 'Asset Profile',
+              fields: [
+                { name: 'name', label: 'Asset Name', type: 'text', required: true, fullWidth: true, placeholder: 'e.g. Primary Residence...' },
+                { 
+                  name: 'type', 
+                  label: 'Asset Type', 
+                  type: 'select', 
+                  options: ASSET_TYPES.map(t => ({ label: t, value: t }))
+                },
+                { name: 'initialValue', label: 'Initial Balance', type: 'number', required: true, step: "0.01", placeholder: "0.00" },
+                { name: 'startDate', label: 'Asset Acquisition (Start Date)', type: 'date', required: true, fullWidth: true }
+              ]
+            }
+          ]}
+          formData={formData}
+          accentColor="emerald"
+          onChange={(name, value) => setFormData(prev => ({ ...prev, [name]: value }))}
+        />
+        {editingAsset && (
+          <div className="mt-4 flex justify-start w-full">
+            <button 
+              type="button" 
+              onClick={() => deleteAsset(editingAsset.id)} 
+              className="text-red-500 text-sm font-medium hover:text-red-600 transition-colors"
+            >
+              Delete Asset
+            </button>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
-      {/* Record Contribution Modal */}
-      {isContribModalOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300">
-            <div className="p-8 md:p-10">
-              <h3 className="text-2xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter mb-8 text-center">Log Fuel</h3>
-              <form onSubmit={handleContribSubmit} className="space-y-6">
-                <div className="flex flex-col gap-4">
+      {/* Schema-Driven Record Contribution Modal */}
+      <Modal
+        isOpen={isContribModalOpen}
+        onClose={() => setIsContribModalOpen(false)}
+        title="Log Fuel"
+        onSubmit={handleContribSubmit}
+        submitText="Log Fuel"
+      >
+        <DynamicForm
+          sections={[
+            {
+              id: 'contrib',
+              title: 'Contribution',
+              fields: [
+                { name: 'amount', label: 'Amount', type: 'number', required: true, step: "0.01", placeholder: "0.00", fullWidth: true }
+              ]
+            }
+          ]}
+          formData={{ amount: contribAmount }}
+          onChange={(_, value) => setContribAmount(value)}
+        />
+      </Modal>
 
-                    <div className="flex flex-col gap-2">
-                        <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] text-center">Amount</label>
-                        <input 
-                            required autoFocus type="number" step="0.01" value={contribAmount} 
-                            onChange={e => setContribAmount(e.target.value)} 
-                            placeholder="0.00"
-                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-6 text-center text-3xl text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all font-bold"
-                        />
-                    </div>
-                </div>
-                <button type="submit" className="w-full px-8 py-5 rounded-3xl bg-emerald-600 text-white hover:scale-105 transition-all uppercase tracking-widest text-[10px] sm:text-xs font-bold shadow-xl shadow-emerald-200/50 dark:shadow-none">
-                    Log fuel
-                </button>
-                <button type="button" onClick={() => setIsContribModalOpen(false)} className="w-full py-2 text-[10px] text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-400 uppercase tracking-widest font-medium">
-                    Nevermind
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Set Growth Rate Modal */}
-      {isRateModalOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300">
-            <div className="p-8 md:p-10">
-              <h3 className="text-2xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter mb-6 text-center">Annual APY (%)</h3>
-              <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest mb-10 leading-relaxed">
-                Set annual appreciation (+) or depreciation (-)<br />to calculate compounding growth over time.
-              </p>
-              <form onSubmit={handleRateSubmit} className="space-y-6">
-                <div className="flex flex-col gap-2">
-                    <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] text-center">Rate (%)</label>
-                    <input 
-                        required autoFocus type="number" step="0.01" value={rateValue} 
-                        onChange={e => setRateValue(e.target.value)} 
-                        placeholder="0.0%"
-                        className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-6 text-center text-3xl text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all"
-                    />
-                </div>
-                <button type="submit" className="w-full px-8 py-5 rounded-3xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black hover:scale-105 transition-all uppercase tracking-widest text-[10px] sm:text-xs font-bold">
-                    Update APY
-                </button>
-                <button type="button" onClick={() => setIsRateModalOpen(false)} className="w-full py-2 text-[10px] text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-400 uppercase font-bold tracking-widest">
-                    Nevermind
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Schema-Driven Set Growth Rate Modal */}
+      <Modal
+        isOpen={isRateModalOpen}
+        onClose={() => setIsRateModalOpen(false)}
+        title="Annual APY (%)"
+        onSubmit={handleRateSubmit}
+        submitText="Update APY"
+      >
+        <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest mb-6 leading-relaxed">
+          Set annual appreciation (+) or depreciation (-)<br />to calculate compounding growth over time.
+        </p>
+        <DynamicForm
+          sections={[
+            {
+              id: 'rate',
+              title: 'Growth Rate',
+              fields: [
+                { name: 'rate', label: 'Rate (%)', type: 'number', required: true, step: "0.01", placeholder: "0.0%", fullWidth: true }
+              ]
+            }
+          ]}
+          formData={{ rate: rateValue }}
+          onChange={(_, value) => setRateValue(value)}
+        />
+      </Modal>
     </div>
   );
 }

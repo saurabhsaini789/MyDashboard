@@ -14,8 +14,10 @@ import {
   Plus
 } from 'lucide-react';
 import { MultiYearLogData, MonthlyEntry, YearlyLogData, LogBookEntry } from '@/types/books';
-import { setSyncedItem } from '@/lib/storage';
 import { getPrefixedKey } from '@/lib/keys';
+import { setSyncedItem } from '@/lib/storage';
+import { Modal } from '../ui/Modal';
+import { DynamicForm } from '../ui/DynamicForm';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -588,11 +590,14 @@ function AddLogBookModal({
   onClose: () => void;
   onSave: (title: string, author: string, status: Status, category?: string, originalQueueId?: string) => void;
 }) {
-  const [title, setTitle] = useState('');
-  const [author, setAuthor] = useState('');
-  const [status, setStatus] = useState<Status>('Planned');
-  const [category, setCategory] = useState<string | undefined>(undefined);
-  const [originalQueueId, setOriginalQueueId] = useState<string | undefined>(undefined);
+  const [formData, setFormData] = useState({
+    title: '',
+    author: '',
+    status: 'Planned',
+    category: '',
+    originalQueueId: '',
+    quickAdd: ''
+  });
   const [queueBooks, setQueueBooks] = useState<any[]>([]);
 
   useEffect(() => {
@@ -604,127 +609,82 @@ function AddLogBookModal({
     }
   }, []);
 
-  const handleSelectFromQueue = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const bookId = e.target.value;
-    if (!bookId) return;
-    
-    const selected = queueBooks.find(b => b.id === bookId);
-    if (selected) {
-      setTitle(selected.name);
-      setAuthor(selected.author || '');
-      setCategory(selected.category);
-      setOriginalQueueId(selected.id);
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
-    onSave(title.trim(), author.trim(), status, category, originalQueueId);
+    if (!formData.title.trim()) return;
+    onSave(
+      formData.title.trim(), 
+      formData.author.trim(), 
+      formData.status as Status, 
+      formData.category || undefined, 
+      formData.originalQueueId || undefined
+    );
   };
 
+  const fields = [];
+  if (queueBooks.length > 0) {
+    fields.push({
+      name: 'quickAdd',
+      label: 'Quick Add: Pick from Reading Plan',
+      type: 'select',
+      options: [
+        { value: '', label: 'Select a book...' },
+        ...queueBooks.map(b => ({ value: b.id, label: b.name }))
+      ],
+      fullWidth: true
+    });
+  }
+
+  fields.push(
+    { name: 'title', label: 'Book Name', type: 'text', required: true, fullWidth: true, placeholder: 'Atomic Habits...' },
+    { name: 'author', label: 'Author Name', type: 'text', placeholder: 'James Clear...' },
+    {
+      name: 'status',
+      label: 'Phase',
+      type: 'select',
+      options: STATUS_OPTIONS.map(opt => ({ value: opt, label: opt === 'None' ? 'TBD' : opt }))
+    }
+  );
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-900/40 dark:bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-zinc-900 rounded-3xl w-full max-w-md shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-xl font-black text-zinc-900 dark:text-white tracking-tight">Add Book details</h3>
-              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mt-1">
-                {month} • {type === 'english' ? 'English' : 'Hindi'}
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
-            >
-              <Plus size={16} className="rotate-45" />
-            </button>
-          </div>
-
-          {queueBooks.length > 0 && (
-            <div className="mb-6 p-4 bg-teal-500/5 border border-teal-500/10 rounded-2xl">
-              <label className="block text-[10px] font-black uppercase tracking-widest text-teal-600 dark:text-teal-400 mb-2">
-                Quick Add: Pick from Reading Plan
-              </label>
-              <select 
-                onChange={handleSelectFromQueue}
-                className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/50"
-              >
-                <option value="">Select a book...</option>
-                {queueBooks.map(b => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">
-                Book Name
-              </label>
-              <input
-                autoFocus
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Atomic Habits..."
-                className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/50 text-zinc-900 dark:text-white transition-all placeholder:font-normal placeholder:opacity-50"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">
-                Author Name
-              </label>
-              <input
-                type="text"
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-                placeholder="James Clear..."
-                className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/50 text-zinc-900 dark:text-white transition-all placeholder:font-normal placeholder:opacity-50"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">
-                Phase
-              </label>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {STATUS_OPTIONS.map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => setStatus(opt)}
-                    className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border transition-all ${
-                      status === opt
-                        ? 'bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600 shadow-sm scale-100'
-                        : 'bg-white dark:bg-zinc-900 border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 text-zinc-500 scale-95 opacity-70'
-                    }`}
-                  >
-                    {STATUS_ICONS[opt] || <div className="w-4 h-4 rounded-full border border-current"></div>}
-                    <span className={`text-[10px] font-black uppercase ${status === opt ? 'text-zinc-900 dark:text-white' : 'text-zinc-500'}`}>
-                      {opt === 'None' ? 'TBD' : opt}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="pt-4 mt-6 border-t border-zinc-100 dark:border-zinc-800">
-              <button
-                type="submit"
-                disabled={!title.trim()}
-                className="w-full flex items-center justify-center gap-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-6 py-3.5 rounded-xl text-sm font-black hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none"
-              >
-                Save to Log
-              </button>
-            </div>
-          </form>
-        </div>
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title="Add Book Details"
+      onSubmit={handleSubmit}
+      submitText="Save to Log"
+      disableSubmit={!formData.title.trim()}
+      accentColor="amber"
+    >
+      <div className="mb-4">
+        <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mt-1">
+          {month} • {type === 'english' ? 'English' : 'Hindi'}
+        </p>
       </div>
-    </div>
+      <DynamicForm
+        sections={[{ id: 'book_form', title: '', fields }]}
+        formData={formData}
+        accentColor="amber"
+        onChange={(name, value) => {
+          if (name === 'quickAdd') {
+            const selected = queueBooks.find(b => b.id === value);
+            if (selected) {
+              setFormData(prev => ({
+                ...prev,
+                quickAdd: value as string,
+                title: selected.name,
+                author: selected.author || '',
+                category: selected.category || '',
+                originalQueueId: selected.id
+              }));
+            } else {
+              setFormData(prev => ({ ...prev, quickAdd: value as string }));
+            }
+          } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+          }
+        }}
+      />
+    </Modal>
   );
 }

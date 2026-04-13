@@ -19,6 +19,8 @@ import confetti from 'canvas-confetti';
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
 import { SYNC_KEYS } from '@/lib/sync-keys';
+import { Modal } from '../ui/Modal';
+import { DynamicForm } from '../ui/DynamicForm';
 import { DEFAULT_PLATFORMS, CONTENT_TYPES, type BusinessChannel, type ContentIdea } from '@/types/business';
 
 export function BusinessChannelsSection() {
@@ -481,228 +483,129 @@ export function BusinessChannelsSection() {
       </div>
 
       {/* Modal Integration */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-xl animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[40px] w-full max-w-xl shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300 max-h-[90vh] flex flex-col">
-            <div className="p-8 md:p-12 overflow-y-auto">
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingChannel ? 'Edit Channel' : 'New Channel'}
+        onSubmit={handleSubmit}
+        submitText={editingChannel ? 'Update Channel' : 'Create Channel'}
+        accentColor="purple"
+      >
+        <DynamicForm
+          sections={[
+            {
+              id: 'channel_basic',
+              title: '',
+              fields: [
+                { name: 'name', label: 'Channel / Business Name', type: 'text', required: true, fullWidth: true, placeholder: 'e.g. Personal Brand, Tech Blog...' },
+                {
+                  name: 'platform', label: 'Platform / Location', type: 'select',
+                  options: DEFAULT_PLATFORMS.map(p => ({ label: p, value: p }))
+                },
+                ...(formData.platform === 'Other' ? [{ name: 'customPlatform', label: 'Other Platform Name', type: 'text', required: true }] : []),
+                {
+                  name: 'contentType', label: 'Content / Category', type: 'select',
+                  options: CONTENT_TYPES.map(t => ({ label: t, value: t }))
+                },
+                ...(formData.contentType === 'Other' ? [{ name: 'customContentType', label: 'Other Content Type', type: 'text', required: true }] : []),
+                { name: 'postingFrequency', label: 'Posting Frequency (Days)', type: 'number', min: 1, required: true },
+                { name: 'lastPostedDate', label: 'Last Posted Date', type: 'date', required: true }
+              ]
+            }
+          ]}
+          formData={formData}
+          accentColor="purple"
+          onChange={(name, value) => setFormData(prev => ({ ...prev, [name]: value }))}
+        />
 
-              <div className="flex justify-between items-center mb-10">
-                <h3 className="text-3xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter">
-                  {editingChannel ? 'Edit Channel' : 'New Channel'}
-                </h3>
-                <button onClick={() => setIsModalOpen(false)} className="bg-zinc-100 dark:bg-zinc-800 p-2 rounded-full text-zinc-600 hover:text-zinc-900 dark:hover:text-white transition-colors">
-                  <X size={24} />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-8">
-                <div className="space-y-6">
-                  <div className="flex flex-col gap-3">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Channel / Business Name</label>
-                    <input 
-                      required 
-                      type="text" 
-                      value={formData.name} 
-                      onChange={e => setFormData({...formData, name: e.target.value})} 
-                      placeholder="e.g. Personal Brand, Tech Blog..."
-                      className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-lg font-bold"
-                    />
-                  </div>
-
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-3">
-                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Platform / Location</label>
-                      <select 
-                        value={formData.platform} 
-                        onChange={e => setFormData({...formData, platform: e.target.value})}
-                        className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all appearance-none font-medium cursor-pointer"
-                      >
-                        {DEFAULT_PLATFORMS.map(p => (
-                          <option key={p} value={p}>{p}</option>
-                        ))}
-                      </select>
-                    </div>
-
-
-                    {formData.platform === 'Other' && (
-                      <div className="flex flex-col gap-3">
-                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Other Platform Name</label>
-                        <input 
-                          required 
-                          type="text" 
-                          value={formData.customPlatform} 
-                          onChange={e => setFormData({...formData, customPlatform: e.target.value})} 
-                          placeholder="Platform name..."
-                          className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all"
-                        />
-                      </div>
-                    )}
-
-                    <div className="flex flex-col gap-3">
-                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Content / Category</label>
-                      <select 
-                        value={formData.contentType} 
-                        onChange={e => setFormData({...formData, contentType: e.target.value})}
-                        className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all appearance-none font-medium cursor-pointer"
-                      >
-                        {CONTENT_TYPES.map(t => (
-                          <option key={t} value={t}>{t}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {formData.contentType === 'Other' && (
-                      <div className="flex flex-col gap-3">
-                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Other Content Type</label>
-                        <input 
-                          required 
-                          type="text" 
-                          value={formData.customContentType} 
-                          onChange={e => setFormData({...formData, customContentType: e.target.value})} 
-                          placeholder="Category name..."
-                          className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-3">
-                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Posting Frequency (Days)</label>
-                      <input 
-                        required 
-                        type="number" 
-                        min="1"
-                        value={formData.postingFrequency} 
-                        onChange={e => setFormData({...formData, postingFrequency: parseInt(e.target.value) || 1})} 
-                        className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-lg font-bold"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-3">
-                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Last Posted Date</label>
-                      <input 
-                        required 
-                        type="date" 
-                        value={formData.lastPostedDate} 
-                        onChange={e => setFormData({...formData, lastPostedDate: e.target.value})} 
-                        className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all font-medium"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-3 bg-zinc-50 dark:bg-zinc-800/30 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Current Status</label>
-                    <div className="flex gap-2">
-                      {['Active', 'Paused', 'Idea'].map((status) => (
-                        <button
-                          key={status}
-                          type="button"
-                          onClick={() => setFormData({...formData, status: status as 'Active' | 'Paused' | 'Idea'})}
-                          className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                            formData.status === status
-                              ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-lg'
-                              : 'bg-white dark:bg-zinc-800 text-zinc-500 border border-zinc-100 dark:border-zinc-700'
-                          }`}
-                        >
-                          {status}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-3 bg-zinc-50 dark:bg-zinc-800/30 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Row Color (Light)</label>
-                    <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
-                      {LIGHT_COLORS.map((color) => (
-                        <button
-                          key={color.name}
-                          type="button"
-                          onClick={() => setFormData({...formData, rowColor: color.value})}
-                          className={`w-full aspect-square rounded-xl border transition-all flex items-center justify-center ${
-                            color.value ? color.value.split(' ')[0] : 'bg-white dark:bg-zinc-900'
-                          } ${
-                            formData.rowColor === color.value
-                              ? 'ring-2 ring-zinc-900 dark:ring-white border-transparent'
-                              : 'border-zinc-200 dark:border-zinc-700'
-                          }`}
-                          title={color.name}
-                        >
-                          {formData.rowColor === color.value && (
-                            <div className="w-1.5 h-1.5 rounded-full bg-zinc-900 dark:bg-white" />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 pt-4">
-                  {editingChannel && (
-                    <button 
-                      type="button" 
-                      onClick={() => deleteChannel(editingChannel.id)} 
-                      className="px-6 py-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 text-rose-500 text-[10px] font-black uppercase tracking-widest hover:bg-rose-100 transition-all"
-                    >
-                      Delete
-                    </button>
-                  )}
-                  <button 
-                    type="submit" 
-                    className="flex-1 px-8 py-5 rounded-[24px] bg-zinc-900 dark:bg-white text-white dark:text-black hover:scale-[1.02] transition-all uppercase tracking-widest text-xs font-black shadow-xl shadow-zinc-900/10"
-                  >
-                    {editingChannel ? 'Update Channel' : 'Create Channel'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Idea Selection Modal */}
-      {isIdeaModalOpen && selectedChannelForPost && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-xl animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[40px] w-full max-w-md shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300">
-            <div className="p-8">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-zinc-900 dark:text-white uppercase tracking-tight">
-                  Select Idea Used
-                </h3>
-                <button onClick={() => setIsIdeaModalOpen(false)} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors">
-                  <X size={20} />
-                </button>
-              </div>
-
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-6 uppercase tracking-widest font-bold">
-                Which idea did you just post?
-              </p>
-
-              <div className="space-y-3 max-h-[300px] overflow-y-auto mb-8 pr-2">
-                {ideas.filter(i => i.channelId === selectedChannelForPost && i.status === 'Pending').map(idea => (
-                  <button
-                    key={idea.id}
-                    onClick={() => markAsPosted(selectedChannelForPost, idea.id)}
-                    className="w-full text-left p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all group"
-                  >
-                    <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">
-                      {idea.title}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
+        <div className="flex flex-col gap-3 bg-zinc-50 dark:bg-zinc-800/30 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 mt-6">
+          <label className="text-sm font-bold text-zinc-500 dark:text-zinc-400">Current Status</label>
+          <div className="flex gap-2">
+            {['Active', 'Paused', 'Idea'].map((status) => (
               <button
-                onClick={() => markAsPosted(selectedChannelForPost, 'none')}
-                className="w-full py-4 rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 text-[10px] font-black uppercase tracking-widest hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-all"
+                key={status}
+                type="button"
+                onClick={() => setFormData({...formData, status: status as 'Active' | 'Paused' | 'Idea'})}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all border ${
+                  formData.status === status
+                    ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-900 dark:border-zinc-100 shadow-sm'
+                    : 'bg-white dark:bg-zinc-900 text-zinc-500 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300'
+                }`}
               >
-                Post without an idea from queue
+                {status}
               </button>
-            </div>
+            ))}
           </div>
         </div>
-      )}
+
+        <div className="flex flex-col gap-3 bg-zinc-50 dark:bg-zinc-800/30 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 mt-6 mb-6">
+          <label className="text-sm font-bold text-zinc-500 dark:text-zinc-400">Row Color (Light)</label>
+          <div className="grid grid-cols-4 md:grid-cols-8 gap-2 mt-2">
+            {LIGHT_COLORS.map((color) => (
+              <button
+                key={color.name}
+                type="button"
+                onClick={() => setFormData({...formData, rowColor: color.value})}
+                className={`w-full aspect-square rounded-xl border transition-all flex items-center justify-center ${
+                  color.value ? color.value.split(' ')[0] : 'bg-white dark:bg-zinc-900'
+                } ${
+                  formData.rowColor === color.value
+                    ? 'ring-2 ring-zinc-900 dark:ring-white border-transparent'
+                    : 'border-zinc-200 dark:border-zinc-700'
+                }`}
+                title={color.name}
+              >
+                {formData.rowColor === color.value && (
+                  <div className="w-2 h-2 rounded-full bg-zinc-900 dark:bg-white" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {editingChannel && (
+          <div className="pt-4 mt-2">
+            <button 
+              type="button" 
+              onClick={() => deleteChannel(editingChannel.id)} 
+              className="text-sm font-bold text-rose-500 hover:text-rose-700 transition-colors"
+            >
+              Delete Channel
+            </button>
+          </div>
+        )}
+      </Modal>
+      {/* Idea Selection Modal */}
+      <Modal
+        isOpen={isIdeaModalOpen && !!selectedChannelForPost}
+        onClose={() => setIsIdeaModalOpen(false)}
+        title="Select Idea Used"
+      >
+        <div className="pb-4">
+          <p className="text-sm font-bold text-zinc-500 dark:text-zinc-400 mb-6">
+            Which idea did you just post?
+          </p>
+          <div className="space-y-3 max-h-[300px] overflow-y-auto mb-8 pr-2">
+            {ideas.filter(i => i.channelId === selectedChannelForPost && i.status === 'Pending').map(idea => (
+              <button
+                key={idea.id}
+                onClick={() => markAsPosted(selectedChannelForPost!, idea.id)}
+                className="w-full text-left p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:border-teal-500 dark:hover:border-teal-500 transition-all group bg-zinc-50 dark:bg-zinc-800/30 hover:bg-teal-50/50 dark:hover:bg-teal-500/10"
+              >
+                <span className="text-sm font-bold text-zinc-900 dark:text-white transition-colors">
+                  {idea.title}
+                </span>
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => markAsPosted(selectedChannelForPost!, 'none')}
+            className="w-full py-4 rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 text-sm font-bold hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-all"
+          >
+            Post without an idea from queue
+          </button>
+        </div>
+      </Modal>
     </section>
   );
 }

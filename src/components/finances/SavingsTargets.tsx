@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
+import { Modal } from '../ui/Modal';
+import { DynamicForm } from '../ui/DynamicForm';
 import { calculateAssetBalance } from '@/lib/finances';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 
@@ -400,145 +402,112 @@ export function SavingsTargets() {
         })}
       </div>
 
-      {isGoalModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[32px] w-full max-w-2xl shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300">
-            <div className="p-8 md:p-10">
-              <div className="flex justify-between items-center mb-8 md:mb-10">
-                <h3 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter">
-                  {editingGoal ? 'Edit Goal' : 'New Target'}
-                </h3>
-                <button onClick={() => setIsGoalModalOpen(false)} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors">
-                  <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
+      {/* Schema-Driven Add/Edit Goal Modal */}
+      <Modal
+        isOpen={isGoalModalOpen}
+        onClose={() => setIsGoalModalOpen(false)}
+        title={editingGoal ? 'Edit Goal' : 'New Target'}
+        onSubmit={handleGoalSubmit}
+        submitText={editingGoal ? 'Update' : 'Create'}
+        accentColor="blue"
+      >
+        <DynamicForm
+          sections={[
+            {
+              id: 'basic',
+              title: 'Target Details',
+              fields: [
+                { name: 'name', label: 'Goal Name', type: 'text', required: true, fullWidth: true, placeholder: 'e.g. Dream Car' },
+                { name: 'targetAmount', label: 'Target Amount ($)', type: 'number', required: true, step: "0.01", placeholder: "0.00" },
+                { name: 'initialAmount', label: 'Initial Balance', type: 'number', required: true, step: "0.01", placeholder: "0" },
+                { name: 'startDate', label: 'Start Date', type: 'date', required: true },
+                { name: 'targetDate', label: 'Target Date', type: 'date', required: true }
+              ]
+            }
+          ]}
+          formData={formData}
+          accentColor="blue"
+          onChange={(name, value) => setFormData(prev => ({ ...prev, [name]: value }))}
+        />
+        {editingGoal && (
+          <div className="mt-4 flex justify-start w-full">
+            <button 
+              type="button" 
+              onClick={() => deleteGoal(editingGoal.id)} 
+              className="text-red-500 text-sm font-medium hover:text-red-600 transition-colors"
+            >
+              Delete Goal
+            </button>
+          </div>
+        )}
+      </Modal>
 
-              <form onSubmit={handleGoalSubmit} className="space-y-6">
-                <div className="flex flex-col gap-2">
-                    <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] ml-2">Goal Name</label>
-                    <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Target Amount ($)</label>
-                        <input required type="number" value={formData.targetAmount} onChange={e => setFormData({...formData, targetAmount: e.target.value})} className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all" />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Initial Balance</label>
-                        <input 
-                            required type="number" value={formData.initialAmount} 
-                            onChange={e => setFormData({...formData, initialAmount: e.target.value})} 
-                            placeholder="0"
-                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all" 
-                        />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Start Date</label>
-                        <input required type="date" value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all" />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Target Date</label>
-                        <input required type="date" value={formData.targetDate} onChange={e => setFormData({...formData, targetDate: e.target.value})} className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all" />
-                    </div>
-                </div>
+      {/* Schema-Driven Contribution Modal */}
+      <Modal
+        isOpen={isContributionModalOpen}
+        onClose={() => setIsContributionModalOpen(false)}
+        title="Fuel the Target"
+        onSubmit={recordContribution}
+        submitText="Log Fuel"
+      >
+        <DynamicForm
+          sections={[
+            {
+              id: 'fuel',
+              title: 'Contribution',
+              fields: [
+                { name: 'amount', label: 'Amount', type: 'number', required: true, step: "0.01", placeholder: "0.00", fullWidth: true }
+              ]
+            }
+          ]}
+          formData={{ amount: contributionAmount }}
+          onChange={(_, value) => setContributionAmount(value)}
+        />
+      </Modal>
 
-                <div className="flex gap-4 pt-6">
-                  {editingGoal && (
-                    <button type="button" onClick={() => deleteGoal(editingGoal.id)} className="px-5 py-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 text-rose-500 text-[10px] uppercase tracking-widest font-bold hover:bg-rose-100 transition-all">
-                        Delete
+      {/* Schema-Driven History Modal */}
+      <Modal
+        isOpen={isHistoryModalOpen && !!historyGoalId}
+        onClose={() => setIsHistoryModalOpen(false)}
+        title="Fuel History"
+        onSubmit={(e) => { e.preventDefault(); setIsHistoryModalOpen(false); }}
+        submitText="Done"
+      >
+        <div className="flex flex-col gap-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+          {(() => {
+            const goal = goals.find(g => g.id === historyGoalId);
+            if (!goal) return null;
+            return (
+              <div className="flex flex-col gap-3 w-full">
+                {(goal.contributions || []).map(c => (
+                  <div key={c.id} className="flex justify-between items-center p-5 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-zinc-100 dark:border-zinc-800/50 group">
+                    <div className="flex flex-col">
+                      <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
+                          ${c.amount.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
+                      </span>
+                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-widest font-medium">{new Date(c.date).toLocaleDateString('en-CA', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                    <button type="button" onClick={() => deleteContribution(historyGoalId as string, c.id)} className="p-2 text-zinc-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
-                  )}
-                  <button type="button" onClick={() => setIsGoalModalOpen(false)} className="flex-1 px-6 py-4 md:py-5 rounded-2xl md:rounded-3xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 transition-all font-bold">
-                    Cancel
-                  </button>
-                  <button type="submit" className="flex-1 px-6 py-4 md:py-5 rounded-2xl md:rounded-3xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black hover:scale-105 transition-all uppercase tracking-widest text-[10px] sm:text-xs font-bold">
-                    {editingGoal ? 'Update' : 'Create'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isContributionModalOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300">
-            <div className="p-8 md:p-10">
-              <h3 className="text-2xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter mb-8 text-center">Fuel the Target</h3>
-              <form onSubmit={recordContribution} className="space-y-6">
-                <input 
-                    required autoFocus type="number" step="0.01" value={contributionAmount} onChange={e => setContributionAmount(e.target.value)} placeholder="0.00"
-                    className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-6 text-center text-3xl text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all font-bold"
-                />
-                <button type="submit" className="w-full px-8 py-5 rounded-3xl bg-blue-600 text-white hover:scale-105 transition-all uppercase tracking-widest text-[10px] sm:text-xs font-bold shadow-xl shadow-blue-200/50 dark:shadow-none">
-                    Log fuel
-                </button>
-                <button type="button" onClick={() => setIsContributionModalOpen(false)} className="w-full py-2 text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-400 uppercase tracking-widest font-medium">
-                    Nevermind
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isHistoryModalOpen && historyGoalId && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[32px] w-full max-w-lg shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300 max-h-[80vh] flex flex-col">
-            <div className="p-8 md:p-10 flex flex-col h-full overflow-hidden">
-              <div className="flex justify-between items-center mb-8">
-                <h3 className="text-2xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter">Fuel History</h3>
-                <button onClick={() => setIsHistoryModalOpen(false)} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-
-               <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                {(() => {
-                  const goal = goals.find(g => g.id === historyGoalId);
-                  if (!goal) return null;
-                  return (
-                    <div className="flex flex-col gap-3">
-                      {(goal.contributions || []).map(c => (
-                        <div key={c.id} className="flex justify-between items-center p-5 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-zinc-100 dark:border-zinc-800/50 group">
-                          <div className="flex flex-col">
-                            <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
-                                ${c.amount.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
-                            </span>
-                            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-widest font-medium">{new Date(c.date).toLocaleDateString('en-CA', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-                          </div>
-                          <button onClick={() => deleteContribution(historyGoalId, c.id)} className="p-2 text-zinc-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all">
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                          </button>
-                        </div>
-                      ))}
-                      {goal.initialAmount > 0 && (
-                          <div className="flex justify-between items-center p-5 bg-blue-50/20 dark:bg-blue-500/5 rounded-3xl border border-blue-100/50 dark:border-blue-900/30">
-                            <div className="flex flex-col">
-                                <span className="text-lg font-bold text-blue-600 dark:text-blue-400 tracking-tight">
-                                    ${goal.initialAmount.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
-                                </span>
-                                <span className="text-[10px] text-blue-500/50 uppercase tracking-widest font-bold">Starting Balance</span>
-                            </div>
-                            <div className="text-[10px] text-blue-500/40 uppercase tracking-widest px-3 py-1 bg-blue-50/50 dark:bg-blue-500/10 rounded-xl font-bold">Init</div>
-                          </div>
-                      )}
+                  </div>
+                ))}
+                {goal.initialAmount > 0 && (
+                    <div className="flex justify-between items-center p-5 bg-blue-50/20 dark:bg-blue-500/5 rounded-3xl border border-blue-100/50 dark:border-blue-900/30 mt-2">
+                      <div className="flex flex-col">
+                          <span className="text-lg font-bold text-blue-600 dark:text-blue-400 tracking-tight">
+                              ${goal.initialAmount.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
+                          </span>
+                          <span className="text-[10px] text-blue-500/50 uppercase tracking-widest font-bold">Starting Balance</span>
+                      </div>
+                      <div className="text-[10px] text-blue-500/40 uppercase tracking-widest px-3 py-1 bg-blue-50/50 dark:bg-blue-500/10 rounded-xl font-bold">Init</div>
                     </div>
-                  );
-                })()}
+                )}
               </div>
-              <button 
-                onClick={() => setIsHistoryModalOpen(false)}
-                className="w-full mt-6 py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black uppercase tracking-widest text-xs rounded-2xl font-bold transition-all active:scale-95"
-              >
-                Done
-              </button>
-            </div>
-          </div>
+            );
+          })()}
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

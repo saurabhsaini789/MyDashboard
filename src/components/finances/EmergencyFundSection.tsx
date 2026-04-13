@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
 import { SYNC_KEYS } from '@/lib/sync-keys';
+import { Modal } from '../ui/Modal';
+import { DynamicForm } from '../ui/DynamicForm';
 
 interface Contribution {
   id: string;
@@ -249,92 +251,85 @@ export function EmergencyFundSection() {
         </div>
       </div>
 
-      {isTargetModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[40px] w-full max-w-xl shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300">
-            <div className="p-10">
-              <div className="flex justify-between items-center mb-10">
-                <h3 className="text-3xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter">Adjust Pillar</h3>
-                <button onClick={() => setIsTargetModalOpen(false)} className="text-zinc-600 hover:text-zinc-900 dark:hover:text-white transition-colors">
-                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-              <form onSubmit={handleUpdateSettings} className="space-y-6">
-                <div className="flex flex-col gap-2">
-                    <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Total Goal Target ($)</label>
-                    <input required type="number" value={tempData.targetAmount} onChange={e => setTempData({...tempData, targetAmount: e.target.value})} className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" />
-                </div>
-                <div className="flex flex-col gap-2">
-                    <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Ideal Monthly Expenses ($)</label>
-                    <input required type="number" value={tempData.monthlyExpenses} onChange={e => setTempData({...tempData, monthlyExpenses: e.target.value})} className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" />
-                </div>
-                <div className="flex gap-4 pt-6">
-                  <button type="button" onClick={() => setIsTargetModalOpen(false)} className="flex-1 px-8 py-5 rounded-3xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 hover:text-zinc-900 transition-all font-bold">Cancel</button>
-                  <button type="submit" className="flex-1 px-8 py-5 rounded-3xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black hover:scale-105 transition-all uppercase tracking-widest text-xs font-bold">Update pillar</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Schema-Driven Settings Modal */}
+      <Modal
+        isOpen={isTargetModalOpen}
+        onClose={() => setIsTargetModalOpen(false)}
+        title="Adjust Pillar"
+        onSubmit={handleUpdateSettings}
+        submitText="Update Pillar"
+        accentColor="amber"
+      >
+        <DynamicForm
+          sections={[
+            {
+              id: 'settings',
+              title: 'Emergency Fund Settings',
+              fields: [
+                { name: 'targetAmount', label: 'Total Goal Target ($)', type: 'number', required: true, step: '1', fullWidth: true },
+                { name: 'monthlyExpenses', label: 'Ideal Monthly Expenses ($)', type: 'number', required: true, step: '1', fullWidth: true }
+              ]
+            }
+          ]}
+          formData={tempData}
+          accentColor="amber"
+          onChange={(name, value) => setTempData(prev => ({ ...prev, [name]: value }))}
+        />
+      </Modal>
 
-      {isContributionModalOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[40px] w-full max-w-sm shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300">
-            <div className="p-10">
-              <h3 className="text-2xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter mb-8 text-center text-amber-500">Fuel the Fund</h3>
-              <form onSubmit={handleAddContribution} className="space-y-6">
-                <div className="relative">
-                    <input required autoFocus type="number" step="0.01" value={contributionAmount} onChange={e => setContributionAmount(e.target.value)} placeholder="0.00" className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-6 text-center text-3xl text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all font-bold" />
-                </div>
-                <button type="submit" className="w-full px-8 py-5 rounded-3xl bg-amber-500 text-white hover:scale-105 transition-all uppercase tracking-widest text-xs shadow-xl shadow-amber-200/50 dark:shadow-none font-bold">Log</button>
-                <button type="button" onClick={() => setIsContributionModalOpen(false)} className="w-full py-2 text-xs text-zinc-500 hover:text-zinc-900 uppercase tracking-widest font-medium">Nevermind</button>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Schema-Driven Contribution Modal */}
+      <Modal
+        isOpen={isContributionModalOpen}
+        onClose={() => setIsContributionModalOpen(false)}
+        title="Fuel the Fund"
+        onSubmit={handleAddContribution}
+        submitText="Log"
+        accentColor="amber"
+      >
+        <DynamicForm
+          sections={[
+            {
+              id: 'fuel',
+              title: 'Contribution',
+              fields: [
+                { name: 'amount', label: 'Amount', type: 'number', required: true, step: '0.01', placeholder: '0.00', fullWidth: true }
+              ]
+            }
+          ]}
+          formData={{ amount: contributionAmount }}
+          accentColor="amber"
+          onChange={(_, value) => setContributionAmount(value)}
+        />
+      </Modal>
 
-      {isHistoryModalOpen && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[40px] w-full max-w-lg shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300 max-h-[80vh] flex flex-col">
-            <div className="p-10 flex flex-col h-full overflow-hidden">
-              <div className="flex justify-between items-center mb-8">
-                <h3 className="text-2xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter">Fuel Records</h3>
-                <button onClick={() => setIsHistoryModalOpen(false)} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                <div className="flex flex-col gap-3">
-                  {(data.contributions || []).map(c => (
-                    <div key={c.id} className="flex justify-between items-center p-5 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-zinc-100 dark:border-zinc-800/50 group">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 font-bold">$</div>
-                        <div className="flex flex-col">
-                            <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
-                                ${(c.amount || 0).toLocaleString('en-CA', { maximumFractionDigits: 0 })}
-                            </span>
-                            <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">{new Date(c.date).toLocaleDateString('en-CA', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-                        </div>
-                      </div>
-                      <button onClick={() => deleteContribution(c.id)} className="p-2 text-zinc-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all">
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      </button>
-                    </div>
-                  ))}
+      {/* Schema-Driven History Modal */}
+      <Modal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        title="Fuel Records"
+        onSubmit={(e) => { e.preventDefault(); setIsHistoryModalOpen(false); }}
+        submitText="Done"
+        accentColor="amber"
+      >
+        <div className="flex flex-col gap-3 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+          {(data.contributions || []).map(c => (
+            <div key={c.id} className="flex justify-between items-center p-5 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-zinc-100 dark:border-zinc-800/50 group">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 font-bold">$</div>
+                <div className="flex flex-col">
+                    <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
+                        ${(c.amount || 0).toLocaleString('en-CA', { maximumFractionDigits: 0 })}
+                    </span>
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">{new Date(c.date).toLocaleDateString('en-CA', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                 </div>
               </div>
-              <button 
-                onClick={() => setIsHistoryModalOpen(false)}
-                className="w-full mt-6 py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black uppercase tracking-widest text-xs rounded-2xl font-bold"
-              >
-                Done
+              <button type="button" onClick={() => deleteContribution(c.id)} className="p-2 text-zinc-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
               </button>
             </div>
-          </div>
+          ))}
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

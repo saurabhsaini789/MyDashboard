@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { setSyncedItem } from '@/lib/storage';
 import { getPrefixedKey } from '@/lib/keys';
+import { Modal } from '../ui/Modal';
+import { DynamicForm } from '../ui/DynamicForm';
 
 type HabitStatus = 'none' | 'done' | 'missed';
 
@@ -456,127 +458,96 @@ export function Habits() {
 
       {/* Add Habit Modal */}
       {isAddingHabit && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-zinc-900 rounded-3xl w-full max-w-md shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden scale-in">
-            <div className="p-8">
-              <h3 className="text-2xl font-bold text-zinc-900 dark:text-white mb-6">Create New Habit</h3>
-              
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2">Habit Name</label>
-                  <input 
-                    type="text" 
-                    value={newHabitName}
-                    onChange={(e) => setNewHabitName(e.target.value)}
-                    placeholder="E.g. Morning Yoga"
-                    className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 rounded-2xl px-5 py-4 text-lg font-medium outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all"
-                    autoFocus
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2">Active For</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { id: 'this-month', label: 'This Month' },
-                      { id: 'next-1', label: 'Next 1 Month' },
-                      { id: 'next-2', label: 'Next 2 Months' },
-                      { id: 'next-3', label: 'Next 3 Months' },
-                      { id: 'next-6', label: 'Next 6 Months' },
-                      { id: 'this-year', label: 'This Year' },
-                      { id: 'all', label: 'All Time' },
-                    ].map((scope) => (
-                      <button
-                        key={scope.id}
-                        onClick={() => setSelectedScope(scope.id as any)}
-                        className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all border-2 
-                          ${selectedScope === scope.id 
-                            ? 'bg-teal-50 border-teal-500 text-teal-700 dark:bg-teal-500/10 dark:text-teal-400' 
-                            : 'bg-transparent border-zinc-100 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-200 dark:hover:border-zinc-700'}`}
-                      >
-                        {scope.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-10">
-                <button 
-                  onClick={() => setIsAddingHabit(false)}
-                  className="flex-1 px-6 py-4 rounded-2xl font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleAddHabit}
-                  disabled={!newHabitName.trim()}
-                  className="flex-1 px-6 py-4 rounded-2xl font-bold bg-teal-500 text-white hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-teal-500/20"
-                >
-                  Create Habit
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <Modal
+          isOpen={true}
+          onClose={() => setIsAddingHabit(false)}
+          title="Create New Habit"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleAddHabit();
+          }}
+          submitText="Create Habit"
+        >
+          <DynamicForm
+            sections={[
+              {
+                id: 'habit_details',
+                title: 'Habit Details',
+                fields: [
+                  { name: 'name', label: 'Habit Name', type: 'text', required: true, fullWidth: true, placeholder: 'E.g. Morning Yoga' },
+                  {
+                    name: 'scope',
+                    label: 'Active For',
+                    type: 'select',
+                    fullWidth: true,
+                    options: [
+                      { value: 'this-month', label: 'This Month' },
+                      { value: 'next-1', label: 'Next 1 Month' },
+                      { value: 'next-2', label: 'Next 2 Months' },
+                      { value: 'next-3', label: 'Next 3 Months' },
+                      { value: 'next-6', label: 'Next 6 Months' },
+                      { value: 'this-year', label: 'This Year' },
+                      { value: 'all', label: 'All Time' },
+                    ]
+                  }
+                ]
+              }
+            ]}
+            formData={{ name: newHabitName, scope: selectedScope }}
+            onChange={(name, value) => {
+              if (name === 'name') setNewHabitName(value as string);
+              if (name === 'scope') setSelectedScope(value as any);
+            }}
+          />
+        </Modal>
       )}
 
       {/* Delete Habit Modal */}
       {habitToDelete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-zinc-900 rounded-3xl w-full max-w-md shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden scale-in">
-            <div className="p-8">
-              <div className="w-16 h-16 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center mb-6">
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold text-zinc-900 dark:text-white mb-2">Delete Habit?</h3>
-              <p className="text-zinc-500 dark:text-zinc-400 mb-8 font-medium">
-                Are you sure you want to delete <span className="text-zinc-900 dark:text-zinc-100 font-bold">"{habitToDelete.name}"</span>?
-              </p>
-              
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2">Delete From</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { id: 'this-month', label: 'This Month' },
-                      { id: 'this-year', label: 'Rest of This Year' },
-                      { id: 'all', label: 'Delete Completely' },
-                    ].map((scope) => (
-                      <button
-                        key={scope.id}
-                        onClick={() => setSelectedScope(scope.id as any)}
-                        className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all border-2 
-                          ${selectedScope === scope.id 
-                            ? 'bg-red-50 border-red-500 text-red-700 dark:bg-red-500/10 dark:text-red-400' 
-                            : 'bg-transparent border-zinc-100 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-200 dark:hover:border-zinc-700'}`}
-                      >
-                        {scope.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-10">
-                <button 
-                  onClick={() => setHabitToDelete(null)}
-                  className="flex-1 px-6 py-4 rounded-2xl font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleDeleteHabit}
-                  className="flex-1 px-6 py-4 rounded-2xl font-bold bg-red-500 text-white hover:bg-red-600 transition-all shadow-lg shadow-red-500/20"
-                >
-                  Confirm Delete
-                </button>
-              </div>
-            </div>
+        <Modal
+          isOpen={true}
+          onClose={() => setHabitToDelete(null)}
+          title="Delete Habit?"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleDeleteHabit();
+          }}
+          submitText="Confirm Delete"
+        >
+          <div className="mb-6 flex flex-col items-center justify-center p-6 bg-red-50 dark:bg-red-500/10 rounded-2xl border border-red-100 dark:border-red-900/50">
+            <svg className="w-8 h-8 text-red-500 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <p className="text-zinc-700 dark:text-zinc-300 font-medium text-center">
+              Are you sure you want to delete <span className="font-bold text-red-600 dark:text-red-400">"{habitToDelete.name}"</span>?
+            </p>
           </div>
-        </div>
+          <DynamicForm
+            sections={[
+              {
+                id: 'delete_scope',
+                title: 'Deletion Options',
+                fields: [
+                  {
+                    name: 'scope',
+                    label: 'Delete From',
+                    type: 'select',
+                    fullWidth: true,
+                    options: [
+                      { value: 'this-month', label: 'This Month Only' },
+                      { value: 'this-year', label: 'Rest of This Year' },
+                      { value: 'all', label: 'Delete Completely' }
+                    ]
+                  }
+                ]
+              }
+            ]}
+            formData={{ scope: selectedScope }}
+            onChange={(name, value) => {
+              if (name === 'scope') setSelectedScope(value as any);
+            }}
+          />
+        </Modal>
       )}
     </div>
   );

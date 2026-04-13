@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
+import { Modal } from '../ui/Modal';
+import { DynamicForm } from '../ui/DynamicForm';
 import { calculateLiabilityBalance, type Liability, type PaymentLog } from '@/lib/finances';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 
@@ -462,208 +464,137 @@ export function LiabilitiesSection() {
         })}
       </div>
 
-      {/* Add/Edit Liability Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[32px] w-full max-w-2xl shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300">
-            <div className="p-8 md:p-10">
-              <div className="flex justify-between items-center mb-8 md:mb-10">
-                <h3 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter">
-                  {editingLiability ? 'Modify Liability' : 'New Liability'}
-                </h3>
-                <button onClick={() => setIsModalOpen(false)} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors">
-                  <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
+      {/* Schema-Driven Add/Edit Liability Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingLiability ? 'Modify Liability' : 'New Liability'}
+        onSubmit={handleSubmit}
+        submitText={editingLiability ? 'Update' : 'Save'}
+        accentColor="rose"
+      >
+        <DynamicForm
+          sections={[
+            {
+              id: 'basic',
+              title: 'Liability Profile',
+              fields: [
+                { name: 'name', label: 'Liability Name', type: 'text', required: true, fullWidth: true, placeholder: 'e.g. Home Mortgage...' },
+                { 
+                  name: 'type', 
+                  label: 'Loan Type', 
+                  type: 'select', 
+                  options: LIABILITY_TYPES.map(t => ({ label: t, value: t }))
+                },
+                { name: 'totalAmount', label: 'Total Amount', type: 'number', required: true, step: "0.01", placeholder: "0.00" },
+                { name: 'remainingBalance', label: 'Remaining Balance', type: 'number', required: true, step: "0.01", placeholder: "0.00" },
+                { name: 'interestRate', label: 'Interest Rate (%)', type: 'number', required: true, step: "0.01", placeholder: "0.00" },
+                { name: 'emi', label: 'Monthly EMI', type: 'number', required: true, step: "0.01", placeholder: "0.00" },
+                { name: 'tenureRemaining', label: 'Remaining Tenure (Months)', type: 'number', required: true, placeholder: "0" }
+              ]
+            }
+          ]}
+          formData={formData}
+          accentColor="rose"
+          onChange={(name, value) => setFormData(prev => ({ ...prev, [name]: value }))}
+        />
+        {editingLiability && (
+          <div className="mt-4 flex justify-start w-full">
+            <button 
+              type="button" 
+              onClick={() => deleteLiability(editingLiability.id)} 
+              className="text-red-500 text-sm font-medium hover:text-red-600 transition-colors"
+            >
+              Delete Liability
+            </button>
+          </div>
+        )}
+      </Modal>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="flex flex-col gap-2">
-                    <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Liability Name</label>
-                    <input 
-                      required type="text" value={formData.name} 
-                      onChange={e => setFormData({...formData, name: e.target.value})} 
-                      placeholder="e.g. Home Mortgage..."
-                      className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" 
-                    />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Loan Type</label>
-                        <select 
-                            value={formData.type} 
-                            onChange={e => setFormData({...formData, type: e.target.value as LiabilityType})}
-                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all appearance-none cursor-pointer"
+      {/* Schema-Driven Repay Modal */}
+      <Modal
+        isOpen={isRepayModalOpen}
+        onClose={() => setIsRepayModalOpen(false)}
+        title="Log Payment"
+        onSubmit={handleRepaySubmit}
+        submitText="Log Payment"
+      >
+        <DynamicForm
+          sections={[
+            {
+              id: 'repay',
+              title: 'Payment Details',
+              fields: [
+                {
+                  name: 'repayType',
+                  label: 'Payment Type',
+                  fullWidth: true,
+                  render: ({ name, value, onChange }) => (
+                    <div className="flex gap-2 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-xl mb-2">
+                        <button 
+                            type="button" 
+                            onClick={() => onChange(name, 'Regular EMI')}
+                            className={`flex-1 py-2 text-[10px] uppercase tracking-widest rounded-lg transition-all ${value === 'Regular EMI' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white' : 'text-zinc-600'}`}
                         >
-                            {LIABILITY_TYPES.map(type => (
-                                <option key={type} value={type}>{type}</option>
-                            ))}
-                        </select>
+                            Regular EMI
+                        </button>
+                        <button 
+                            type="button" 
+                            onClick={() => onChange(name, 'Prepayment')}
+                            className={`flex-1 py-2 text-[10px] uppercase tracking-widest rounded-lg transition-all ${value === 'Prepayment' ? 'bg-rose-500 text-white shadow-lg shadow-rose-200 dark:shadow-none' : 'text-zinc-600'}`}
+                        >
+                            Prepayment
+                        </button>
                     </div>
-                     <div className="flex flex-col gap-2">
-                        <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Total Amount</label>
-                        <input 
-                                required type="number" step="0.01" value={formData.totalAmount} 
-                                onChange={e => setFormData({...formData, totalAmount: e.target.value})} 
-                                placeholder="0.00"
-                                className="w-full min-w-0 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 pr-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all text-xl" 
-                            />
-                    </div>
-                </div>
+                  )
+                },
+                { name: 'amount', label: 'Amount', type: 'number', required: true, step: "0.01", placeholder: "0.00", fullWidth: true }
+              ]
+            }
+          ]}
+          formData={{ amount: repayAmount, repayType }}
+          onChange={(name, value) => {
+            if (name === 'amount') setRepayAmount(value);
+            if (name === 'repayType') setRepayType(value);
+          }}
+        />
+      </Modal>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Remaining Balance</label>
-                        <input 
-                                required type="number" step="0.01" value={formData.remainingBalance} 
-                                onChange={e => setFormData({...formData, remainingBalance: e.target.value})} 
-                                placeholder="0.00"
-                                className="w-full min-w-0 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 pr-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all" 
-                            />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Interest Rate (%)</label>
-                        <input 
-                            required type="number" step="0.01" value={formData.interestRate} 
-                            onChange={e => setFormData({...formData, interestRate: e.target.value})} 
-                            placeholder="0.00"
-                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all" 
-                        />
-                    </div>
+      {/* Schema-Driven Simulation Modal */}
+      <Modal
+        isOpen={isSimModalOpen}
+        onClose={() => setIsSimModalOpen(false)}
+        title="Payoff Impact"
+        onSubmit={(e) => { e.preventDefault(); setIsSimModalOpen(false); }}
+        submitText="Done"
+      >
+        <p className="text-[10px] text-zinc-500 text-center uppercase tracking-widest mb-6 font-medium">
+          Visualize how much time and interest you save with an extra payment.
+        </p>
+        <DynamicForm
+          sections={[
+            {
+              id: 'sim',
+              title: 'Simulation',
+              fields: [
+                { name: 'extra', label: 'Extra One-Time Payment ($)', type: 'number', step: "100", placeholder: "e.g. 5000", fullWidth: true }
+              ]
+            }
+          ]}
+          formData={{ extra: simExtraPayment }}
+          onChange={(_, value) => setSimExtraPayment(value)}
+        />
+        {simExtraPayment && activeLiabilityId && (
+            <div className="mt-6 grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-3xl p-6 flex flex-col gap-1 items-center text-center">
+                    <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">Interest Saved</span>
+                    <span className="text-2xl text-indigo-700 dark:text-indigo-300 tracking-tighter">
+                        {calculateSim(liabilities.find(l => l.id === activeLiabilityId)!, parseFloat(simExtraPayment)).monthsSaved} Months
+                    </span>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Monthly EMI</label>
-                        <input 
-                                required type="number" step="0.01" value={formData.emi} 
-                                onChange={e => setFormData({...formData, emi: e.target.value})} 
-                                placeholder="0.00"
-                                className="w-full min-w-0 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 pr-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all" 
-                            />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs text-zinc-600 uppercase tracking-[0.2em] ml-2">Remaining Tenure (Months)</label>
-                        <input 
-                            required type="number" value={formData.tenureRemaining} 
-                            onChange={e => setFormData({...formData, tenureRemaining: e.target.value})} 
-                            placeholder="0"
-                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all" 
-                        />
-                    </div>
-                </div>
-
-                <div className="flex gap-4 pt-6">
-                  {editingLiability && (
-                    <button type="button" onClick={() => deleteLiability(editingLiability.id)} className="px-5 py-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 text-rose-500 text-[10px] uppercase tracking-widest font-bold hover:bg-rose-100 transition-all">
-                        Delete
-                    </button>
-                  )}
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-4 md:py-5 rounded-2xl md:rounded-3xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 transition-all font-bold">
-                    Cancel
-                  </button>
-                  <button type="submit" className="flex-1 px-6 py-4 md:py-5 rounded-2xl md:rounded-3xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black hover:scale-105 transition-all uppercase tracking-widest text-[10px] sm:text-xs font-bold">
-                    {editingLiability ? 'Update' : 'Save'}
-                  </button>
-                </div>
-              </form>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Repay Modal */}
-      {isRepayModalOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300">
-            <div className="p-8 md:p-10">
-              <h3 className="text-2xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter mb-8 text-center text-rose-500">Log Payment</h3>
-              <form onSubmit={handleRepaySubmit} className="space-y-6">
-                <div className="flex gap-2 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-xl mb-4">
-                    <button 
-                        type="button" 
-                        onClick={() => setRepayType('Regular EMI')}
-                        className={`flex-1 py-2 text-[10px] uppercase tracking-widest rounded-lg transition-all ${repayType === 'Regular EMI' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white' : 'text-zinc-600'}`}
-                    >
-                        Regular EMI
-                    </button>
-                    <button 
-                        type="button" 
-                        onClick={() => setRepayType('Prepayment')}
-                        className={`flex-1 py-2 text-[10px] uppercase tracking-widest rounded-lg transition-all ${repayType === 'Prepayment' ? 'bg-rose-500 text-white shadow-lg shadow-rose-200 dark:shadow-none' : 'text-zinc-600'}`}
-                    >
-                        Prepayment
-                    </button>
-                </div>
-
-                <div className="flex flex-col gap-4">
-
-                    <div className="flex flex-col gap-2">
-                        <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] text-center">Amount</label>
-                        <input 
-                            required autoFocus type="number" step="0.01" value={repayAmount} 
-                            onChange={e => setRepayAmount(e.target.value)} 
-                            placeholder="0.00"
-                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-6 text-center text-3xl text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all font-bold"
-                        />
-                    </div>
-                </div>
-                <button type="submit" className="w-full px-8 py-5 rounded-3xl bg-rose-500 text-white hover:scale-105 transition-all uppercase tracking-widest text-[10px] sm:text-xs font-bold shadow-xl shadow-rose-200/50 dark:shadow-none">
-                    Log payment
-                </button>
-                <button type="button" onClick={() => setIsRepayModalOpen(false)} className="w-full py-2 text-[10px] text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-400 uppercase tracking-widest font-medium">
-                    Nevermind
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Simulation Modal */}
-      {isSimModalOpen && activeLiabilityId && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 rounded-[32px] w-full max-w-lg shadow-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-300 max-h-[90vh] flex flex-col">
-            <div className="p-8 md:p-10 flex flex-col h-full overflow-hidden">
-              <h3 className="text-2xl font-bold text-zinc-900 dark:text-white uppercase tracking-tighter mb-2 text-center">Payoff Impact</h3>
-              <p className="text-[10px] text-zinc-500 text-center uppercase tracking-widest mb-10 font-medium">
-                Visualize how much time and interest you save with an extra payment.
-              </p>
-              
-              <div className="space-y-8">
-                <div className="flex flex-col gap-2">
-                    <label className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] text-center">Extra One-Time Payment ($)</label>
-                    <input 
-                        autoFocus type="number" step="100" value={simExtraPayment} 
-                        onChange={e => setSimExtraPayment(e.target.value)} 
-                        placeholder="e.g. 5000"
-                        className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-6 text-center text-3xl text-zinc-900 dark:text-white outline-none focus:ring-4 focus:ring-zinc-900/5 transition-all"
-                    />
-                </div>
-
-                {simExtraPayment && (
-                    <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-3xl p-6 flex flex-col gap-1 items-center text-center">
-                            <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">Interest Saved</span>
-                            <span className="text-2xl text-indigo-700 dark:text-indigo-300 tracking-tighter">
-                                {calculateSim(liabilities.find(l => l.id === activeLiabilityId)!, parseFloat(simExtraPayment)).monthsSaved} Months
-                            </span>
-                        </div>
-                    </div>
-                )}
-
-                <button 
-                    type="button" 
-                    onClick={() => setIsSimModalOpen(false)} 
-                    className="w-full px-8 py-5 rounded-3xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black hover:scale-105 transition-all uppercase tracking-widest text-[10px] sm:text-xs font-bold"
-                >
-                    Done
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 }
