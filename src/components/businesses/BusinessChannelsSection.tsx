@@ -499,15 +499,15 @@ export function BusinessChannelsSection() {
               fields: [
                 { name: 'name', label: 'Channel / Business Name', type: 'text', required: true, fullWidth: true, placeholder: 'e.g. Personal Brand, Tech Blog...' },
                 {
-                  name: 'platform', label: 'Platform / Location', type: 'select',
+                  name: 'platform', label: 'Platform / Location', type: 'select' as const,
                   options: DEFAULT_PLATFORMS.map(p => ({ label: p, value: p }))
                 },
-                ...(formData.platform === 'Other' ? [{ name: 'customPlatform', label: 'Other Platform Name', type: 'text', required: true }] : []),
+                ...(formData.platform === 'Other' ? [{ name: 'customPlatform', label: 'Other Platform Name', type: 'text' as const, required: true }] : []),
                 {
-                  name: 'contentType', label: 'Content / Category', type: 'select',
+                  name: 'contentType', label: 'Content / Category', type: 'select' as const,
                   options: CONTENT_TYPES.map(t => ({ label: t, value: t }))
                 },
-                ...(formData.contentType === 'Other' ? [{ name: 'customContentType', label: 'Other Content Type', type: 'text', required: true }] : []),
+                ...(formData.contentType === 'Other' ? [{ name: 'customContentType', label: 'Other Content Type', type: 'text' as const, required: true }] : []),
                 { name: 'postingFrequency', label: 'Posting Frequency (Days)', type: 'number', min: 1, required: true },
                 { name: 'lastPostedDate', label: 'Last Posted Date', type: 'date', required: true }
               ]

@@ -23,6 +23,7 @@ interface ModalProps {
   submitText?: string;
   cancelText?: string;
   isReadonly?: boolean;
+  isSubmitDisabled?: boolean;
   maxWidth?: string;
   accentColor?: AccentColor;
 }
@@ -38,6 +39,7 @@ export const Modal: React.FC<ModalProps> = ({
   submitText = 'Save Changes',
   cancelText = 'Cancel',
   isReadonly = false,
+  isSubmitDisabled = false,
   maxWidth = 'max-w-2xl',
   accentColor = 'blue',
 }) => {
@@ -122,7 +124,8 @@ export const Modal: React.FC<ModalProps> = ({
               <button
                 type="submit"
                 form="generic-modal-form"
-                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm active:scale-95 ${buttonColorMap[accentColor] || buttonColorMap.blue}`}
+                disabled={isSubmitDisabled}
+                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 ${buttonColorMap[accentColor] || buttonColorMap.blue}`}
               >
                 {submitText}
               </button>

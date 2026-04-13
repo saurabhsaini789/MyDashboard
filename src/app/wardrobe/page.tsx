@@ -9,7 +9,7 @@ import { useSyncStatus } from '@/context/SyncContext';
 
 export default function WardrobePage() {
   const { items, isLoaded, addItem, updateItem, deleteItem } = useWardrobe();
-  const { syncStatus, isLocalhost } = useSyncStatus();
+  const { syncStatus, isDevelopment } = useSyncStatus();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<WardrobeItem | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('ALL');

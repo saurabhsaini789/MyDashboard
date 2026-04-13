@@ -4,10 +4,10 @@ import React from 'react';
 
 interface SyncStatusProps {
   status: 'idle' | 'syncing' | 'error' | 'unauthenticated' | 'connected' | 'initializing' | 'local';
-  isLocalhost?: boolean;
+  isDevelopment?: boolean;
 }
 
-export function SyncStatus({ status, isLocalhost }: SyncStatusProps) {
+export function SyncStatus({ status, isDevelopment }: SyncStatusProps) {
   const getStatusConfig = () => {
     switch (status) {
       case 'syncing':
@@ -20,7 +20,7 @@ export function SyncStatus({ status, isLocalhost }: SyncStatusProps) {
       case 'connected':
         return { 
           color: 'bg-emerald-500', 
-          text: isLocalhost ? 'Cloud Active (Pull Only)' : 'Cloud Active', 
+          text: isDevelopment ? 'Cloud Active (Pull Only)' : 'Cloud Active', 
           ping: false,
           label: 'text-emerald-600 dark:text-emerald-400'
         };
@@ -55,7 +55,7 @@ export function SyncStatus({ status, isLocalhost }: SyncStatusProps) {
       default:
         return { 
           color: 'bg-emerald-500/50', 
-          text: isLocalhost ? 'Cloud Synced (Isolated)' : 'Cloud Synced', 
+          text: isDevelopment ? 'Cloud Synced (Isolated)' : 'Cloud Synced', 
           ping: false,
           label: 'text-zinc-400 dark:text-zinc-500'
         };

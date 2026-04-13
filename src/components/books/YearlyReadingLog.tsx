@@ -17,7 +17,7 @@ import { MultiYearLogData, MonthlyEntry, YearlyLogData, LogBookEntry } from '@/t
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
 import { Modal } from '../ui/Modal';
-import { DynamicForm } from '../ui/DynamicForm';
+import { DynamicForm, FormSchemaField } from '../ui/DynamicForm';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -621,7 +621,7 @@ function AddLogBookModal({
     );
   };
 
-  const fields = [];
+  const fields: FormSchemaField[] = [];
   if (queueBooks.length > 0) {
     fields.push({
       name: 'quickAdd',
@@ -653,7 +653,7 @@ function AddLogBookModal({
       title="Add Book Details"
       onSubmit={handleSubmit}
       submitText="Save to Log"
-      disableSubmit={!formData.title.trim()}
+      isSubmitDisabled={!formData.title.trim()}
       accentColor="amber"
     >
       <div className="mb-4">
