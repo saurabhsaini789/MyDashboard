@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { setSyncedItem } from '@/lib/storage';
 import { getPrefixedKey } from '@/lib/keys';
-
-import { ProjectModal, type Project, type Task, getProjectPriorityInfo, sortProjects } from './ProjectModal';
+import { SectionTitle } from '@/components/ui/Text';
+import { ProjectModal, type Project, getProjectPriorityInfo, sortProjects } from './ProjectModal';
 
 import { GanttView } from './GanttView';
 
@@ -15,13 +15,14 @@ const BUCKETS = [
   'Learning', 'Admin', 'Mental'
 ];
 
-// --- Shared Priority & Status Logic ---
+interface GoalsProps {
+  view: 'grid' | 'gantt';
+  setView: (v: 'grid' | 'gantt') => void;
+}
 
-
-export function Goals() {
+export function Goals({ view, setView }: GoalsProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [view, setView] = useState<'grid' | 'gantt'>('grid');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [creatingForBucket, setCreatingForBucket] = useState<string | null>(null);
   const projectsRef = React.useRef(projects);
@@ -107,32 +108,6 @@ export function Goals() {
   return (
     <div className="w-full relative">
 
-      {/* View Switcher Tabs */}
-      <div className="flex justify-center mb-8">
-        <div className="bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-xl flex items-center gap-1 shadow-inner">
-          <button
-            onClick={() => setView('grid')}
-            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${view === 'grid'
-              ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
-              : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-              }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
-            Grid View
-          </button>
-          <button
-            onClick={() => setView('gantt')}
-            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${view === 'gantt'
-              ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
-              : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-              }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10h18M3 14h18M3 18h18M7 6v4M17 6v4" /></svg>
-            Gantt View
-          </button>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className={view === 'grid' ? 'block animate-in fade-in duration-500' : 'hidden'}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -145,10 +120,10 @@ export function Goals() {
             return (
               <div key={bucket} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 flex flex-col h-[480px] shadow-sm transition-all hover:shadow-md">
                 <div className="flex items-center justify-between mb-4 flex-shrink-0">
-                  <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  <SectionTitle className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-teal-500/20 border border-teal-500"></div>
                     {bucket}
-                  </h2>
+                  </SectionTitle>
                   <button
                     onClick={() => setCreatingForBucket(bucket)}
                     className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 transition-colors"
@@ -170,15 +145,15 @@ export function Goals() {
                       <div
                         key={project.id}
                         onClick={() => setSelectedProject(project)}
-                        className={`text-left p-4 rounded-xl transition-all sm:hover:-translate-y-0.5 flex-shrink-0 flex flex-col justify-between cursor-pointer group relative border-l-4 ${priority.classes}`}
+                        className={`text-left p-4 rounded-xl transition-all sm:hover:-translate-y-0.5 flex-shrink-0 flex flex-col justify-between cursor-pointer group relative border-l-4 bg-white dark:bg-zinc-900/60 shadow-sm hover:shadow-md ${priority.classes}`}
                       >
                         
                         <div className="flex justify-between items-start gap-2 w-full">
                           <div className="flex flex-col gap-1 flex-1 min-w-0">
-                              <span className="text-xs uppercase font-bold tracking-widest opacity-80">
-                                {priority.label}
-                              </span>
-                            <h4 className="font-bold text-[17px] leading-tight break-words flex items-center gap-2">
+                            <span className={`text-xs uppercase font-semibold opacity-80 ${priority.text}`}>
+                              {priority.label}
+                            </span>
+                            <h4 className="font-semibold text-[17px] leading-tight break-words flex items-center gap-2">
                               {project.title}
                               {project.isImportant && (
                                 <span className="text-amber-500 flex-shrink-0 animate-pulse-subtle">
@@ -200,7 +175,7 @@ export function Goals() {
                             })()}
                           </div>
                           {project.dueDate && (
-                            <div className="flex items-center gap-1.5 py-1 px-2 rounded-lg bg-white/60 dark:bg-black/30 text-xs opacity-90 font-bold shrink-0 mt-0.5 shadow-sm">
+                            <div className="flex items-center gap-1.5 py-1 px-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/80 text-xs opacity-90 font-semibold shrink-0 mt-0.5 shadow-sm border border-zinc-100 dark:border-zinc-700/50">
                               {new Date(project.dueDate + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                             </div>
                           )}
@@ -229,12 +204,12 @@ export function Goals() {
         if (completedProjects.length === 0) return null;
         return (
           <div className="mt-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2 mb-6">
+            <SectionTitle className="flex items-center gap-2 mb-6">
               <span className="w-8 h-8 rounded-full bg-teal-50 dark:bg-teal-500/10 text-teal-500 flex items-center justify-center shadow-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
               </span>
               Completed projects
-            </h2>
+            </SectionTitle>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {completedProjects.map(project => {
                 const priority = getProjectPriorityInfo(project);
@@ -242,10 +217,10 @@ export function Goals() {
                   <div
                     key={project.id}
                     onClick={() => setSelectedProject(project)}
-                    className={`text-left p-4 rounded-xl transition-all sm:hover:-translate-y-0.5 flex-shrink-0 flex flex-col justify-between cursor-pointer shadow-sm ${priority.classes}`}
+                    className={`text-left p-4 rounded-xl transition-all sm:hover:-translate-y-0.5 flex-shrink-0 flex flex-col justify-between cursor-pointer bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 shadow-sm ${priority.classes}`}
                   >
                     <div className="flex flex-col gap-1.5 w-full">
-                      <div className="flex items-start justify-between gap-2 text-xs uppercase font-bold tracking-widest opacity-90">
+                      <div className="flex items-start justify-between gap-2 text-xs uppercase font-semibold opacity-90">
                         <span className="mt-1 text-zinc-500 dark:text-zinc-400">{project.bucketId}</span>
                         {project.dueDate && (
                           <div className="flex items-center gap-1.5 py-0.5 px-2 rounded-md bg-white/50 dark:bg-black/20 normal-case opacity-90 font-medium shrink-0">

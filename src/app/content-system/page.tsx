@@ -5,8 +5,7 @@ import { TodayActions } from '@/components/content-system/TodayActions';
 import { BusinessChannelsSection } from '@/components/content-system/BusinessChannelsSection';
 import { ContentQueue } from '@/components/content-system/ContentQueue';
 import { Insights } from '@/components/content-system/Insights';
-import { PageContainer } from '@/components/PageContainer';
-import { MedicineInventorySection } from '@/components/health-system/MedicineInventorySection';
+import { PageTitle, Text, Description } from '@/components/ui/Text';
 
 export default function ContentSystemPage() {
   const [mounted, setMounted] = useState(false);
@@ -18,18 +17,21 @@ export default function ContentSystemPage() {
   if (!mounted) return null;
 
   return (
-    <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 selection:bg-zinc-500/10 relative overflow-hidden">
-      <PageContainer>
+    <main className="min-h-screen bg-[#fcfcfc] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 selection:bg-teal-500/10 p-4 md:p-8 xl:p-12 relative overflow-hidden">
+      <div className="mx-auto w-full max-w-7xl flex flex-col gap-12 relative z-10">
+
         {/* Page Title */}
-        <header className="flex flex-col items-start mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-            Content
-          </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2">Strategic creation and distribution management</p>
+        <header className="flex flex-col items-start mb-6">
+          <PageTitle>
+            Content System
+          </PageTitle>
+          <Description>
+            Manage you content operations, channels and strategy
+          </Description>
         </header>
 
         {/* Insights - Actionable Guidance */}
-        <div className="fade-in pt-4" style={{ animationDelay: '0.2s' }}>
+        <div className="fade-in pt-0" style={{ animationDelay: '0.2s' }}>
           <Insights />
         </div>
 
@@ -48,12 +50,11 @@ export default function ContentSystemPage() {
           <ContentQueue />
         </div>
 
-        <div className="fade-in pt-4" style={{ animationDelay: '1.0s' }}>
-          <MedicineInventorySection />
-        </div>
-      </PageContainer>
+      </div>
 
-      {/* Minimal background texture (optional, keeping it blank for ultimate minimalism) */}
+      {/* Decorative Background Elements */}
+      <div className="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-teal-500/5 rounded-full blur-[120px] -z-10 animate-pulse" />
+      <div className="absolute bottom-[-10%] left-[-5%] w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[120px] -z-10" />
     </main>
   );
 }

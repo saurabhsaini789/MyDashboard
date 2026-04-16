@@ -1,12 +1,29 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Plus, 
+  Trash2, 
+  Edit2, 
+  Globe, 
+  MoreVertical, 
+  ChevronDown, 
+  X,
+  PlusCircle,
+  MoreHorizontal,
+  Info,
+  CheckCircle2,
+  Rocket,
+  Circle
+} from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 import { Modal } from '../ui/Modal';
 import { DynamicForm } from '../ui/DynamicForm';
-import { DEFAULT_PLATFORMS, CONTENT_TYPES, type BusinessChannel, type ContentIdea } from '@/types/content-system';
+import { DEFAULT_PLATFORMS, CONTENT_TYPES, type BusinessChannel, type ContentIdea } from '@/types/business';
+import { Text, SectionTitle } from '../ui/Text';
 
 export function BusinessChannelsSection() {
   const [channels, setChannels] = useState<BusinessChannel[]>([]);
@@ -26,8 +43,26 @@ export function BusinessChannelsSection() {
     customContentType: '',
     status: 'Active' as 'Active' | 'Paused' | 'Idea',
     postingFrequency: 1,
-    lastPostedDate: new Date().toISOString().split('T')[0]
+    lastPostedDate: new Date().toISOString().split('T')[0],
+    rowColor: ''
   });
+
+  const LIGHT_COLORS = [
+    { name: 'Default', value: '', dot: 'bg-zinc-200 dark:bg-zinc-700' },
+    { name: 'Rose', value: 'bg-rose-50/50 dark:bg-rose-500/5', dot: 'bg-rose-500' },
+    { name: 'Amber', value: 'bg-amber-50/50 dark:bg-amber-500/5', dot: 'bg-amber-500' },
+    { name: 'Emerald', value: 'bg-emerald-50/50 dark:bg-emerald-500/5', dot: 'bg-emerald-500' },
+    { name: 'Sky', value: 'bg-sky-50/50 dark:bg-sky-500/5', dot: 'bg-sky-500' },
+    { name: 'Indigo', value: 'bg-indigo-50/50 dark:bg-indigo-500/5', dot: 'bg-indigo-500' },
+    { name: 'Violet', value: 'bg-violet-50/50 dark:bg-violet-500/5', dot: 'bg-violet-500' },
+    { name: 'Zinc', value: 'bg-zinc-50/50 dark:bg-zinc-500/5', dot: 'bg-zinc-500' },
+  ];
+
+  const getDotColor = (rowColorValue?: string) => {
+    const color = LIGHT_COLORS.find(c => c.value === rowColorValue);
+    return color?.dot || 'bg-zinc-200 dark:bg-zinc-700';
+  };
+
 
   const channelsRef = useRef(channels);
   useEffect(() => {
@@ -60,6 +95,7 @@ export function BusinessChannelsSection() {
       }
     };
 
+    // Initial load for ideas
     const savedIdeas = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_BUSINESS_IDEAS));
     if (savedIdeas) {
       try { setIdeas(JSON.parse(savedIdeas)); } catch (e) {}
@@ -79,10 +115,12 @@ export function BusinessChannelsSection() {
       customContentType: '',
       status: 'Active',
       postingFrequency: 1,
-      lastPostedDate: new Date().toISOString().split('T')[0]
+      lastPostedDate: new Date().toISOString().split('T')[0],
+      rowColor: ''
     });
     setIsModalOpen(true);
   };
+
 
   const openEditModal = (channel: BusinessChannel) => {
     setEditingChannel(channel);
@@ -94,10 +132,12 @@ export function BusinessChannelsSection() {
       customContentType: CONTENT_TYPES.includes(channel.contentType || '') ? '' : (channel.contentType || ''),
       status: channel.status,
       postingFrequency: channel.postingFrequency,
-      lastPostedDate: channel.lastPostedDate
+      lastPostedDate: channel.lastPostedDate,
+      rowColor: channel.rowColor || ''
     });
     setIsModalOpen(true);
   };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,7 +156,8 @@ export function BusinessChannelsSection() {
       status: formData.status,
       postingFrequency: formData.postingFrequency,
       lastPostedDate: formData.lastPostedDate,
-      nextPostDueDate: nextDueDate.toISOString().split('T')[0]
+      nextPostDueDate: nextDueDate.toISOString().split('T')[0],
+      rowColor: formData.rowColor
     };
 
     let updatedChannels;
@@ -131,6 +172,7 @@ export function BusinessChannelsSection() {
     setIsModalOpen(false);
   };
 
+
   const deleteChannel = (id: string) => {
     const updated = channels.filter(c => c.id !== id);
     setChannels(updated);
@@ -142,6 +184,7 @@ export function BusinessChannelsSection() {
     const today = new Date();
     const todayISO = today.toISOString().split('T')[0];
     
+    // Check if we should show idea selection first
     if (!ideaId) {
       const channelIdeas = ideas.filter(i => i.channelId === id && i.status === 'Pending');
       if (channelIdeas.length > 0) {
@@ -166,6 +209,7 @@ export function BusinessChannelsSection() {
       return c;
     });
 
+    // If an idea was selected, mark it as completed
     if (ideaId) {
       const updatedIdeas = ideas.map(idea => 
         idea.id === ideaId ? { ...idea, status: 'Completed' as const } : idea
@@ -174,6 +218,13 @@ export function BusinessChannelsSection() {
       setSyncedItem(SYNC_KEYS.FINANCES_BUSINESS_IDEAS, JSON.stringify(updatedIdeas));
     }
 
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#10b981', '#3b82f6', '#f59e0b']
+    });
+
     setChannels(updatedChannels);
     setSyncedItem(SYNC_KEYS.FINANCES_BUSINESS, JSON.stringify(updatedChannels));
     setIsIdeaModalOpen(false);
@@ -181,7 +232,7 @@ export function BusinessChannelsSection() {
   };
 
   const getStatusIndicator = (channel: BusinessChannel) => {
-    if (channel.status !== 'Active') return { label: 'draft', color: 'text-zinc-400', priority: 0 };
+    if (channel.status !== 'Active') return { icon: <Circle size={10} className="fill-current text-zinc-400" />, label: 'Draft', color: 'text-zinc-400' };
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -190,24 +241,20 @@ export function BusinessChannelsSection() {
     
     const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     
-    if (diffDays < 0) return { label: 'overdue', color: 'text-rose-500', priority: 3 };
-    if (diffDays <= 1) return { label: 'due soon', color: 'text-amber-500', priority: 2 };
-    return { label: 'on track', color: 'text-emerald-500', priority: 1 };
-  };
-
-  const getPlatformDotColor = (platform: string) => {
-    const p = platform.toLowerCase();
-    if (p.includes('instagram')) return 'bg-rose-400';
-    if (p.includes('youtube')) return 'bg-red-400';
-    if (p.includes('linkedin')) return 'bg-blue-400';
-    return 'bg-zinc-400';
+    if (diffDays < 0) return { icon: <Circle size={10} className="fill-current text-rose-500" />, label: 'Overdue', color: 'text-rose-500', priority: 3 };
+    if (diffDays <= 1) return { icon: <Circle size={10} className="fill-current text-amber-500" />, label: 'Due Soon', color: 'text-amber-500', priority: 2 };
+    return { icon: <Circle size={10} className="fill-current text-emerald-500" />, label: 'On Track', color: 'text-emerald-500', priority: 1 };
   };
 
   const sortedChannels = [...channels].sort((a, b) => {
     const statusA = getStatusIndicator(a);
     const statusB = getStatusIndicator(b);
+    
+    // Idea/Paused at the bottom
     if (a.status === 'Active' && b.status !== 'Active') return -1;
     if (a.status !== 'Active' && b.status === 'Active') return 1;
+    
+    // Sort by priority (Overdue > Due Soon > On Track)
     return (statusB.priority || 0) - (statusA.priority || 0);
   });
 
@@ -217,36 +264,38 @@ export function BusinessChannelsSection() {
     <section className="w-full">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 px-2">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-            System Channels
-          </h2>
-          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 uppercase tracking-widest font-bold">
-            The operational layer of your content distribution
-          </p>
+          <SectionTitle className="flex items-center gap-2">
+            Channels / Content System
+          </SectionTitle>
+          <Text variant="label" as="p" className="mt-1">
+            The central database and control layer of your content empire
+          </Text>
         </div>
 
+        
         <button 
           onClick={openAddModal}
-          className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-8 py-3.5 rounded-2xl text-xs uppercase tracking-widest font-black shadow-md hover:scale-[1.02] active:scale-95 transition-all"
+          className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-semibold px-6 py-4 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-sm shadow-zinc-900/10 h-[54px] flex items-center gap-2"
         >
+          <Plus size={16} />
           New Channel
         </button>
       </div>
 
       {/* Table View (Desktop) */}
-      <div className="hidden lg:block bg-white dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 rounded-[32px] overflow-hidden shadow-sm">
+      <div className="hidden lg:block bg-white dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-zinc-100 dark:border-zinc-800">
-                <th className="px-8 py-6 text-[11px] uppercase tracking-widest font-black text-zinc-500">Status</th>
-                <th className="px-8 py-6 text-[11px] uppercase tracking-widest font-black text-zinc-500">Channel Name</th>
-                <th className="px-8 py-6 text-[11px] uppercase tracking-widest font-black text-zinc-500">Platform</th>
-                <th className="px-8 py-6 text-[11px] uppercase tracking-widest font-black text-zinc-500">Category</th>
-                <th className="px-8 py-6 text-[11px] uppercase tracking-widest font-black text-zinc-500 text-center">Freq</th>
-                <th className="px-8 py-6 text-[11px] uppercase tracking-widest font-black text-zinc-500 text-center">Velocity</th>
-                <th className="px-8 py-6 text-[11px] uppercase tracking-widest font-black text-zinc-500 text-right">Next Due</th>
-                <th className="px-8 py-6"></th>
+                <Text variant="label" as="th" className="px-6 py-6 font-semibold">Status</Text>
+                <Text variant="label" as="th" className="px-6 py-6 font-semibold">Channel / Business Name</Text>
+                <Text variant="label" as="th" className="px-6 py-6 font-semibold">Platform / Location</Text>
+                <Text variant="label" as="th" className="px-6 py-6 font-semibold">Content / Category</Text>
+                <Text variant="label" as="th" className="px-6 py-6 font-semibold text-center">Freq</Text>
+                <Text variant="label" as="th" className="px-6 py-6 font-semibold text-center">Days Ago</Text>
+                <Text variant="label" as="th" className="px-6 py-6 font-semibold text-right">Next Due</Text>
+                <th className="px-6 py-6"></th>
               </tr>
             </thead>
             <tbody>
@@ -258,60 +307,74 @@ export function BusinessChannelsSection() {
                 const daysSince = Math.floor((today.getTime() - lastPosted.getTime()) / (1000 * 60 * 60 * 24));
 
                 return (
-                  <tr key={channel.id} className="group hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors border-b border-zinc-100 dark:border-zinc-800 last:border-0">
-                    <td className="px-8 py-6">
-                      <span className={`text-[11px] font-black uppercase tracking-widest ${indicator.color}`}>
-                        {indicator.label}
-                      </span>
-                    </td>
-                    <td className="px-8 py-6">
-                      <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
-                        {channel.name}
-                      </span>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${getPlatformDotColor(channel.platform)} opacity-80`} />
-                        <span className="text-xs text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-tight">
-                          {channel.platform}
-                        </span>
+                  <tr key={channel.id} className="group hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors border-b border-zinc-100 dark:border-zinc-800 last:border-0">
+                    <td className="px-6 py-6">
+                      <div className="flex flex-col gap-1">
+                        <Text variant="label" as="span" className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-semibold border ${ channel.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' : channel.status === 'Paused' ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20' : 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-500 dark:border-zinc-700' }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${channel.status === 'Active' ? 'bg-emerald-500 animate-pulse' : channel.status === 'Paused' ? 'bg-amber-500' : 'bg-zinc-400'}`} />
+                          {channel.status}
+                        </Text>
+                        {channel.status === 'Active' && (
+                          <Text variant="label" as="span" className={`px-2 flex items-center gap-1.5 font-semibold ${indicator.color}`}>
+                            {indicator.icon} {indicator.label}
+                          </Text>
+                        )}
                       </div>
                     </td>
-                    <td className="px-8 py-6">
-                      <span className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+                    <td className="px-6 py-6">
+                      <div className="flex flex-col">
+                        <Text variant="body" as="span" className="font-bold">
+                          {channel.name}
+                        </Text>
+                      </div>
+                    </td>
+                    <td className="px-6 py-6">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${getDotColor(channel.rowColor)}`} />
+                        <Text variant="bodySmall" muted as="span" className="text-xs">
+                          {channel.platform}
+                        </Text>
+                      </div>
+                    </td>
+                    <td className="px-6 py-6">
+                      <Text variant="label" as="span" className="px-2 py-0.5 rounded-full border border-zinc-200 dark:border-zinc-800">
                         {channel.contentType || 'Mixed'}
-                      </span>
+                      </Text>
                     </td>
-                    <td className="px-8 py-6 text-center">
-                      <span className="text-xs text-zinc-600 dark:text-zinc-400 font-bold">
+                    <td className="px-6 py-6 text-center">
+                      <Text variant="bodySmall" muted as="span" className="text-xs">
+
                         {channel.postingFrequency}d
-                      </span>
+                      </Text>
                     </td>
-                    <td className="px-8 py-6 text-center">
-                      <span className={`text-xs font-black ${daysSince > channel.postingFrequency ? 'text-rose-500' : 'text-zinc-500'}`}>
+                    <td className="px-6 py-6 text-center">
+                      <Text variant="body" as="span" className={`text-xs font-semibold ${daysSince > channel.postingFrequency ? 'text-rose-500' : 'text-zinc-500'}`}>
                         {daysSince}d
-                      </span>
+                      </Text>
                     </td>
-                    <td className="px-8 py-6 text-right">
-                      <span className={`text-sm font-bold tracking-tight ${indicator.label === 'overdue' ? 'text-rose-500' : 'text-zinc-700 dark:text-zinc-300'}`}>
-                        {channel.nextPostDueDate ? new Date(channel.nextPostDueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '-'}
-                      </span>
+                    <td className="px-6 py-6 text-right">
+                      <div className="flex flex-col items-end">
+                        <Text variant="body" as="span" className={`text-sm font-semibold ${ indicator.label === 'Overdue' ? 'text-rose-500' : 'text-zinc-700 dark:text-zinc-300' }`}>
+                          {channel.nextPostDueDate ? new Date(channel.nextPostDueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'No Date'}
+                        </Text>
+                      </div>
                     </td>
-                    <td className="px-8 py-6 text-right">
-                      <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <td className="px-6 py-6 text-right">
+                      <div className="flex items-center justify-end gap-2">
                         {channel.status === 'Active' && (
                           <button
                             onClick={() => markAsPosted(channel.id)}
-                            className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest"
+                            className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 p-2 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-lg"
+                            title="Mark as Posted"
                           >
-                            Mark Posted
+                            <CheckCircle2 size={14} />
                           </button>
                         )}
                         <button 
                           onClick={() => openEditModal(channel)}
-                          className="text-xs font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+                          className="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-zinc-800 rounded-xl transition-all"
                         >
-                          Edit
+                          <Edit2 size={14} />
                         </button>
                       </div>
                     </td>
@@ -320,7 +383,10 @@ export function BusinessChannelsSection() {
               }) : (
                 <tr>
                   <td colSpan={8} className="px-8 py-20 text-center">
-                    <span className="text-xs text-zinc-400 uppercase tracking-widest font-black">No channels detected</span>
+                    <div className="flex flex-col items-center gap-2">
+                      <Info size={32} className="text-zinc-300" />
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase">No channels found. Add your first platform!</span>
+                    </div>
                   </td>
                 </tr>
               )}
@@ -339,53 +405,65 @@ export function BusinessChannelsSection() {
           const daysSince = Math.floor((today.getTime() - lastPosted.getTime()) / (1000 * 60 * 60 * 24));
 
           return (
-            <div key={channel.id} className="p-6 rounded-[32px] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 space-y-5">
+            <div key={channel.id} className="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 space-y-4">
               <div className="flex justify-between items-start">
                 <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${getPlatformDotColor(channel.platform)} opacity-80`} />
-                    <span className="text-[11px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                      {channel.platform}
-                    </span>
-                  </div>
-                  <span className="text-lg font-bold text-zinc-900 dark:text-white tracking-tight leading-tight">
+                  <Text variant="title" as="span" className="text-lg">
                     {channel.name}
-                  </span>
+                  </Text>
+                  <div className="flex flex-wrap gap-2">
+                    <Text variant="label" as="span" className="border border-zinc-200 dark:border-zinc-800 px-2 py-0.5 rounded-full flex items-center gap-1.5">
+                      <div className={`w-1.5 h-1.5 rounded-full ${getDotColor(channel.rowColor)}`} />
+                      {channel.platform}
+                    </Text>
+                    <Text variant="label" as="span" className="border border-zinc-200 dark:border-zinc-800 px-2 py-0.5 rounded-full">
+                      {channel.contentType || 'Mixed'}
+                    </Text>
+                  </div>
                 </div>
-                <span className={`text-[11px] font-black uppercase tracking-widest ${indicator.color}`}>
-                  {indicator.label}
-                </span>
+                <div className="flex flex-col items-end gap-1">
+                  <Text variant="label" as="span" className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-semibold border ${ channel.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' : channel.status === 'Paused' ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20' : 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-500 dark:border-zinc-700' }`}>
+                    {channel.status}
+                  </Text>
+                  {channel.status === 'Active' && (
+                    <Text variant="label" as="span" className={`flex items-center gap-1.5 font-semibold ${indicator.color}`}>
+                      {indicator.icon} {indicator.label}
+                    </Text>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
                 <div className="flex flex-col">
-                  <span className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">Freq</span>
-                  <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{channel.postingFrequency}d</span>
+                  <Text variant="label" as="span" className="font-semibold">Freq</Text>
+                  <Text variant="body" as="span" className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{channel.postingFrequency}d</Text>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">Velocity</span>
-                  <span className={`text-sm font-bold ${daysSince > channel.postingFrequency ? 'text-rose-500' : 'text-zinc-700 dark:text-zinc-300'}`}>{daysSince}d</span>
+                  <Text variant="label" as="span" className="font-black">Last</Text>
+                  <Text variant="body" as="span" className={`text-sm font-semibold ${daysSince > channel.postingFrequency ? 'text-rose-500' : 'text-zinc-700 dark:text-zinc-300'}`}>{daysSince}d</Text>
                 </div>
                 <div className="flex flex-col items-end">
-                  <span className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">Due</span>
-                  <span className={`text-sm font-bold ${indicator.label === 'overdue' ? 'text-rose-500' : 'text-zinc-700 dark:text-zinc-300'}`}>
+                  <Text variant="label" as="span" className="font-semibold">Next Due</Text>
+                  <Text variant="body" as="span" className={`text-sm font-semibold ${indicator.label === 'Overdue' ? 'text-rose-500' : 'text-zinc-700 dark:text-zinc-300'}`}>
                     {channel.nextPostDueDate ? new Date(channel.nextPostDueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '-'}
-                  </span>
+                  </Text>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 pt-2">
+              <div className="flex items-center justify-end gap-3 pt-2">
                 <button 
                   onClick={() => openEditModal(channel)}
-                  className="flex-1 py-3.5 text-xs font-black uppercase tracking-widest text-zinc-500 bg-zinc-100 dark:bg-zinc-800 rounded-2xl"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 text-xs font-semibold uppercase text-zinc-500 bg-zinc-100 dark:bg-zinc-800 rounded-2xl"
                 >
+                  <Edit2 size={14} />
                   Edit
                 </button>
                 {channel.status === 'Active' && (
                   <button
                     onClick={() => markAsPosted(channel.id)}
-                    className="flex-[2] py-3.5 text-xs font-black uppercase tracking-widest bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl shadow-md"
+                    className="flex-[2] flex items-center justify-center gap-2 py-3 text-xs font-semibold uppercase bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl shadow-lg"
                   >
+                    <CheckCircle2 size={14} />
                     Mark Posted
                   </button>
                 )}
@@ -393,8 +471,9 @@ export function BusinessChannelsSection() {
             </div>
           );
         }) : (
-          <div className="p-12 text-center bg-white dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 rounded-[32px]">
-            <span className="text-xs text-zinc-400 uppercase tracking-widest font-black">No channels found</span>
+          <div className="p-12 text-center bg-white dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+            <Info size={32} className="mx-auto text-zinc-300 mb-2" />
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase">No channels found</span>
           </div>
         )}
       </div>
@@ -403,9 +482,9 @@ export function BusinessChannelsSection() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingChannel ? 'Edit Channel' : 'New Channel'}
+        title={editingChannel ? 'Edit channel' : 'New channel'}
         onSubmit={handleSubmit}
-        submitText={editingChannel ? 'Update' : 'Create'}
+        submitText={editingChannel ? 'Update Channel' : 'Create Channel'}
         accentColor="purple"
       >
         <DynamicForm
@@ -414,19 +493,19 @@ export function BusinessChannelsSection() {
               id: 'channel_basic',
               title: '',
               fields: [
-                { name: 'name', label: 'Channel Name', type: 'text', required: true, fullWidth: true, placeholder: 'Operational title...' },
+                { name: 'name', label: 'Channel / Business Name', type: 'text', required: true, fullWidth: true, placeholder: 'e.g. Personal Brand, Tech Blog...' },
                 {
-                  name: 'platform', label: 'Platform', type: 'select' as const,
+                  name: 'platform', label: 'Platform / Location', type: 'select' as const,
                   options: DEFAULT_PLATFORMS.map(p => ({ label: p, value: p }))
                 },
-                ...(formData.platform === 'Other' ? [{ name: 'customPlatform', label: 'Other Platform', type: 'text' as const, required: true }] : []),
+                ...(formData.platform === 'Other' ? [{ name: 'customPlatform', label: 'Other Platform Name', type: 'text' as const, required: true }] : []),
                 {
-                  name: 'contentType', label: 'Category', type: 'select' as const,
+                  name: 'contentType', label: 'Content / Category', type: 'select' as const,
                   options: CONTENT_TYPES.map(t => ({ label: t, value: t }))
                 },
-                ...(formData.contentType === 'Other' ? [{ name: 'customContentType', label: 'Other Category', type: 'text' as const, required: true }] : []),
-                { name: 'postingFrequency', label: 'Frequency (Days)', type: 'number', min: 1, required: true },
-                { name: 'lastPostedDate', label: 'Last Posting', type: 'date', required: true }
+                ...(formData.contentType === 'Other' ? [{ name: 'customContentType', label: 'Other Content Type', type: 'text' as const, required: true }] : []),
+                { name: 'postingFrequency', label: 'Posting Frequency (Days)', type: 'number', min: 1, required: true },
+                { name: 'lastPostedDate', label: 'Last Posted Date', type: 'date', required: true }
               ]
             }
           ]}
@@ -435,19 +514,15 @@ export function BusinessChannelsSection() {
           onChange={(name, value) => setFormData(prev => ({ ...prev, [name]: value }))}
         />
 
-        <div className="flex flex-col gap-3 mt-8">
-          <label className="text-[11px] font-black uppercase tracking-widest text-zinc-500">Operation Status</label>
+        <div className="flex flex-col gap-3 bg-zinc-50 dark:bg-zinc-800/30 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 mt-6">
+          <label className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">Current Status</label>
           <div className="flex gap-2">
             {['Active', 'Paused', 'Idea'].map((status) => (
               <button
                 key={status}
                 type="button"
                 onClick={() => setFormData({...formData, status: status as 'Active' | 'Paused' | 'Idea'})}
-                className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${
-                  formData.status === status
-                    ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700 shadow-sm'
-                    : 'bg-transparent text-zinc-400 border-transparent hover:text-zinc-500'
-                }`}
+                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all border ${ formData.status === status ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-900 dark:border-zinc-100 shadow-sm' : 'bg-white dark:bg-zinc-900 text-zinc-500 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300' }`}
               >
                 {status}
               </button>
@@ -455,37 +530,55 @@ export function BusinessChannelsSection() {
           </div>
         </div>
 
+        <div className="flex flex-col gap-3 bg-zinc-50 dark:bg-zinc-800/30 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 mt-6 mb-6">
+          <label className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">Indicator Color</label>
+          <div className="grid grid-cols-4 md:grid-cols-8 gap-2 mt-2">
+            {LIGHT_COLORS.map((color) => (
+              <button
+                key={color.name}
+                type="button"
+                onClick={() => setFormData({...formData, rowColor: color.value})}
+                className={`w-full aspect-square rounded-full border transition-all flex items-center justify-center ${ color.dot } ${ formData.rowColor === color.value ? 'ring-2 ring-zinc-900 dark:ring-white border-transparent' : 'border-zinc-200 dark:border-zinc-700' }`}
+                title={color.name}
+              >
+                {formData.rowColor === color.value && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-zinc-900" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {editingChannel && (
-          <div className="pt-8 border-t border-zinc-100 dark:border-zinc-800 mt-8">
+          <div className="pt-4 mt-2">
             <button 
               type="button" 
               onClick={() => deleteChannel(editingChannel.id)} 
-              className="text-xs font-black uppercase tracking-widest text-rose-500 hover:text-rose-700 transition-colors"
+              className="text-sm font-semibold text-rose-500 hover:text-rose-700 transition-colors"
             >
-              Delete Lifecycle
+              Delete Channel
             </button>
           </div>
         )}
       </Modal>
-
       {/* Idea Selection Modal */}
       <Modal
         isOpen={isIdeaModalOpen && !!selectedChannelForPost}
         onClose={() => setIsIdeaModalOpen(false)}
-        title="Link Queue Item"
+        title="Select idea used"
       >
         <div className="pb-4">
-          <p className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-6">
-            Associate this post with a pending idea
+          <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 mb-6">
+            Which idea did you just post?
           </p>
-          <div className="space-y-2 max-h-[300px] overflow-y-auto mb-8 pr-2">
+          <div className="space-y-3 max-h-[300px] overflow-y-auto mb-8 pr-2">
             {ideas.filter(i => i.channelId === selectedChannelForPost && i.status === 'Pending').map(idea => (
               <button
                 key={idea.id}
                 onClick={() => markAsPosted(selectedChannelForPost!, idea.id)}
-                className="w-full text-left p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all bg-zinc-50/50 dark:bg-zinc-900/40"
+                className="w-full text-left p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:border-teal-500 dark:hover:border-teal-500 transition-all group bg-zinc-50 dark:bg-zinc-800/30 hover:bg-teal-50/50 dark:hover:bg-teal-500/10"
               >
-                <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                <span className="text-sm font-semibold text-zinc-900 dark:text-white transition-colors">
                   {idea.title}
                 </span>
               </button>
@@ -493,9 +586,9 @@ export function BusinessChannelsSection() {
           </div>
           <button
             onClick={() => markAsPosted(selectedChannelForPost!, 'none')}
-            className="w-full py-4 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 text-zinc-500 text-xs font-black uppercase tracking-widest hover:bg-zinc-50 dark:hover:bg-zinc-900/40 transition-all"
+            className="w-full py-4 rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 text-sm font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-all"
           >
-            Standalone Post
+            Post without an idea from queue
           </button>
         </div>
       </Modal>

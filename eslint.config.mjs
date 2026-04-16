@@ -13,6 +13,28 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    files: ["src/**/*.{js,jsx,ts,tsx}"],
+    ignores: [
+      "src/lib/design-system.tsx",
+      "src/components/ui/**/*.{js,jsx,ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "JSXAttribute[name.name='className'] Literal[value=/\\b(text|font|tracking)-/]",
+          message:
+            "Typography utilities (text-*, font-*, tracking-*) are prohibited. Use <Text>, <PageTitle>, or <SectionTitle> from '@/components/ui/Text' to maintain design consistency.",
+        },
+        {
+          selector: "JSXAttribute[name.name='className'] TemplateElement[value.raw=/\\b(text|font|tracking)-/]",
+          message:
+            "Typography utilities (text-*, font-*, tracking-*) are prohibited. Use <Text>, <PageTitle>, or <SectionTitle> from '@/components/ui/Text' to maintain design consistency.",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

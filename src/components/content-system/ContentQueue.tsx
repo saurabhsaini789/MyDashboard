@@ -1,10 +1,24 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Plus, 
+  CheckCircle2, 
+  Circle, 
+  Trash2, 
+  ChevronDown, 
+  ChevronRight,
+  Lightbulb,
+  MoreVertical,
+  X,
+  PlusCircle,
+  MessageSquare
+} from 'lucide-react';
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
 import { SYNC_KEYS } from '@/lib/sync-keys';
-import type { BusinessChannel, ContentIdea } from '@/types/content-system';
+import type { BusinessChannel, ContentIdea } from '@/types/business';
+import { Text, SectionTitle } from '../ui/Text';
 
 export function ContentQueue() {
   const [channels, setChannels] = useState<BusinessChannel[]>([]);
@@ -20,17 +34,20 @@ export function ContentQueue() {
   }, [ideas]);
 
   useEffect(() => {
+    // Load Channels
     const savedChannels = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_BUSINESS));
     if (savedChannels) {
       try { setChannels(JSON.parse(savedChannels)); } catch (e) {}
     }
 
+    // Load Ideas
     const savedIdeas = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_BUSINESS_IDEAS));
     if (savedIdeas) {
       try { 
         const parsedIdeas = JSON.parse(savedIdeas);
         setIdeas(parsedIdeas);
         
+        // Expand active channels with ideas by default
         const initialExpanded: Record<string, boolean> = {};
         const activeChannelIds = new Set(JSON.parse(savedChannels || '[]').filter((c: any) => c.status === 'Active').map((c: any) => c.id));
         activeChannelIds.forEach((id: any) => {
@@ -102,35 +119,23 @@ export function ContentQueue() {
 
   const activeChannels = channels.filter(c => c.status === 'Active');
 
-  const getPlatformDotColor = (platform: string) => {
-    const p = platform.toLowerCase();
-    if (p.includes('instagram')) return 'bg-rose-400';
-    if (p.includes('youtube')) return 'bg-red-400';
-    if (p.includes('linkedin')) return 'bg-blue-400';
-    return 'bg-zinc-400';
-  };
-
   return (
-    <section className="w-full mt-12">
+    <section className="w-full mt-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 px-2">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-            Content Queue
-          </h2>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 uppercase tracking-widest font-bold">
-            Backlog of distribution-ready concepts
-          </p>
+          <SectionTitle className="flex items-center gap-2">
+            Content queue
+          </SectionTitle>
+          <Text variant="label" as="p" className="mt-1">
+            Ready-to-use ideas to keep your execution consistent
+          </Text>
         </div>
         
         <button 
           onClick={() => setShowCompleted(!showCompleted)}
-          className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-widest rounded-xl transition-all border shadow-sm active:scale-95 ${
-            showCompleted 
-              ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-white shadow-md' 
-              : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200/80 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800'
-          }`}
+          className={`text-xs uppercase font-semibold px-4 py-2 rounded-xl transition-all border ${ showCompleted ? 'bg-teal-50 text-teal-600 border-teal-100 dark:bg-teal-500/10 dark:text-teal-400 dark:border-teal-500/20' : 'text-zinc-500 border-zinc-200 dark:border-zinc-800' }`}
         >
-          {showCompleted ? 'Hide Archive' : 'Show Archive'}
+          {showCompleted ? 'Hide Completed' : 'Show Completed'}
         </button>
       </div>
 
@@ -142,87 +147,84 @@ export function ContentQueue() {
           return (
             <div 
               key={channel.id} 
-              className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/50 rounded-3xl overflow-hidden flex flex-col shadow-sm group hover:shadow-md transition-all duration-300"
+              className="bg-white dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden flex flex-col shadow-sm group transition-all duration-300"
             >
               <div 
-                className="p-6 flex items-center justify-between cursor-pointer"
+                className="p-5 flex items-center justify-between cursor-pointer group/header"
                 onClick={() => toggleChannel(channel.id)}
               >
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${getPlatformDotColor(channel.platform)} opacity-80`} />
-                    <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                      {channel.platform}
-                    </span>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white font-semibold text-xs">
+                    {channel.name.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-base font-bold text-zinc-900 dark:text-white tracking-tight leading-tight">
-                    {channel.name}
-                  </span>
+                  <div className="flex flex-col">
+                    <Text variant="body" as="span" className="font-bold">
+                      {channel.name}
+                    </Text>
+                    <Text variant="label" as="span" className="font-semibold">
+                      {channel.platform} • {channelIdeas.length} ideas
+                    </Text>
+                  </div>
                 </div>
-                <span className="text-xs font-bold uppercase text-zinc-300 dark:text-zinc-600 tracking-widest">
-                  {isExpanded ? 'CLOSE' : `${channelIdeas.length} IDEAS`}
-                </span>
+                {isExpanded ? <ChevronDown size={18} className="text-zinc-400" /> : <ChevronRight size={18} className="text-zinc-400" />}
               </div>
 
               {isExpanded && (
-                <div className="px-6 pb-6 flex flex-col gap-4">
-                  <div className="space-y-1 max-h-[250px] overflow-y-auto pr-1 custom-scrollbar">
+                <div className="px-5 pb-5 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                  {/* Ideas List - Scrollable */}
+                  <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800">
                     {channelIdeas.map(idea => (
                       <div 
                         key={idea.id} 
-                        className="group/item flex items-center gap-3 py-3 border-b border-zinc-100 dark:border-zinc-800/50 last:border-0"
+                        className={`group/item flex items-start gap-3 p-3 rounded-2xl border transition-all ${ idea.status === 'Completed' ? 'bg-zinc-50 dark:bg-zinc-800/10 border-zinc-100 dark:border-zinc-800/50 opacity-60' : 'bg-white dark:bg-zinc-800/50 border-zinc-100 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700' }`}
                       >
                         <button 
                           onClick={(e) => { e.stopPropagation(); toggleIdeaStatus(idea.id); }}
-                          className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
-                            idea.status === 'Completed' 
-                              ? 'bg-teal-500 border-teal-500 shadow-sm shadow-teal-500/20' 
-                              : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-400'
-                          }`}
+                          className={`mt-0.5 shrink-0 transition-colors ${idea.status === 'Completed' ? 'text-emerald-500' : 'text-zinc-300 hover:text-zinc-400'}`}
                         >
-                          {idea.status === 'Completed' && (
-                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                          )}
+                          {idea.status === 'Completed' ? <CheckCircle2 size={16} /> : <Circle size={16} />}
                         </button>
                         <div className="flex-1 min-w-0">
-                          <p className={`text-xs font-bold leading-snug transition-all ${
-                            idea.status === 'Completed' 
-                              ? 'text-zinc-400 line-through decoration-zinc-300' 
-                              : 'text-zinc-700 dark:text-zinc-200'
-                          }`}>
+                          <Text variant="body" as="p" className={`text-xs font-semibold leading-relaxed ${idea.status === 'Completed' ? 'text-zinc-400 line-through' : 'text-zinc-700 dark:text-zinc-200'}`}>
                             {idea.title}
-                          </p>
+                          </Text>
+                          {idea.notes && (
+                            <Text variant="bodySmall" muted as="p" className="text-xs mt-1 leading-normal">
+
+                              {idea.notes}
+                            </Text>
+                          )}
                         </div>
                         <button 
                           onClick={(e) => { e.stopPropagation(); deleteIdea(idea.id); }}
-                          className="opacity-0 group-hover/item:opacity-100 text-xs font-bold uppercase tracking-widest text-rose-500 hover:text-rose-700 transition-all"
+                          className="opacity-0 group-hover/item:opacity-100 p-1 text-zinc-400 hover:text-rose-500 transition-all"
                         >
-                          Delete
+                          <Trash2 size={12} />
                         </button>
                       </div>
                     ))}
                     {channelIdeas.length === 0 && !showCompleted && (
-                      <div className="py-8 text-center">
-                        <span className="text-xs text-zinc-400 uppercase tracking-widest font-bold">No Ideas Pending</span>
+                      <div className="py-4 text-center">
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase font-semibold">No pending ideas</span>
                       </div>
                     )}
                   </div>
 
-                  <div className="flex flex-col gap-2 pt-2">
+                  {/* Add Idea Input */}
+                  <div className="mt-2 flex gap-2">
                     <input 
                       type="text" 
-                      placeholder="NEW CONCEPT..."
+                      placeholder="Add an idea..."
                       value={newIdeaTexts[channel.id] || ''}
                       onChange={(e) => setNewIdeaTexts({...newIdeaTexts, [channel.id]: e.target.value})}
                       onKeyDown={(e) => e.key === 'Enter' && addIdea(channel.id)}
-                      className="w-full bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200/80 dark:border-zinc-800/50 rounded-xl px-4 py-3 text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white outline-none focus:ring-2 focus:ring-zinc-400/30 transition-all placeholder:text-zinc-300"
+                      className="flex-1 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-zinc-900 dark:text-white outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all font-medium"
                     />
                     <button 
                       onClick={() => addIdea(channel.id)}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest rounded-xl bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all border border-zinc-200/80 dark:border-zinc-800/50 shadow-sm active:scale-95"
+                      className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 p-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-sm flex items-center justify-center shrink-0"
                     >
-                      <span className="text-lg leading-none">+</span>
-                      Add Idea
+                      <Plus size={16} strokeWidth={3} />
                     </button>
                   </div>
                 </div>
@@ -230,8 +232,9 @@ export function ContentQueue() {
             </div>
           );
         }) : (
-         <div className="col-span-full py-20 text-center">
-            <span className="text-xs text-zinc-400 uppercase tracking-widest font-black">No Operational Data Found</span>
+          <div className="col-span-full py-12 bg-zinc-50 dark:bg-zinc-900/20 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-3">
+            <Lightbulb size={32} className="text-zinc-300" />
+            <span className="text-xs text-zinc-400 uppercase font-semibold">No active channels found</span>
           </div>
         )}
       </div>

@@ -1,74 +1,74 @@
 export type InventoryStatus = 'OK' | 'LOW' | 'MISSING' | 'EXPIRED';
 
 /* =========================
-   MEDICINE INVENTORY
+ MEDICINE INVENTORY
 ========================= */
 
 export interface MedicineItem {
-  id: string;
+ id: string;
 
-  itemName: string;
-  category: string;
+ itemName: string;
+ category: string;
 
-  purpose: string;
-  whenToUse: string;
+ purpose: string;
+ whenToUse: string;
 
-  quantity: number;
-  targetQuantity: number;
+ quantity: number;
+ targetQuantity: number;
 
-  expiryDate: string; // ISO
+ expiryDate: string; // ISO
 
-  instructions: string;
+ instructions: string;
 
-  notes?: string;
+ notes?: string;
 }
 
 /* =========================
-   SUPPLEMENTS
+ SUPPLEMENTS
 ========================= */
 
 export interface SupplementItem {
-  id: string;
+ id: string;
 
-  name: string;
-  category: string;
+ name: string;
+ category: string;
 
-  purpose: string;
-  whoUses: string;
+ purpose: string;
+ whoUses: string;
 
-  frequency: string;
-  dosage: string;
+ frequency: string;
+ dosage: string;
 
-  quantity: number;
-  targetQuantity: number;
+ quantity: number;
+ targetQuantity: number;
 
-  expiryDate: string;
+ expiryDate: string;
 
-  notes?: string;
+ notes?: string;
 }
 
 /* =========================
-   CATEGORY CONSTANTS
+ CATEGORY CONSTANTS
 ========================= */
 
 export const MEDICINE_CATEGORIES = [
-  'Pain Relief & Inflammation',
-  'Digestive Care',
-  'Cold, Cough & Flu',
-  'Chronic Conditions',
-  'Dental Care',
-  'Women’s Health',
-  'External Use (Topicals)',
-  'Eye & Minor Care',
-  'Emergency Medication',
-  'General Health Essentials'
+ 'Pain Relief & Inflammation',
+ 'Digestive Care',
+ 'Cold, Cough & Flu',
+ 'Chronic Conditions',
+ 'Dental Care',
+ 'Women’s Health',
+ 'External Use (Topicals)',
+ 'Eye & Minor Care',
+ 'Emergency Medication',
+ 'General Health Essentials'
 ];
 
 export const SUPPLEMENT_CATEGORIES = [
-  'Multivitamin',
-  'Vitamin',
-  'Mineral',
-  'Herbal / Traditional',
-  'Protein / Nutrition',
-  'Specialty Supplement'
+ 'Multivitamin',
+ 'Vitamin',
+ 'Mineral',
+ 'Herbal / Traditional',
+ 'Protein / Nutrition',
+ 'Specialty Supplement'
 ];

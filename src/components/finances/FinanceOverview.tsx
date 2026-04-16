@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { Wallet, Shield, TrendingUp, TrendingDown, Percent } from 'lucide-react';
 import { getPrefixedKey } from '@/lib/keys';
 import { MultiSelectDropdown } from '../ui/MultiSelectDropdown';
 import { MONTHS, YEARS } from '@/lib/constants';
 import { calculateAssetBalance, calculateLiabilityBalance, type Asset, type Liability } from '@/lib/finances';
 import { SYNC_KEYS } from '@/lib/sync-keys';
+import { Text, SectionTitle } from '../ui/Text';
 
 interface MetricProps {
   label: string;
@@ -14,7 +16,6 @@ interface MetricProps {
   icon: React.ReactNode;
   color: 'teal' | 'emerald' | 'rose' | 'amber' | 'indigo' | 'blue';
   customBg?: string;
-  
 }
 
 function MetricCard({ label, value, subValue, icon, color, customBg }: MetricProps) {
@@ -37,29 +38,28 @@ function MetricCard({ label, value, subValue, icon, color, customBg }: MetricPro
   };
 
   return (
-    <div className={`flex flex-col p-4 md:p-6 rounded-2xl border shadow-sm transition-all group relative overflow-hidden h-full ${customBg || `bg-white dark:bg-zinc-900/50 ${borderClasses[color]}`}`}>
+    <div className={`flex flex-col p-4 md:p-6 rounded-2xl border border-l-4 shadow-sm transition-all group relative overflow-hidden h-full bg-white dark:bg-zinc-900/60 ${customBg || borderClasses[color]}`}>
       <div className="flex items-center justify-between mb-4 md:mb-6">
         <div className={`p-2.5 md:p-3.5 rounded-2xl transition-colors ${iconClasses[color]}`}>
           {React.cloneElement(icon as React.ReactElement<any>, { className: "w-5 h-5 md:w-6 md:h-6" })}
         </div>
         {subValue && (
-            <div className="flex flex-col items-end">
-                <span className="text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 px-2.5 py-1 rounded-full text-right leading-none">
-                    {subValue}
-                </span>
-            </div>
+          <div className="flex flex-col items-end">
+            <Text variant="label" as="span" className="bg-zinc-50 dark:bg-zinc-800/50 px-2.5 py-1 rounded-full text-right leading-none">
+              {subValue}
+            </Text>
+          </div>
         )}
       </div>
       
       <div className="flex flex-col gap-0.5">
-        <span className="text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-0.5">
+        <Text variant="label" as="span" className="mb-0.5">
           {label}
-        </span>
+        </Text>
         <div className="flex flex-col">
-          <span className={`text-xl md:text-2xl tracking-tighter text-zinc-900 dark:text-zinc-100 leading-none font-bold`}>
+          <Text variant="metric" as="span" className="text-xl md:text-2xl leading-none">
             {value}
-          </span>
-          
+          </Text>
         </div>
       </div>
     </div>
@@ -84,8 +84,6 @@ export function FinanceOverview() {
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
 
   const calculateFinance = () => {
-    
-
     // 1. Calculate Income
     const incomeData = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_INCOME));
     let totalIncomeCount = 0;
@@ -122,19 +120,19 @@ export function FinanceOverview() {
     let totalAssets = 0;
     const assetsData = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_ASSETS));
     if (assetsData) {
-        try {
-            const assets: Asset[] = JSON.parse(assetsData);
-            totalAssets = assets.reduce((sum, a) => sum + calculateAssetBalance(a), 0);
-        } catch (e) {}
+      try {
+        const assets: Asset[] = JSON.parse(assetsData);
+        totalAssets = assets.reduce((sum, a) => sum + calculateAssetBalance(a), 0);
+      } catch (e) {}
     }
 
     let totalLiabilities = 0;
     const liabilitiesData = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_LIABILITIES));
     if (liabilitiesData) {
-        try {
-            const liabilities: Liability[] = JSON.parse(liabilitiesData);
-            totalLiabilities = liabilities.reduce((sum, l) => sum + calculateLiabilityBalance(l), 0);
-        } catch (e) {}
+      try {
+        const liabilities: Liability[] = JSON.parse(liabilitiesData);
+        totalLiabilities = liabilities.reduce((sum, l) => sum + calculateLiabilityBalance(l), 0);
+      } catch (e) {}
     }
     setNetWorth(totalAssets - totalLiabilities);
 
@@ -142,11 +140,11 @@ export function FinanceOverview() {
     const efData = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_EMERGENCY_FUND));
     let monthsCovered = 0;
     if (efData) {
-        try {
-            const data: EmergencyFundData = JSON.parse(efData);
-            const totalSaved = data.contributions.reduce((sum, c) => sum + c.amount, 0);
-            monthsCovered = data.monthlyExpenses > 0 ? totalSaved / data.monthlyExpenses : 0;
-        } catch (e) {}
+      try {
+        const data: EmergencyFundData = JSON.parse(efData);
+        const totalSaved = data.contributions.reduce((sum, c) => sum + c.amount, 0);
+        monthsCovered = data.monthlyExpenses > 0 ? totalSaved / data.monthlyExpenses : 0;
+      } catch (e) {}
     }
     setEmergencyFundMonths(monthsCovered);
   };
@@ -169,7 +167,6 @@ export function FinanceOverview() {
         SYNC_KEYS.FINANCES_ASSETS, 
         SYNC_KEYS.FINANCES_LIABILITIES, 
         SYNC_KEYS.FINANCES_EMERGENCY_FUND,
-        // SYNC_KEYS.FINANCES_EXCHANGE_RATE
       ].includes(e.detail.key)) {
         calculateFinance();
       }
@@ -179,7 +176,6 @@ export function FinanceOverview() {
     return () => window.removeEventListener('local-storage-change', handleLocal);
   }, [selectedMonths, selectedYears, isLoaded]);
 
-
   if (!isLoaded) return null;
 
   const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0;
@@ -187,9 +183,9 @@ export function FinanceOverview() {
   return (
     <div className="w-full flex flex-col gap-6 md:gap-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 px-1 md:px-2">
-        <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+        <SectionTitle>
           Financial Overview
-        </h2>
+        </SectionTitle>
 
         <div className="flex gap-2 md:gap-3">
           <MultiSelectDropdown
@@ -211,63 +207,43 @@ export function FinanceOverview() {
         <MetricCard 
           label="Net Worth"
           value={`$${netWorth.toLocaleString("en-CA", { maximumFractionDigits: 0 })}`}
-          
           subValue={netWorth >= 0 ? "Positive Equity" : "Negative Equity"}
           color={netWorth >= 0 ? "emerald" : "rose"}
           customBg={netWorth >= 0 
-            ? "bg-emerald-50/30 dark:bg-emerald-500/5 border-emerald-100/50 dark:border-emerald-900/30" 
-            : "bg-rose-50/30 dark:bg-rose-500/5 border-rose-100/50 dark:border-rose-900/30"
+            ? "border-emerald-100/50 dark:border-emerald-900/30" 
+            : "border-rose-100/50 dark:border-rose-900/30"
           }
-          icon={
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor font-bold">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3 1.343 3 3-1.343 3-3 3m0-12c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3m0 12v1m0-18v1" />
-            </svg>
-          }
+          icon={<Wallet strokeWidth={2.5} />}
         />
 
         <MetricCard 
           label="Emergency Fund"
           value={`${emergencyFundMonths < 10 ? emergencyFundMonths.toFixed(1) : Math.floor(emergencyFundMonths)} Months`}
-          
           subValue={emergencyFundMonths >= 6 ? "Fully Funded" : emergencyFundMonths >= 3 ? "On Track" : "Focus Needed"}
           color={emergencyFundMonths >= 6 ? "emerald" : emergencyFundMonths >= 3 ? "amber" : "rose"}
           customBg={emergencyFundMonths >= 6 
-            ? "bg-emerald-50/30 dark:bg-emerald-500/5 border-emerald-100/50 dark:border-emerald-900/30"
+            ? "border-emerald-100/50 dark:border-emerald-900/30"
             : emergencyFundMonths >= 3
-            ? "bg-amber-50/30 dark:bg-amber-500/5 border-amber-100/50 dark:border-amber-900/30"
-            : "bg-rose-50/30 dark:bg-rose-500/5 border-rose-100/50 dark:border-rose-900/30"
+            ? "border-amber-100/50 dark:border-amber-900/30"
+            : "border-rose-100/50 dark:border-rose-900/30"
           }
-          icon={
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-          }
+          icon={<Shield strokeWidth={2.5} />}
         />
 
         <MetricCard
           label="Monthly Income"
           value={`$${income.toLocaleString("en-CA", { maximumFractionDigits: 0 })}`}
-          
           subValue={selectedMonths.length === 1 && selectedYears.length === 1 ? MONTHS[selectedMonths[0]] : `${selectedMonths.length} Months`}
           color="emerald"
-          icon={
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-          }
+          icon={<TrendingUp strokeWidth={2.5} />}
         />
 
         <MetricCard
           label="Monthly Expenses"
           value={`$${expenses.toLocaleString("en-CA", { maximumFractionDigits: 0 })}`}
-          
           subValue={`${income > 0 ? ((expenses / income) * 100).toFixed(0) : 0}% of Income`}
           color="rose"
-          icon={
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6" />
-            </svg>
-          }
+          icon={<TrendingDown strokeWidth={2.5} />}
         />
 
         <MetricCard
@@ -276,16 +252,12 @@ export function FinanceOverview() {
           subValue="Goal: 20%"
           color={savingsRate >= 20 ? "emerald" : savingsRate >= 10 ? "amber" : "rose"}
           customBg={savingsRate >= 20
-            ? "bg-emerald-50/30 dark:bg-emerald-500/5 border-emerald-100/50 dark:border-emerald-900/30"
+            ? "border-emerald-100/50 dark:border-emerald-900/30"
             : savingsRate >= 10
-            ? "bg-amber-50/30 dark:bg-amber-500/5 border-amber-100/50 dark:border-amber-900/30"
-            : "bg-rose-50/30 dark:bg-rose-500/5 border-rose-100/50 dark:border-rose-900/30"
+            ? "border-amber-100/50 dark:border-amber-900/30"
+            : "border-rose-100/50 dark:border-rose-900/30"
           }
-          icon={
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          }
+          icon={<Percent strokeWidth={2.5} />}
         />
       </div>
     </div>

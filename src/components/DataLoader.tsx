@@ -12,59 +12,42 @@ import type { BusinessChannel } from "@/types/business";
  */
 export function DataLoader() {
   useEffect(() => {
-    // --- Project Seeding (from Goals.tsx v3) ---
+    // --- Project Seeding (Generic Examples) ---
     if (typeof window !== 'undefined' && !localStorage.getItem(getPrefixedKey('goals_projects'))) {
       const SEED_PROJECTS: Project[] = [
-        { id: crypto.randomUUID(), bucketId: 'Health', title: 'Get Family Medical Insurance', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'NEXT STEP - Gather details.', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Health', title: 'Get Term Insurance', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'NEXT STEP - Gather details.', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Health', title: 'New Vaccines', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'NEXT STEP - Plan when to get which one...', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Health', title: 'Dental Checkup - October', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Complete dental treatment and full health checkups for you and Neha.', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Health', title: 'Understand Local Hospitals', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Explore Yamuna Nagar - the hospitals', isCompleted: false }, { id: crypto.randomUUID(), title: 'Connect with Saurabh Pal...', isCompleted: false }] },
+        { id: crypto.randomUUID(), bucketId: 'Health', title: 'Schedule Annual Health Checkup', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Contact clinic and book appointment', isCompleted: false }] },
+        { id: crypto.randomUUID(), bucketId: 'Health', title: 'Update Medical Insurance', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Review current coverage and options', isCompleted: false }] },
+        { id: crypto.randomUUID(), bucketId: 'Health', title: 'Plan Vaccination Schedule', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Check which vaccines are due this year', isCompleted: false }] },
+        { id: crypto.randomUUID(), bucketId: 'Health', title: 'Dental Maintenance', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Schedule hygiene appointment', isCompleted: false }] },
+        { id: crypto.randomUUID(), bucketId: 'Health', title: 'Local Hospital Research', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Identify nearest emergency facilities', isCompleted: false }] },
 
-        { id: crypto.randomUUID(), bucketId: 'Income', title: 'Website Creation', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Prepare digital templates for school, bookshop, and coaching businesses...', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Income', title: 'ID Freelancing', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Develop freelance outreach scripts and global client proposals...', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Income', title: 'Teaching', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Begin teaching job and start building tuition leads...', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Income', title: 'Bookshop Expansion', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Research and shortlist 10-15 large printing presses in Delhi, Haryana, an...', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Income', title: 'Performance & Learning Academy', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Create structured tuition curriculum and batch plans...', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Income', title: 'Parlor and Tailoring', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Finalize Neha\'s beauty and tailoring services, pricing, and branding...', isCompleted: false }] },
+        { id: crypto.randomUUID(), bucketId: 'Income', title: 'Professional Portfolio Website', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Draft content for home page and case studies', isCompleted: false }] },
+        { id: crypto.randomUUID(), bucketId: 'Income', title: 'Freelance Service Development', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Define 3 service tiers and pricing', isCompleted: false }] },
+        { id: crypto.randomUUID(), bucketId: 'Income', title: 'Passive Income Stream Research', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Research 10 potential niches for digital products', isCompleted: false }] },
+        
+        { id: crypto.randomUUID(), bucketId: 'Career', title: 'Skill Certification Plan', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Identify relevant industry certifications', isCompleted: false }] },
+        { id: crypto.randomUUID(), bucketId: 'Career', title: 'Network Expansion', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Connect with 10 professionals in target field', isCompleted: false }] },
 
-        { id: crypto.randomUUID(), bucketId: 'Career', title: 'Freelancing Packages', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'NEXT STEP - Finalize 2-3 global freelance service packages...', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Career', title: 'Portfolio Case Studies Update', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Build strong case studies on your premium consulting portfolio...', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Career', title: 'Leads Management', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Start collecting emails and leads from LinkedIn and your content channels.', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Career', title: 'Skill Development', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'NEXT STEP - Read E-Learning Magazines...', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Career', title: 'Portfolio Testimonials', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Amelia Loving - Requested once', isCompleted: false }, { id: crypto.randomUUID(), title: 'John Lewinski - Not active...', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Career', title: 'Networking', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Build relationships with teachers and administrators on LinkedIn and...', isCompleted: false }] },
+        { id: crypto.randomUUID(), bucketId: 'Wealth', title: 'Emergency Fund Strategy', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Define target balance for 6 months of expenses', isCompleted: false }] },
+        { id: crypto.randomUUID(), bucketId: 'Wealth', title: 'Investment Account Review', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Check asset allocation and rebalance if needed', isCompleted: false }] },
 
-        { id: crypto.randomUUID(), bucketId: 'Wealth', title: 'Savings Target - SEPT END', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Save aggressively and cut unnecessary expenses to reach $10k-12k by...', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Wealth', title: 'Emergency Fund', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Prepare a 12-month budget and emergency fund strategy.', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Wealth', title: 'Expenses', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Identify essential purchases and avoid unnecessary spending.', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Wealth', title: 'UNDERSTANDING', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'YouTube - Labor Law Academy', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Wealth', title: 'Zerodha Account', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Open account', isCompleted: false }] },
+        { id: crypto.randomUUID(), bucketId: 'Family', title: 'Family Heritage Digital Archive', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Scan and organize 50 family photos', isCompleted: false }] },
 
-        { id: crypto.randomUUID(), bucketId: 'Family', title: 'Children Planning', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Start child planning and medical consultation.', isCompleted: false }] },
+        { id: crypto.randomUUID(), bucketId: 'Lifestyle', title: 'Home Workspace Optimization', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Declutter desk and improve lighting setup', isCompleted: false }] },
 
-        { id: crypto.randomUUID(), bucketId: 'Lifestyle', title: 'Home & Work Setup', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Clean, declutter, and set up home and work environment.', isCompleted: false }] },
+        { id: crypto.randomUUID(), bucketId: 'Learning', title: 'New Language Basics', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Complete first 5 lessons on language app', isCompleted: false }] },
 
-        { id: crypto.randomUUID(), bucketId: 'Learning', title: 'Understand', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'NRE vs Ordinary Bank Account', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Learning', title: 'CHECK', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Mobile application - National Digital Library of India', isCompleted: false }] },
+        { id: crypto.randomUUID(), bucketId: 'Admin', title: 'Digital Security Audit', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Enable 2FA on all important accounts', isCompleted: false }] },
+        { id: crypto.randomUUID(), bucketId: 'Admin', title: 'System Backup Routine', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Configure automatic weekly cloud backups', isCompleted: false }] },
 
-        { id: crypto.randomUUID(), bucketId: 'Admin', title: 'Transaction Details', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'List all the transactions - Everything sent to India', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Admin', title: 'India Move', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Plan travel, relocation, and initial setup in India.', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Admin', title: 'FCA Address update', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Update address in FCA data.', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Admin', title: 'iCloud Backup (Photos + Docume...)', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Backup everything to new Seagate hard drive.', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Admin', title: 'Organization', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Organize contacts, digital files, and systems for a smooth transition.', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Admin', title: 'Freedom', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Call freedom to get cheapest plan...', isCompleted: false }] },
-
-        { id: crypto.randomUUID(), bucketId: 'Mental', title: 'Forgive Others', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Understand this properly - Forgive your parents...', isCompleted: false }] },
-        { id: crypto.randomUUID(), bucketId: 'Mental', title: 'My Habits', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Culmination of parents habits and values.', isCompleted: false }] }
-
+        { id: crypto.randomUUID(), bucketId: 'Mental', title: 'Daily Gratitude Practice', dueDate: '', isImportant: false, isCompleted: false, status: 'not-started', createdAt: new Date().toISOString(), tasks: [{ id: crypto.randomUUID(), title: 'Write down 3 things you are grateful for daily', isCompleted: false }] }
       ];
       setSyncedItem('goals_projects', JSON.stringify(SEED_PROJECTS));
       setSyncedItem('goals_seeded_v2', 'true');
       setSyncedItem('goals_seeded_v3', 'true');
     }
 
-    // --- Habit Seeding ---
+    // --- Habit Seeding (Generic Examples) ---
     if (typeof window !== 'undefined' && !localStorage.getItem(getPrefixedKey('os_habits'))) {
       const SEED_HABITS = [
         { id: crypto.randomUUID(), name: 'Morning Meditation', period: 'daily', records: {} },
@@ -75,13 +58,23 @@ export function DataLoader() {
       setSyncedItem('os_habits', JSON.stringify(SEED_HABITS));
     }
 
-    // --- Business Channel Seeding ---
+    // --- Content System Seeding (Generic Examples) ---
     if (typeof window !== 'undefined' && !localStorage.getItem(getPrefixedKey('finances_business'))) {
       const today = new Date().toISOString().split('T')[0];
       const SEED_BUSINESSES: BusinessChannel[] = [
         { 
           id: crypto.randomUUID(), 
-          name: 'Personal Brand', 
+          name: 'Tech Insights', 
+          platform: 'YouTube', 
+          contentType: 'Long Video', 
+          status: 'Active', 
+          lastPostedDate: today, 
+          postingFrequency: 7, 
+          nextPostDueDate: today 
+        },
+        { 
+          id: crypto.randomUUID(), 
+          name: 'Productivity Tips', 
           platform: 'Instagram', 
           contentType: 'Reel', 
           status: 'Active', 
@@ -91,22 +84,12 @@ export function DataLoader() {
         },
         { 
           id: crypto.randomUUID(), 
-          name: 'Tech Insights', 
-          platform: 'YouTube', 
-          contentType: 'Short', 
-          status: 'Active', 
-          lastPostedDate: today, 
-          postingFrequency: 2, 
-          nextPostDueDate: today 
-        },
-        { 
-          id: crypto.randomUUID(), 
-          name: 'Career Tips', 
+          name: 'Career Advice', 
           platform: 'LinkedIn', 
           contentType: 'Post', 
           status: 'Active', 
           lastPostedDate: today, 
-          postingFrequency: 3, 
+          postingFrequency: 2, 
           nextPostDueDate: today 
         }
       ];
@@ -114,5 +97,5 @@ export function DataLoader() {
     }
   }, []);
 
-  return null;
+ return null;
 }

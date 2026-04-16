@@ -9,6 +9,7 @@ import { FirstAidMobileSection } from '@/components/health-system/FirstAidMobile
 import { SupplementSection } from '@/components/health-system/SupplementSection';
 import { PageContainer } from '@/components/PageContainer';
 import { getPrefixedKey } from '@/lib/keys';
+import { PageTitle, Text, Description } from '@/components/ui/Text';
 
 export default function HealthSystemPage() {
   const searchParams = useSearchParams();
@@ -20,7 +21,6 @@ export default function HealthSystemPage() {
   };
 
   const [mounted, setMounted] = useState(false);
-  const [allItems, setAllItems] = useState<any[]>([]);
   const [globalStatusFilter, setGlobalStatusFilter] = useState<
     'ALL' | 'LOW' | 'MISSING' | 'EXPIRED'
   >(getInitialFilter());
@@ -28,32 +28,6 @@ export default function HealthSystemPage() {
 
   useEffect(() => {
     setMounted(true);
-
-    // Safely load all health-related data from local storage
-    const keys = [
-      'MEDICINE_INVENTORY',
-      'TRAVEL_MEDICAL_KIT',
-      'FIRST_AID_HOME',
-      'FIRST_AID_MOBILE',
-      'SUPPLEMENTS'
-    ];
-
-    let combined: any[] = [];
-    keys.forEach(key => {
-      const saved = localStorage.getItem(getPrefixedKey(key));
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            combined = [...combined, ...parsed];
-          }
-        } catch (e) {
-          console.error(`Failed to load health inventory for key: ${key}`, e);
-        }
-      }
-    });
-
-    setAllItems(combined);
   }, []);
 
   useEffect(() => {
@@ -62,82 +36,18 @@ export default function HealthSystemPage() {
     }
   }, [globalStatusFilter]);
 
-  // Shared status logic consistent with section components
-  const getStatus = (item: any) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const expiry = new Date(item.expiryDate);
-    expiry.setHours(0, 0, 0, 0);
-
-    if (expiry < today) return 'EXPIRED';
-    if (item.quantity === 0) return 'MISSING';
-    if (item.quantity < (item.targetQuantity || 1)) return 'LOW';
-    return 'OK';
-  };
-
-  const expiredCount = allItems.filter(i => getStatus(i) === 'EXPIRED').length;
-  const missingCount = allItems.filter(i => getStatus(i) === 'MISSING').length;
-  const lowCount = allItems.filter(i => getStatus(i) === 'LOW').length;
-
   if (!mounted) return null;
 
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 selection:bg-zinc-500/10 relative overflow-hidden">
       <PageContainer>
         {/* Page Title */}
-        <header className="flex flex-col items-start mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+        <header className="flex flex-col items-start mb-10">
+          <PageTitle>
             Health
-          </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2">Medical inventory and preparedness system</p>
+          </PageTitle>
+          <Description>Medical inventory and preparedness system</Description>
         </header>
-
-        {/* Global Alert System */}
-        {(expiredCount > 0 || missingCount > 0 || lowCount > 0) && (
-          <div className="mt-8 mb-2 px-2">
-            <div className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 flex items-center">
-              Attention needed:
-              {expiredCount > 0 && (
-                <button 
-                  onClick={() => setGlobalStatusFilter('EXPIRED')}
-                  className="hover:underline ml-1"
-                >
-                  {expiredCount} expired
-                </button>
-              )}
-              {missingCount > 0 && (
-                <>
-                  <span className="mx-1">•</span>
-                  <button 
-                    onClick={() => setGlobalStatusFilter('MISSING')}
-                    className="hover:underline"
-                  >
-                    {missingCount} missing
-                  </button>
-                </>
-              )}
-              {lowCount > 0 && (
-                <>
-                  <span className="mx-1">•</span>
-                  <button 
-                    onClick={() => setGlobalStatusFilter('LOW')}
-                    className="hover:underline"
-                  >
-                    {lowCount} low
-                  </button>
-                </>
-              )}
-              {globalStatusFilter !== 'ALL' && (
-                <button
-                  onClick={() => setGlobalStatusFilter('ALL')}
-                  className="ml-2 text-[11px] uppercase tracking-widest text-zinc-400 hover:text-zinc-600 font-bold"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Medicine Inventory Section - Animated Entry */}
         <div ref={medicineRef} className="fade-in pt-4" style={{ animationDelay: '0.2s' }}>
