@@ -464,6 +464,105 @@ export function DataLoader() {
       setSyncedItem('FIRST_AID_MOBILE', JSON.stringify(SEED_FIRST_AID_MOBILE));
       setSyncedItem('first_aid_mobile_seeded_v2', 'true');
     }
+
+    // --- Supplements Seeding ---
+    if (typeof window !== 'undefined' && !localStorage.getItem(getPrefixedKey('supplements_seeded_v1'))) {
+      const SEED_SUPPLEMENTS: SupplementItem[] = [
+        {
+          id: crypto.randomUUID(),
+          name: 'Multivitamin',
+          category: 'Vitamins',
+          purpose: 'General health support',
+          whoUses: 'Both',
+          frequency: 'Daily',
+          dosage: 'As per label',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          notes: 'Base supplement'
+        },
+        {
+          id: crypto.randomUUID(),
+          name: 'Vitamin D',
+          category: 'Vitamins',
+          purpose: 'Bone health, immunity',
+          whoUses: 'Both',
+          frequency: 'Daily',
+          dosage: 'As per label',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          notes: 'Common deficiency'
+        },
+        {
+          id: crypto.randomUUID(),
+          name: 'Vitamin B12',
+          category: 'Vitamins',
+          purpose: 'Energy, nerve health',
+          whoUses: 'Both',
+          frequency: 'Daily/Weekly',
+          dosage: 'As per label',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          notes: 'Especially important'
+        },
+        {
+          id: crypto.randomUUID(),
+          name: 'Calcium',
+          category: 'Minerals',
+          purpose: 'Bone strength',
+          whoUses: 'Wife / Both',
+          frequency: 'Daily',
+          dosage: 'As per label',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          name: 'Magnesium',
+          category: 'Minerals',
+          purpose: 'Muscle, nerve support',
+          whoUses: 'You',
+          frequency: 'Daily',
+          dosage: 'As per label',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          notes: 'Helps with pain/sleep'
+        },
+        {
+          id: crypto.randomUUID(),
+          name: 'Zinc',
+          category: 'Minerals',
+          purpose: 'Immunity',
+          whoUses: 'Both',
+          frequency: 'Daily',
+          dosage: 'As per label',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          name: 'Ashwagandha',
+          category: 'Herbal',
+          purpose: 'Stress, energy balance',
+          whoUses: 'You / Both',
+          frequency: 'Daily',
+          dosage: 'As per label',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          notes: 'Traditional supplement'
+        }
+      ];
+      setSyncedItem('SUPPLEMENTS', JSON.stringify(SEED_SUPPLEMENTS));
+      setSyncedItem('supplements_seeded_v1', 'true');
+    }
   }, []);
 
   return null;
