@@ -98,7 +98,7 @@ export function DataLoader() {
     }
 
     // --- Medicine Inventory Seeding ---
-    if (typeof window !== 'undefined' && !localStorage.getItem(getPrefixedKey('MEDICINE_INVENTORY'))) {
+    if (typeof window !== 'undefined' && !localStorage.getItem(getPrefixedKey('medicine_inventory_seeded_v1'))) {
       const SEED_MEDICINE: MedicineItem[] = [
         {
           id: crypto.randomUUID(),
@@ -282,6 +282,7 @@ export function DataLoader() {
         }
       ];
       setSyncedItem('MEDICINE_INVENTORY', JSON.stringify(SEED_MEDICINE));
+      setSyncedItem('medicine_inventory_seeded_v1', 'true');
     }
   }, []);
 
