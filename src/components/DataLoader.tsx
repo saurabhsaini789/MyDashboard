@@ -137,44 +137,332 @@ export function DataLoader() {
       setSyncedItem('travel_medical_kit_seeded_v1', 'true');
     }
 
-    // --- First Aid Kit Home Seeding (Generic Placeholders) ---
-    if (typeof window !== 'undefined' && !localStorage.getItem(getPrefixedKey('first_aid_home_seeded_v1'))) {
+    // --- First Aid Kit Home Seeding - BUMPED V2 ---
+    if (typeof window !== 'undefined' && !localStorage.getItem(getPrefixedKey('first_aid_home_seeded_v2'))) {
       const SEED_FIRST_AID_HOME: MedicineItem[] = [
         {
           id: crypto.randomUUID(),
-          itemName: 'Home Adhesive Bandages',
+          itemName: 'Adhesive Bandages',
           category: 'External Use (Topicals)',
-          purpose: 'General wound care',
-          whenToUse: 'Minor cuts',
-          quantity: 20,
+          purpose: 'Cover small cuts',
+          whenToUse: 'Minor cuts, blisters',
+          quantity: 27,
+          targetQuantity: 30,
+          expiryDate: '2027-04-16',
+          instructions: 'Clean wound before applying',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Sterile Gauze Pads',
+          category: 'External Use (Topicals)',
+          purpose: 'Cover larger wounds',
+          whenToUse: 'Bleeding, deeper cuts',
+          quantity: 17,
           targetQuantity: 20,
-          expiryDate: '2027-01-01',
+          expiryDate: '2027-04-16',
+          instructions: 'Use with antiseptic',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Medical Tape',
+          category: 'External Use (Topicals)',
+          purpose: 'Secure gauze',
+          whenToUse: 'Dressing wounds',
+          quantity: 2,
+          targetQuantity: 2,
+          expiryDate: '2027-04-16',
+          instructions: 'Apply over gauze',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Cotton',
+          category: 'External Use (Topicals)',
+          purpose: 'Clean wounds',
+          whenToUse: 'Before dressing',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          instructions: 'Use clean pieces',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Antiseptic Solution (Betadine)',
+          category: 'External Use (Topicals)',
+          purpose: 'Disinfect wounds',
+          whenToUse: 'Cuts, abrasions',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          instructions: 'Apply before dressing',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Antiseptic Ointment',
+          category: 'External Use (Topicals)',
+          purpose: 'Prevent infection',
+          whenToUse: 'Minor wounds',
+          quantity: 2,
+          targetQuantity: 2,
+          expiryDate: '2027-04-16',
+          instructions: 'Apply thin layer',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Crepe Bandage',
+          category: 'External Use (Topicals)',
+          purpose: 'Support sprains',
+          whenToUse: 'Muscle injury',
+          quantity: 2,
+          targetQuantity: 3,
+          expiryDate: '2027-04-16',
+          instructions: 'Wrap firmly',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Burn Ointment',
+          category: 'External Use (Topicals)',
+          purpose: 'Treat burns',
+          whenToUse: 'Minor burns',
+          quantity: 1,
+          targetQuantity: 2,
+          expiryDate: '2027-04-16',
+          instructions: 'Apply gently',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Pain Relief Spray / Gel',
+          category: 'Pain Relief & Inflammation',
+          purpose: 'Muscle/joint relief',
+          whenToUse: 'Sprain, back pain',
+          quantity: 1,
+          targetQuantity: 2,
+          expiryDate: '2027-04-16',
+          instructions: 'External use',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Pain Relief Balm',
+          category: 'Pain Relief & Inflammation',
+          purpose: 'Mild relief',
+          whenToUse: 'Headache, body ache',
+          quantity: 1,
+          targetQuantity: 2,
+          expiryDate: '2027-04-16',
+          instructions: 'External use',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Scissors (Small)',
+          category: 'General Health Essentials',
+          purpose: 'Cut materials',
+          whenToUse: 'Dressing wounds',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          instructions: 'Keep clean',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Tweezers',
+          category: 'General Health Essentials',
+          purpose: 'Remove splinters',
+          whenToUse: 'Minor injuries',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
           instructions: 'Clean before use',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Disposable Gloves',
+          category: 'General Health Essentials',
+          purpose: 'Hygiene',
+          whenToUse: 'Handling wounds',
+          quantity: 12,
+          targetQuantity: 15,
+          expiryDate: '2027-04-16',
+          instructions: 'Single use',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Hand Sanitizer',
+          category: 'External Use (Topicals)',
+          purpose: 'Clean hands',
+          whenToUse: 'Before/after care',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          instructions: 'Apply thoroughly',
           notes: ''
         }
       ];
       setSyncedItem('FIRST_AID_HOME', JSON.stringify(SEED_FIRST_AID_HOME));
-      setSyncedItem('first_aid_home_seeded_v1', 'true');
+      setSyncedItem('first_aid_home_seeded_v2', 'true');
     }
 
-    // --- First Aid Kit Mobile Seeding (Generic Placeholders) ---
-    if (typeof window !== 'undefined' && !localStorage.getItem(getPrefixedKey('first_aid_mobile_seeded_v1'))) {
+    // --- First Aid Kit Mobile Seeding - BUMPED V2 ---
+    if (typeof window !== 'undefined' && !localStorage.getItem(getPrefixedKey('first_aid_mobile_seeded_v2'))) {
       const SEED_FIRST_AID_MOBILE: MedicineItem[] = [
         {
           id: crypto.randomUUID(),
-          itemName: 'Mobile Adhesive Bandages',
+          itemName: 'Adhesive Bandages',
           category: 'External Use (Topicals)',
-          purpose: 'Portable wound care',
-          whenToUse: 'Minor injuries on the go',
+          purpose: 'Cover small cuts',
+          whenToUse: 'Minor injuries',
           quantity: 10,
-          targetQuantity: 10,
-          expiryDate: '2027-01-01',
-          instructions: 'Clean before use',
+          targetQuantity: 12,
+          expiryDate: '2027-04-16',
+          instructions: 'Clean before applying',
+          notes: 'Small pack'
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Sterile Gauze Pads',
+          category: 'External Use (Topicals)',
+          purpose: 'Cover wounds',
+          whenToUse: 'Medium cuts',
+          quantity: 6,
+          targetQuantity: 8,
+          expiryDate: '2027-04-16',
+          instructions: 'Use with antiseptic',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Medical Tape',
+          category: 'External Use (Topicals)',
+          purpose: 'Secure gauze',
+          whenToUse: 'Dressing wounds',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          instructions: 'Apply over gauze',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Cotton (Small Pack)',
+          category: 'External Use (Topicals)',
+          purpose: 'Clean wounds',
+          whenToUse: 'Before dressing',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          instructions: 'Use clean pieces',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Antiseptic (Small Bottle)',
+          category: 'External Use (Topicals)',
+          purpose: 'Disinfect wounds',
+          whenToUse: 'Cuts',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          instructions: 'Apply before dressing',
+          notes: 'Travel-size'
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Antiseptic Ointment',
+          category: 'External Use (Topicals)',
+          purpose: 'Prevent infection',
+          whenToUse: 'Minor wounds',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          instructions: 'Apply thin layer',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Crepe Bandage',
+          category: 'External Use (Topicals)',
+          purpose: 'Support sprains',
+          whenToUse: 'Injury',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          instructions: 'Wrap firmly',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Burn Ointment',
+          category: 'External Use (Topicals)',
+          purpose: 'Treat burns',
+          whenToUse: 'Minor burns',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          instructions: 'Apply gently',
+          notes: 'Optional'
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Pain Relief Spray / Gel',
+          category: 'Pain Relief & Inflammation',
+          purpose: 'Muscle relief',
+          whenToUse: 'Sprain',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          instructions: 'External use',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Scissors (Compact)',
+          category: 'General Health Essentials',
+          purpose: 'Cut materials',
+          whenToUse: 'Dressing',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          instructions: 'Keep clean',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Disposable Gloves',
+          category: 'General Health Essentials',
+          purpose: 'Hygiene',
+          whenToUse: 'Wound care',
+          quantity: 5,
+          targetQuantity: 6,
+          expiryDate: '2027-04-16',
+          instructions: 'Single use',
+          notes: ''
+        },
+        {
+          id: crypto.randomUUID(),
+          itemName: 'Hand Sanitizer (Small)',
+          category: 'External Use (Topicals)',
+          purpose: 'Clean hands',
+          whenToUse: 'Before care',
+          quantity: 1,
+          targetQuantity: 1,
+          expiryDate: '2027-04-16',
+          instructions: 'Apply thoroughly',
           notes: ''
         }
       ];
       setSyncedItem('FIRST_AID_MOBILE', JSON.stringify(SEED_FIRST_AID_MOBILE));
-      setSyncedItem('first_aid_mobile_seeded_v1', 'true');
+      setSyncedItem('first_aid_mobile_seeded_v2', 'true');
     }
   }, []);
 
