@@ -261,7 +261,7 @@ export function SavingsTargets() {
   Savings Planner
   </SectionTitle>
   <div className="flex items-center gap-3">
-    <div className="hidden sm:flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl border border-zinc-200 dark:border-zinc-700">
+    <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl border border-zinc-200 dark:border-zinc-700">
       <button 
         onClick={() => toggleViewMode('grid')}
         className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}

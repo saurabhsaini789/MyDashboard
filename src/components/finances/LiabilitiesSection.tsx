@@ -303,7 +303,7 @@ export function LiabilitiesSection() {
  Liabilities &amp; Debt
  </SectionTitle>
  <div className="flex items-center gap-3">
-    <div className="hidden sm:flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl border border-zinc-200 dark:border-zinc-700">
+    <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl border border-zinc-200 dark:border-zinc-700">
       <button 
         onClick={() => toggleViewMode('grid')}
         className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 shadow-sm text-rose-600 dark:text-rose-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
@@ -451,7 +451,7 @@ export function LiabilitiesSection() {
  </div>
  </div>
 
- <div className={`sm:flex flex-col gap-5 w-full ${expandedLiabilities[liability.id] ? 'flex' : 'hidden'}`}>
+ <div className={`md:flex flex-col gap-5 w-full ${expandedLiabilities[liability.id] ? 'flex' : 'hidden'}`}>
  {/* Progress Bar */}
  <div className="flex flex-col gap-2">
  <div className="flex justify-between text-xs text-zinc-600 dark:text-zinc-300 uppercase">

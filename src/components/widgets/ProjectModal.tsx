@@ -101,7 +101,7 @@ export const getProjectPriorityInfo = (p: Project) => {
 export const sortProjects = (projects: Project[]) => {
  return [...projects].sort((a, b) => {
  const pA = getProjectPriorityInfo(a);
- const pB = getProjectPriorityInfo(b);
+ const pB = b.dueDate ? getProjectPriorityInfo(b) : { label: 'On Track' }; // dummy
 
  const score = (label: string) => {
  switch (label) {
@@ -115,7 +115,7 @@ export const sortProjects = (projects: Project[]) => {
  };
 
  const sA = score(pA.label);
- const sB = score(pB.label);
+ const sB = score(pB.label as string);
 
  if (sA !== sB) return sA - sB;
 
@@ -184,13 +184,31 @@ export function ProjectModal({ project, onClose, onUpdateProject, onDeleteProjec
  setNewTaskTitle('');
  };
 
- const handleToggleProjectCompletion = () => {
- onUpdateProject({ 
- ...project, 
- isCompleted: !project.isCompleted, 
- completedAt: !project.isCompleted ? new Date().toISOString() : undefined 
- });
- };
+  const handleToggleProjectCompletion = () => {
+    const isNowCompleted = !project.isCompleted;
+    onUpdateProject({ 
+      ...project, 
+      isCompleted: isNowCompleted, 
+      status: isNowCompleted ? 'completed' : 'in-progress',
+      completedAt: isNowCompleted ? new Date().toISOString() : undefined 
+    });
+  };
+
+  const handleStatusChange = (newStatus: Project['status']) => {
+    onUpdateProject({ 
+      ...project, 
+      status: newStatus,
+      isCompleted: newStatus === 'completed',
+      completedAt: newStatus === 'completed' ? (project.completedAt || new Date().toISOString()) : undefined
+    });
+  };
+
+  const handleDueDateChange = (newDate: string) => {
+    onUpdateProject({ 
+      ...project, 
+      dueDate: newDate
+    });
+  };
 
  const saveEdits = (e: React.FormEvent) => {
  e.preventDefault();
@@ -210,18 +228,56 @@ export function ProjectModal({ project, onClose, onUpdateProject, onDeleteProjec
  if (mode === 'create') onClose();
  };
 
- const priority = getProjectPriorityInfo(project);
+  const priority = getProjectPriorityInfo(project);
 
+  const detailActions = !isEditing && (
+    <div className="flex gap-2">
+      {!project.isCompleted && (
+        <button
+          onClick={handleToggleProjectCompletion}
+          className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95"
+        >
+          Complete
+        </button>
+      )}
+      <button
+        onClick={() => {
+          setFormData({
+            title: project.title,
+            startDate: project.startDate || '',
+            dueDate: project.dueDate,
+            isImportant: project.isImportant,
+            status: project.status || 'not-started'
+          });
+          setIsEditing(true);
+        }}
+        className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl text-xs font-bold text-zinc-600 dark:text-zinc-300 transition-colors border border-zinc-200 dark:border-zinc-700"
+      >
+        Edit
+      </button>
+      <button
+        onClick={() => {
+          if (confirm('Are you sure you want to delete this project?')) {
+            onDeleteProject(project.id);
+          }
+        }}
+        className="px-4 py-2 bg-rose-50 dark:bg-rose-900/10 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-bold hover:bg-rose-100 dark:hover:bg-rose-900/20 transition-colors border border-rose-100 dark:border-rose-900/20"
+      >
+        Delete
+      </button>
+    </div>
+  );
 
- return (
- <Modal
- isOpen={true}
- onClose={isEditing && mode !== 'create' ? () => setIsEditing(false) : onClose}
- title={isEditing ? (mode === 'create' ? 'Create New Project' : 'Edit Project Details') : project.title}
- onSubmit={isEditing ? saveEdits : undefined}
- submitText={mode === 'create' ? 'Create Project' : 'Save Changes'}
- accentColor="blue"
- >
+  return (
+    <Modal
+      isOpen={true}
+      onClose={isEditing && mode !== 'create' ? () => setIsEditing(false) : onClose}
+      title={isEditing ? (mode === 'create' ? 'Create New Project' : 'Edit Project Details') : project.title}
+      onSubmit={isEditing ? saveEdits : undefined}
+      submitText={mode === 'create' ? 'Create Project' : 'Save Changes'}
+      accentColor="blue"
+      footerControls={detailActions}
+    >
  {isEditing ? (
  <DynamicForm
  sections={[
@@ -257,73 +313,54 @@ export function ProjectModal({ project, onClose, onUpdateProject, onDeleteProjec
  />
  ) : (
  <div className="flex flex-col gap-6">
- <div className="flex flex-col gap-5 p-5 bg-white dark:bg-zinc-900/40 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 shadow-sm transition-all duration-300">
-  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-  <div className="flex flex-wrap items-center gap-3">
-  <span className="text-[10px] font-bold tracking-wider uppercase text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10 px-2.5 py-1 rounded-lg border border-teal-100 dark:border-teal-500/20">
-  {project.bucketId}
-  </span>
-  <span className={`text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-lg flex items-center gap-1.5 ${priority.bg} ${priority.text} ${priority.classes} border border-transparent`}>
-  <span>{priority.label}</span>
-  </span>
+ <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-5 bg-white dark:bg-zinc-900/40 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 shadow-sm">
+  <div className="flex flex-col gap-1.5">
+    <span className="text-[10px] font-bold uppercase text-zinc-400 tracking-widest leading-none">Bucket</span>
+    <span className="text-[13px] font-bold text-teal-600 dark:text-teal-400">{project.bucketId}</span>
+  </div>
+  <div className="flex flex-col gap-1.5">
+    <span className="text-[10px] font-bold uppercase text-zinc-400 tracking-widest leading-none">Status</span>
+    <select
+      value={project.status}
+      onChange={(e) => handleStatusChange(e.target.value as any)}
+      className="text-[13px] font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-50/50 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50 rounded-lg px-2 py-0.5 -ml-2 w-fit cursor-pointer hover:border-teal-500/50 transition-colors outline-none focus:ring-1 focus:ring-teal-500/30 appearance-none"
+    >
+      <option value="not-started">Not Started</option>
+      <option value="in-progress">In Progress</option>
+      <option value="on-hold">On Hold</option>
+      <option value="completed">Completed</option>
+    </select>
+  </div>
+  <div className="flex flex-col gap-1.5">
+    <span className="text-[10px] font-bold uppercase text-zinc-400 tracking-widest leading-none">Health</span>
+    <span className={`text-[13px] font-bold ${priority.text}`}>{priority.label}</span>
+  </div>
+  <div className="flex flex-col gap-1.5">
+    <span className="text-[10px] font-bold uppercase text-zinc-400 tracking-widest leading-none">Importance</span>
+    <div className="flex items-center gap-1.5">
+      {project.isImportant ? (
+        <>
+          <svg className="text-amber-500 shrink-0" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+          <span className="text-[13px] font-bold text-amber-500">High</span>
+        </>
+      ) : (
+        <span className="text-[13px] font-bold text-zinc-400">Normal</span>
+      )}
+    </div>
+  </div>
 
-  {(project.startDate || project.dueDate) && (
-  <div className="flex items-center gap-3 text-[11px] text-zinc-500 dark:text-zinc-400 font-medium ml-1">
-  <span className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700 hidden xs:block"></span>
-  <div className="flex flex-wrap items-center gap-3">
-  {project.startDate && (
-  <span className="flex items-center gap-1">
-  <span className="text-zinc-400 font-normal">Started</span>
-  <span className="text-zinc-700 dark:text-zinc-300">{new Date(project.startDate + 'T12:00:00').toLocaleDateString()}</span>
-  </span>
-  )}
-  {project.dueDate && (
-  <span className="flex items-center gap-1">
-  <span className="text-zinc-400 font-normal">Due</span>
-  <span className="text-zinc-700 dark:text-zinc-300">{new Date(project.dueDate + 'T12:00:00').toLocaleDateString()}</span>
-  </span>
-  )}
-  </div>
-  </div>
-  )}
-  </div>
-
-  <div className="flex items-center gap-3">
-  {project.isImportant && (
-  <div className="flex items-center gap-1.5 px-2.5 py-1 text-amber-500 bg-amber-50/50 dark:bg-amber-500/10 rounded-lg border border-amber-100/50 dark:border-amber-500/20">
-  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-  <span className="text-[10px] font-bold uppercase tracking-tight">Important</span>
-  </div>
-  )}
-  
-  <div className="flex gap-2">
-  <button
-  onClick={() => {
-  setFormData({
-  title: project.title,
-  startDate: project.startDate || '',
-  dueDate: project.dueDate,
-  isImportant: project.isImportant,
-  status: project.status || 'not-started'
-  });
-  setIsEditing(true);
-  }}
-  className="px-4 py-1.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg text-[11px] font-bold text-zinc-600 dark:text-zinc-300 transition-colors border border-zinc-200 dark:border-zinc-700"
-  >
-  Edit Project
-  </button>
-  <button
-  onClick={() => {
-  if (confirm('Are you sure you want to delete this project?')) {
-  onDeleteProject(project.id);
-  }
-  }}
-  className="px-4 py-1.5 bg-rose-50 dark:bg-rose-900/10 text-rose-600 dark:text-rose-400 rounded-lg text-[11px] font-bold hover:bg-rose-100 dark:hover:bg-rose-900/20 transition-colors border border-rose-100 dark:border-rose-900/20"
-  >
-  Delete
-  </button>
-  </div>
-  </div>
+  <div className="col-span-2 flex flex-col gap-1.5 border-t border-zinc-100 dark:border-zinc-800/50 pt-3 mt-1">
+    <span className="text-[10px] font-bold uppercase text-zinc-400 tracking-widest leading-none">Period</span>
+    <div className="flex items-center gap-2 text-[13px] font-bold text-zinc-600 dark:text-zinc-400">
+      <span>{project.startDate ? new Date(project.startDate + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'No start'}</span>
+      <span className="opacity-30">→</span>
+      <input
+        type="date"
+        value={project.dueDate}
+        onChange={(e) => handleDueDateChange(e.target.value)}
+        className={`bg-zinc-50/50 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50 rounded-lg px-2 py-0.5 -ml-1 cursor-pointer hover:border-teal-500/50 transition-colors outline-none focus:ring-1 focus:ring-teal-500/30 text-[12px] ${priority.label === 'Off Track' ? 'text-rose-500' : 'text-zinc-800 dark:text-zinc-200'}`}
+      />
+    </div>
   </div>
  </div>
 

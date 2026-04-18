@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
 import { calculateAssetBalance } from '@/lib/finances';
@@ -25,7 +26,8 @@ export function ExpenseSection() {
  const [emergencyFund, setEmergencyFund] = useState<any | null>(null);
  const [isLoaded, setIsLoaded] = useState(false);
  const [isModalOpen, setIsModalOpen] = useState(false);
- const [editingRecord, setEditingRecord] = useState<ExpenseRecord | null>(null);
+  const [editingRecord, setEditingRecord] = useState<ExpenseRecord | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
  // Filter states
  const [selectedMonths, setSelectedMonths] = useState<number[]>([]); // Initialize empty for SSR
@@ -394,9 +396,21 @@ export function ExpenseSection() {
  <div className="flex flex-col gap-8 w-full transition-all duration-700 animate-in fade-in slide-in-from-bottom-8">
  {/* Integrated Heading, Filters & Global Actions */}
  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
+ <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsCollapsed(!isCollapsed)}>
  <SectionTitle>
  Expenses
  </SectionTitle>
+ <button 
+ className="p-1.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+ aria-label={isCollapsed ? "Expand section" : "Collapse section"}
+ >
+ {isCollapsed ? (
+ <ChevronRight className="w-5 h-5 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300" />
+ ) : (
+ <ChevronDown className="w-5 h-5 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300" />
+ )}
+ </button>
+ </div>
  
  <div className="flex flex-wrap items-center gap-4">
  <div className="flex gap-3">
@@ -424,6 +438,8 @@ export function ExpenseSection() {
 
  <div className="flex flex-col gap-10">
  {/* Top Row: Metrics Integrated into the main flow */}
+ {!isCollapsed && (
+ <div className="flex flex-col gap-10 animate-in fade-in slide-in-from-top-4 duration-300">
  <ExpenseMetrics records={records} selectedMonths={selectedMonths} selectedYears={selectedYears} />
 
  {/* Category Breakdown */}
@@ -443,6 +459,8 @@ export function ExpenseSection() {
  </div>
  ))}
  </div>
+ </div>
+ )}
  </div>
  )}
 

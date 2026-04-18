@@ -242,19 +242,19 @@ export function SupplementSection({ externalFilter }: SupplementSectionProps) {
   </SectionTitle>
   </div>
 
-  <div className="flex items-center gap-3">
+  <div className="flex items-center gap-1.5 sm:gap-3">
     {/* View Toggle */}
     <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl border border-zinc-200 dark:border-zinc-700 h-[54px] items-center">
       <button 
         onClick={() => toggleViewMode('grid')}
-        className={`p-2 rounded-lg transition-all h-full flex items-center gap-2 px-3 ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+        className={`p-2 rounded-lg transition-all h-full flex items-center gap-2 px-2 sm:px-3 ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
         title="Grid View"
       >
         <LayoutGrid size={18} />
       </button>
       <button 
         onClick={() => toggleViewMode('table')}
-        className={`p-2 rounded-lg transition-all h-full flex items-center gap-2 px-3 ${viewMode === 'table' ? 'bg-white dark:bg-zinc-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+        className={`p-2 rounded-lg transition-all h-full flex items-center gap-2 px-2 sm:px-3 ${viewMode === 'table' ? 'bg-white dark:bg-zinc-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
         title="Table View"
       >
         <List size={18} />
@@ -264,7 +264,7 @@ export function SupplementSection({ externalFilter }: SupplementSectionProps) {
     <select 
       value={selectedCategory}
       onChange={(e) => setSelectedCategory(e.target.value)}
-      className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-xs font-bold px-4 h-[54px] rounded-2xl border-none focus:ring-2 focus:ring-zinc-500 appearance-none cursor-pointer min-w-[140px]"
+      className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-[10px] sm:text-xs font-bold px-2 sm:px-4 h-[54px] rounded-2xl border-none focus:ring-2 focus:ring-zinc-500 appearance-none cursor-pointer min-w-[100px] sm:min-w-[140px] flex-1 sm:flex-none"
     >
       <option value="All">ALL CATEGORIES</option>
       {SUPPLEMENT_CATEGORIES.map(cat => (
@@ -274,9 +274,10 @@ export function SupplementSection({ externalFilter }: SupplementSectionProps) {
   
     <button 
       onClick={openAddModal}
-      className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold px-8 py-4 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-sm shadow-zinc-900/10 h-[54px]"
+      className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold px-3 sm:px-8 py-4 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-sm shadow-zinc-900/10 h-[54px] whitespace-nowrap"
     >
-      ADD SUPPLEMENT
+      <span className="sm:hidden">+ ADD</span>
+      <span className="hidden sm:inline">ADD SUPPLEMENT</span>
     </button>
   </div>
  </div>

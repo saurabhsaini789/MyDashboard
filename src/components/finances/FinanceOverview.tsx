@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Wallet, Shield, TrendingUp, TrendingDown, Percent } from 'lucide-react';
+import { Wallet, Shield, TrendingUp, TrendingDown, Percent, ChevronDown, ChevronRight } from 'lucide-react';
 import { getPrefixedKey } from '@/lib/keys';
 import { MultiSelectDropdown } from '../ui/MultiSelectDropdown';
 import { MONTHS, YEARS } from '@/lib/constants';
@@ -78,6 +78,7 @@ export function FinanceOverview() {
   const [netWorth, setNetWorth] = useState(0);
   const [emergencyFundMonths, setEmergencyFundMonths] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Filter states
   const [selectedMonths, setSelectedMonths] = useState<number[]>([]); // Initialize empty for SSR
@@ -183,9 +184,21 @@ export function FinanceOverview() {
   return (
     <div className="w-full flex flex-col gap-6 md:gap-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 px-1 md:px-2">
-        <SectionTitle>
-          Financial Overview
-        </SectionTitle>
+        <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsCollapsed(!isCollapsed)}>
+          <SectionTitle>
+            Financial Overview
+          </SectionTitle>
+          <button 
+            className="p-1.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            aria-label={isCollapsed ? "Expand section" : "Collapse section"}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="w-5 h-5 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300" />
+            )}
+          </button>
+        </div>
 
         <div className="flex gap-2 md:gap-3">
           <MultiSelectDropdown
@@ -203,63 +216,65 @@ export function FinanceOverview() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6">
-        <MetricCard 
-          label="Net Worth"
-          value={`$${netWorth.toLocaleString("en-CA", { maximumFractionDigits: 0 })}`}
-          subValue={netWorth >= 0 ? "Positive Equity" : "Negative Equity"}
-          color={netWorth >= 0 ? "emerald" : "rose"}
-          customBg={netWorth >= 0 
-            ? "border-emerald-100/50 dark:border-emerald-900/30" 
-            : "border-rose-100/50 dark:border-rose-900/30"
-          }
-          icon={<Wallet strokeWidth={2.5} />}
-        />
+      {!isCollapsed && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6 animate-in fade-in slide-in-from-top-4 duration-300">
+          <MetricCard 
+            label="Net Worth"
+            value={`$${netWorth.toLocaleString("en-CA", { maximumFractionDigits: 0 })}`}
+            subValue={netWorth >= 0 ? "Positive Equity" : "Negative Equity"}
+            color={netWorth >= 0 ? "emerald" : "rose"}
+            customBg={netWorth >= 0 
+              ? "border-emerald-100/50 dark:border-emerald-900/30" 
+              : "border-rose-100/50 dark:border-rose-900/30"
+            }
+            icon={<Wallet strokeWidth={2.5} />}
+          />
 
-        <MetricCard 
-          label="Emergency Fund"
-          value={`${emergencyFundMonths < 10 ? emergencyFundMonths.toFixed(1) : Math.floor(emergencyFundMonths)} Months`}
-          subValue={emergencyFundMonths >= 6 ? "Fully Funded" : emergencyFundMonths >= 3 ? "On Track" : "Focus Needed"}
-          color={emergencyFundMonths >= 6 ? "emerald" : emergencyFundMonths >= 3 ? "amber" : "rose"}
-          customBg={emergencyFundMonths >= 6 
-            ? "border-emerald-100/50 dark:border-emerald-900/30"
-            : emergencyFundMonths >= 3
-            ? "border-amber-100/50 dark:border-amber-900/30"
-            : "border-rose-100/50 dark:border-rose-900/30"
-          }
-          icon={<Shield strokeWidth={2.5} />}
-        />
+          <MetricCard 
+            label="Emergency Fund"
+            value={`${emergencyFundMonths < 10 ? emergencyFundMonths.toFixed(1) : Math.floor(emergencyFundMonths)} Months`}
+            subValue={emergencyFundMonths >= 6 ? "Fully Funded" : emergencyFundMonths >= 3 ? "On Track" : "Focus Needed"}
+            color={emergencyFundMonths >= 6 ? "emerald" : emergencyFundMonths >= 3 ? "amber" : "rose"}
+            customBg={emergencyFundMonths >= 6 
+              ? "border-emerald-100/50 dark:border-emerald-900/30"
+              : emergencyFundMonths >= 3
+              ? "border-amber-100/50 dark:border-amber-900/30"
+              : "border-rose-100/50 dark:border-rose-900/30"
+            }
+            icon={<Shield strokeWidth={2.5} />}
+          />
 
-        <MetricCard
-          label="Monthly Income"
-          value={`$${income.toLocaleString("en-CA", { maximumFractionDigits: 0 })}`}
-          subValue={selectedMonths.length === 1 && selectedYears.length === 1 ? MONTHS[selectedMonths[0]] : `${selectedMonths.length} Months`}
-          color="emerald"
-          icon={<TrendingUp strokeWidth={2.5} />}
-        />
+          <MetricCard
+            label="Monthly Income"
+            value={`$${income.toLocaleString("en-CA", { maximumFractionDigits: 0 })}`}
+            subValue={selectedMonths.length === 1 && selectedYears.length === 1 ? MONTHS[selectedMonths[0]] : `${selectedMonths.length} Months`}
+            color="emerald"
+            icon={<TrendingUp strokeWidth={2.5} />}
+          />
 
-        <MetricCard
-          label="Monthly Expenses"
-          value={`$${expenses.toLocaleString("en-CA", { maximumFractionDigits: 0 })}`}
-          subValue={`${income > 0 ? ((expenses / income) * 100).toFixed(0) : 0}% of Income`}
-          color="rose"
-          icon={<TrendingDown strokeWidth={2.5} />}
-        />
+          <MetricCard
+            label="Monthly Expenses"
+            value={`$${expenses.toLocaleString("en-CA", { maximumFractionDigits: 0 })}`}
+            subValue={`${income > 0 ? ((expenses / income) * 100).toFixed(0) : 0}% of Income`}
+            color="rose"
+            icon={<TrendingDown strokeWidth={2.5} />}
+          />
 
-        <MetricCard
-          label="Savings Rate"
-          value={`${savingsRate.toFixed(1)}%`}
-          subValue="Goal: 20%"
-          color={savingsRate >= 20 ? "emerald" : savingsRate >= 10 ? "amber" : "rose"}
-          customBg={savingsRate >= 20
-            ? "border-emerald-100/50 dark:border-emerald-900/30"
-            : savingsRate >= 10
-            ? "border-amber-100/50 dark:border-amber-900/30"
-            : "border-rose-100/50 dark:border-rose-900/30"
-          }
-          icon={<Percent strokeWidth={2.5} />}
-        />
-      </div>
+          <MetricCard
+            label="Savings Rate"
+            value={`${savingsRate.toFixed(1)}%`}
+            subValue="Goal: 20%"
+            color={savingsRate >= 20 ? "emerald" : savingsRate >= 10 ? "amber" : "rose"}
+            customBg={savingsRate >= 20
+              ? "border-emerald-100/50 dark:border-emerald-900/30"
+              : savingsRate >= 10
+              ? "border-amber-100/50 dark:border-amber-900/30"
+              : "border-rose-100/50 dark:border-rose-900/30"
+            }
+            icon={<Percent strokeWidth={2.5} />}
+          />
+        </div>
+      )}
     </div>
   );
 }

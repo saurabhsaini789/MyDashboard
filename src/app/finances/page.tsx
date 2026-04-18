@@ -33,37 +33,37 @@ export default function FinancesPage() {
   </header>
 
   {/* Finance Overview Grid */}
-  <div className="fade-in mb-14" style={{ animationDelay: '0.2s' }}>
+  <div className="fade-in mb-14" style={{ animationDelay: '0.1s' }}>
   <FinanceOverview />
   </div>
 
   {/* Savings Targets Section */}
-  <div className="fade-in mb-14" style={{ animationDelay: '0.4s' }}>
+  <div className="fade-in mb-14" style={{ animationDelay: '0.2s' }}>
   <SavingsTargets />
   </div>
 
   {/* Income Section */}
-  <div className="fade-in mb-14" style={{ animationDelay: '0.6s' }}>
+  <div className="fade-in mb-14" style={{ animationDelay: '0.3s' }}>
   <IncomeSection />
   </div>
 
   {/* Expenses Section */}
-  <div className="fade-in mb-14" style={{ animationDelay: '0.8s' }}>
+  <div className="fade-in mb-14" style={{ animationDelay: '0.4s' }}>
   <ExpenseSection />
   </div>
 
   {/* Emergency Fund Section */}
-  <div className="fade-in mb-14" style={{ animationDelay: '1.0s' }}>
+  <div className="fade-in mb-14" style={{ animationDelay: '0.5s' }}>
   <EmergencyFundSection />
   </div>
 
   {/* Assets Section */}
-  <div className="fade-in mb-14" style={{ animationDelay: '1.2s' }}>
+  <div className="fade-in mb-14" style={{ animationDelay: '0.6s' }}>
   <AssetsSection />
   </div>
 
   {/* Liabilities Section */}
-  <div className="fade-in mb-14" style={{ animationDelay: '1.4s' }}>
+  <div className="fade-in mb-14" style={{ animationDelay: '0.7s' }}>
   <LiabilitiesSection />
   </div>
 

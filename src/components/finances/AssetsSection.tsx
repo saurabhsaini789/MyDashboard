@@ -256,7 +256,7 @@ export function AssetsSection() {
  Assets Portfolio
  </SectionTitle>
  <div className="flex items-center gap-3">
-    <div className="hidden sm:flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl border border-zinc-200 dark:border-zinc-700">
+    <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl border border-zinc-200 dark:border-zinc-700">
       <button 
         onClick={() => toggleViewMode('grid')}
         className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
@@ -382,7 +382,7 @@ export function AssetsSection() {
   </div>
   </div>
 
-  <div className={`sm:flex flex-col gap-4 w-full ${expandedAssets[asset.id] ? 'flex mt-2' : 'hidden'}`}>
+  <div className={`md:flex flex-col gap-4 w-full ${expandedAssets[asset.id] ? 'flex mt-2' : 'hidden'}`}>
   <div className="flex flex-col gap-0.5">
 
   <Text variant="label" as="span">Compounded Valuation</Text>

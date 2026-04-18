@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
 import { calculateAssetBalance } from '@/lib/finances';
@@ -27,6 +28,7 @@ export function IncomeSection() {
  const [isLoaded, setIsLoaded] = useState(false);
  const [isModalOpen, setIsModalOpen] = useState(false);
  const [editingRecord, setEditingRecord] = useState<IncomeRecord | null>(null);
+ const [isCollapsed, setIsCollapsed] = useState(false);
 
  // Filter states
  const [selectedMonths, setSelectedMonths] = useState<number[]>([]); // Initialize empty for SSR
@@ -231,9 +233,21 @@ export function IncomeSection() {
  <div className="flex flex-col gap-8 w-full">
  {/* Integrated Heading, Filters & Global Actions */}
  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
+ <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsCollapsed(!isCollapsed)}>
  <SectionTitle>
  Income Streams
  </SectionTitle>
+ <button 
+ className="p-1.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+ aria-label={isCollapsed ? "Expand section" : "Collapse section"}
+ >
+ {isCollapsed ? (
+ <ChevronRight className="w-5 h-5 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300" />
+ ) : (
+ <ChevronDown className="w-5 h-5 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300" />
+ )}
+ </button>
+ </div>
  
  <div className="flex flex-wrap items-center gap-4">
  <div className="flex gap-3">
@@ -261,7 +275,11 @@ export function IncomeSection() {
 
  <div className="flex flex-col gap-10">
  {/* Top Row: Metrics Integrated into the main flow */}
+ {!isCollapsed && (
+ <div className="animate-in fade-in slide-in-from-top-4 duration-300">
  <IncomeMetrics records={records} selectedMonths={selectedMonths} selectedYears={selectedYears} />
+ </div>
+ )}
 
  {/* Table Section */}
  <div className="bg-white dark:bg-zinc-900/60 border border-l-4 border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-2 overflow-hidden shadow-sm transition-all flex flex-col pt-8">
