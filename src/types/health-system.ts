@@ -30,19 +30,19 @@ export interface MedicineItem {
 export interface SupplementItem {
  id: string;
 
- name: string;
+ itemName: string;
  category: string;
 
  purpose: string;
- whoUses: string;
-
  frequency: string;
- dosage: string;
+ dose: string;
 
  quantity: number;
  targetQuantity: number;
 
  expiryDate: string;
+
+ instructions: string;
 
  notes?: string;
 }
