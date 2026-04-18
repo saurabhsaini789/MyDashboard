@@ -88,32 +88,6 @@ export function PantryCalendar({ records, onUpdateRecords, viewingDate, setViewi
 
  return (
  <div className="flex flex-col gap-8 w-full">
- {/* Monthly Summary */}
- <div className="flex flex-row items-center justify-between px-4 md:px-10 py-6 md:py-10 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl text-zinc-900 dark:text-white shadow-sm relative overflow-hidden">
- <div className="flex flex-col gap-1">
- <span className="text-xs uppercase font-semibold opacity-60">Monthly Spend</span>
- <span className="text-4xl md:text-5xl font-bold">
- ${monthlyTotal.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
- </span>
- </div>
- 
- <div className="flex items-center gap-3 md:gap-4">
- <button onClick={prevMonth} className="p-2 md:p-3 hover:bg-zinc-100 dark:hover:bg-white/10 rounded-xl md:rounded-2xl transition-all">
- <svg className="w-4 h-4 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" /></svg>
- </button>
- <div className="flex flex-col items-center">
- <span className="text-sm font-semibold uppercase text-teal-600 dark:text-teal-400 leading-none">
- {new Intl.DateTimeFormat('en-US', { month: 'short' }).format(viewingDate)}
- </span>
- <span className="text-xs font-semibold opacity-40 uppercase mt-0.5 md:mt-1">
- {viewingDate.getFullYear()}
- </span>
- </div>
- <button onClick={nextMonth} className="p-2 md:p-3 hover:bg-zinc-100 dark:hover:bg-white/10 rounded-xl md:rounded-2xl transition-all">
- <svg className="w-4 h-4 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
- </button>
- </div>
- </div>
 
  {/* Calendar Grid */}
  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 md:p-10 shadow-sm overflow-hidden">

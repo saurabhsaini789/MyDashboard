@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { ExpenseRecord, ExpenseItem } from '@/types/finance';
 import { Modal } from '../ui/Modal';
 import { SectionTitle } from '../ui/Text';
-import { Sparkles, AlertTriangle, Lightbulb } from 'lucide-react';
+import { Sparkles, AlertTriangle, Lightbulb, LayoutGrid, List } from 'lucide-react';
 
 interface PriceIntelligenceProps {
  records: ExpenseRecord[];
@@ -35,8 +35,20 @@ interface ItemStats {
 }
 
 export function PriceIntelligence({ records }: PriceIntelligenceProps) {
- const [searchTerm, setSearchTerm] = useState('');
- const [activeItemStats, setActiveItemStats] = useState<ItemStats | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeItemStats, setActiveItemStats] = useState<ItemStats | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+
+  // Load view mode preference
+  React.useEffect(() => {
+    const saved = localStorage.getItem('pantry-price-intelligence-view');
+    if (saved === 'table' || saved === 'grid') setViewMode(saved);
+  }, []);
+
+  const toggleViewMode = (mode: 'grid' | 'table') => {
+    setViewMode(mode);
+    localStorage.setItem('pantry-price-intelligence-view', mode);
+  };
 
  const itemStats: ItemStats[] = useMemo(() => {
  const map: Record<string, {
@@ -212,41 +224,123 @@ export function PriceIntelligence({ records }: PriceIntelligenceProps) {
  );
  };
 
+  const renderTableView = () => (
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm animate-in fade-in duration-500">
+      <div className="overflow-x-auto custom-scrollbar">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-zinc-50 dark:bg-zinc-950/50 border-b border-zinc-100 dark:border-zinc-800">
+              <th className="p-4 px-6 text-[11px] uppercase text-zinc-500 font-bold tracking-wider">Item</th>
+              <th className="p-4 px-6 text-[11px] uppercase text-zinc-500 font-bold tracking-wider">Last Purchase</th>
+              <th className="p-4 px-6 text-[11px] uppercase text-zinc-500 font-bold tracking-wider text-right">Avg / Lowest</th>
+              <th className="p-4 px-6 text-[11px] uppercase text-zinc-500 font-bold tracking-wider text-right">Trend</th>
+              <th className="p-4 px-6 text-[11px] uppercase text-zinc-500 font-bold tracking-wider text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+            {filteredStats.map(stat => (
+              <tr key={stat.name} onClick={() => setActiveItemStats(stat)} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group cursor-pointer border-b border-zinc-50 dark:border-zinc-800/50 last:border-0">
+                <td className="p-4 px-6">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">{stat.name}</span>
+                    <span className="text-[10px] uppercase font-bold text-zinc-400">{stat.history.length} logs</span>
+                  </div>
+                </td>
+                <td className="p-4 px-6">
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                        ${stat.lastPurchase.price.toLocaleString("en-CA", { minimumFractionDigits: 1, maximumFractionDigits: 3 })}
+                      </span>
+                      <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-tight">/ {stat.lastPurchase.size || 'unit'}</span>
+                    </div>
+                    <span className="text-xs text-zinc-500 truncate max-w-[150px]">at {stat.lastPurchase.vendor}</span>
+                  </div>
+                </td>
+                <td className="p-4 px-6 text-right">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                      Avg: ${stat.averagePrice.toLocaleString("en-CA", {maximumFractionDigits:2})}
+                    </span>
+                    <span className="text-xs font-bold text-teal-600 dark:text-teal-400">
+                      Low: ${stat.lowestPrice.price.toLocaleString("en-CA", {maximumFractionDigits:2})}
+                    </span>
+                  </div>
+                </td>
+                <td className="p-4 px-6 text-right">
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${ stat.priceTrend > 3 ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400' : stat.priceTrend < -3 ? 'bg-teal-50 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400' }`}>
+                    {stat.priceTrend > 0 ? '↑' : stat.priceTrend < 0 ? '↓' : ''} {Math.abs(stat.priceTrend).toFixed(1)}% vs avg
+                  </span>
+                </td>
+                <td className="p-4 px-6 text-right">
+                  <button 
+                    className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all text-zinc-400 hover:text-amber-600 dark:hover:text-amber-400"
+                  >
+                    <Sparkles size={18} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
  return (
  <div className="flex flex-col gap-6 animate-in fade-in duration-700 delay-300">
  
- {/* Header */}
- <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 p-6 md:p-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm relative overflow-hidden">
- <div className="absolute top-0 left-0 w-64 h-64 bg-amber-500/15 dark:bg-amber-500/10 rounded-full blur-3xl -ml-10 -mt-20 pointer-events-none" />
- 
- <div className="flex flex-col gap-2 relative z-10">
- <SectionTitle>Price Intelligence</SectionTitle>
- <p className="text-sm text-zinc-500 font-medium max-w-md">Track historical pricing, store comparisons, and pinpoint the best local deals intelligently based on entered bills and data.</p>
- </div>
+   {/* Header */}
+   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 p-6 md:p-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm relative overflow-hidden">
+     <div className="absolute top-0 left-0 w-64 h-64 bg-amber-500/15 dark:bg-amber-500/10 rounded-full blur-3xl -ml-10 -mt-20 pointer-events-none" />
+     
+     <div className="flex flex-col gap-2 relative z-10">
+       <SectionTitle>Price Intelligence</SectionTitle>
+       <p className="text-sm text-zinc-500 font-medium max-w-md">Track historical pricing, store comparisons, and pinpoint the best local deals intelligently based on entered bills and data.</p>
+     </div>
 
- <div className="relative z-10 w-full md:w-auto">
- <div className="relative">
- <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
- </svg>
- <input 
- type="text" 
- placeholder="Search items..." 
- value={searchTerm}
- onChange={e => setSearchTerm(e.target.value)}
- className="w-full md:w-64 pl-9 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all font-medium"
- />
- </div>
- </div>
- </div>
+     <div className="relative z-10 w-full md:w-auto flex items-center gap-3">
+       {/* View Toggle */}
+       <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl border border-zinc-200 dark:border-zinc-700">
+         <button 
+           onClick={() => toggleViewMode('grid')}
+           className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 shadow-sm text-amber-600 dark:text-amber-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+           title="Grid View"
+         >
+           <LayoutGrid size={18} />
+         </button>
+         <button 
+           onClick={() => toggleViewMode('table')}
+           className={`p-1.5 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white dark:bg-zinc-700 shadow-sm text-amber-600 dark:text-amber-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+           title="Table View"
+         >
+           <List size={18} />
+         </button>
+       </div>
 
- {/* Grid of Intel Cards */}
- {filteredStats.length === 0 ? (
- <div className="text-center p-12 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800">
- <p className="text-zinc-500 font-medium">{itemStats.length === 0 ? "No grocery items logged yet. Add items in Quick Entry or detailed bills." : "No items found matching your search."}</p>
- </div>
- ) : (
- <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+       <div className="relative">
+         <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+         </svg>
+         <input 
+           type="text" 
+           placeholder="Search items..." 
+           value={searchTerm}
+           onChange={e => setSearchTerm(e.target.value)}
+           className="w-full md:w-64 pl-9 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all font-medium"
+         />
+       </div>
+     </div>
+   </div>
+
+   {/* Layout Views */}
+  {filteredStats.length === 0 ? (
+  <div className="text-center p-12 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800">
+  <p className="text-zinc-500 font-medium">{itemStats.length === 0 ? "No grocery items logged yet. Add items in Quick Entry or detailed bills." : "No items found matching your search."}</p>
+  </div>
+   ) : viewMode === 'grid' ? (
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+
  {filteredStats.map(stat => (
  <div key={stat.name} onClick={() => setActiveItemStats(stat)} className="group bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between cursor-pointer">
  
@@ -309,10 +403,13 @@ export function PriceIntelligence({ records }: PriceIntelligenceProps) {
  )}
  </div>
  )}
- </div>
- ))}
- </div>
- )}
+  </div>
+  ))}
+  </div>
+  ) : (
+    renderTableView()
+  )}
+
 
  {/* Pop-up Modal for Detailed Tracking */}
  {activeItemStats && (

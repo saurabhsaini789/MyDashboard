@@ -6,6 +6,9 @@ import { GroceryPlan } from '@/components/pantry/GroceryPlan';
 import { PriceIntelligence } from '@/components/pantry/PriceIntelligence';
 import { InventoryTracker } from '@/components/pantry/InventoryTracker';
 import { SmartInsights } from '@/components/pantry/SmartInsights';
+import { PantryFilter } from '@/components/pantry/PantryFilter';
+import { PantrySummary } from '@/components/pantry/PantrySummary';
+import { PantryEntryModal } from '@/components/pantry/PantryEntryModal';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 import { getPrefixedKey } from '@/lib/keys';
 import { setSyncedItem } from '@/lib/storage';
@@ -17,6 +20,7 @@ export default function PantryPage() {
  const [records, setRecords] = useState<ExpenseRecord[]>([]);
  const [isLoaded, setIsLoaded] = useState(false);
  const [viewingDate, setViewingDate] = useState(new Date());
+ const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
 
  useEffect(() => {
  setMounted(true);
@@ -96,44 +100,34 @@ export default function PantryPage() {
       <PageTitle>Pantry</PageTitle>
       <Description>Kitchen inventory, groceries, and shopping lists.</Description>
     </div>
+
+  {/* Quick Add Modal */}
+  <PantryEntryModal 
+    isOpen={isQuickAddOpen}
+    date={new Date().toISOString().split('T')[0]}
+    recordsOnDate={[]} 
+    onClose={() => setIsQuickAddOpen(false)}
+    onUpdateRecords={updateRecords}
+    allRecords={records}
+  />
   </header>
 
-  {/* Current Month Breakdown Overview */}
-  {Object.keys(categoryTotals).length > 0 && (
-  <div className="flex flex-col gap-5 fade-in animate-in slide-in-from-bottom-4 duration-700 delay-100 mb-14">
- <div className="flex items-center justify-between px-2">
- <Text variant="label" as="span">{viewingDate.toLocaleString('default', { month: 'long', year: 'numeric' })} Breakdown</Text>
- <Text variant="label" as="span">Total: ${(totalNeed + totalWant).toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
- </div>
-
- {/* Need vs Want visualization */}
- <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex flex-col gap-5">
- <div className="flex justify-between items-center px-1">
- <div className="flex flex-col">
- <Text variant="label" as="span" className="text-zinc-400">Essential Needs</Text>
- <Text variant="metric" as="span" className="text-teal-600 dark:text-teal-400">${totalNeed.toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
- </div>
- <div className="flex flex-col items-end">
- <Text variant="label" as="span" className="text-zinc-400">Discretionary Wants</Text>
- <Text variant="metric" as="span" className="text-rose-500 dark:text-rose-400">${totalWant.toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
- </div>
- </div>
- <div className="w-full flex h-3 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
- <div className="bg-teal-500 transition-all duration-1000 ease-out" style={{ width: `${(totalNeed / Math.max(totalNeed + totalWant, 1)) * 100}%`}} />
- <div className="bg-rose-500 transition-all duration-1000 ease-out" style={{ width: `${(totalWant / Math.max(totalNeed + totalWant, 1)) * 100}%`}} />
- </div>
- </div>
-
- <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
- {Object.entries(categoryTotals).sort((a,b) => b[1] - a[1]).map(([cat, total]) => (
- <div key={cat} className="flex flex-col p-4 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-sm hover:-translate-y-1 transition-transform duration-300">
- <span className="text-xs uppercase font-bold text-zinc-500 truncate">{cat}</span>
- <span className="text-xl font-bold text-teal-600 dark:text-teal-400">${total.toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
- </div>
- ))}
- </div>
- </div>
- )}
+      {/* New Compact Filter and Summary Dashboard */}
+      <div className="fade-in animate-in slide-in-from-bottom-4 duration-700 delay-100 mb-8">
+        <PantrySummary 
+          totalTotal={totalNeed + totalWant}
+          totalNeed={totalNeed}
+          totalWant={totalWant}
+          categoryTotals={categoryTotals}
+          extraControls={
+            <PantryFilter 
+              viewingDate={viewingDate} 
+              onDateChange={setViewingDate} 
+              onAddClick={() => setIsQuickAddOpen(true)}
+            />
+          }
+        />
+      </div>
 
   {/* Dynamic Pantry Calendar */}
   <div className="fade-in animate-in slide-in-from-bottom-4 duration-700 mb-14">
@@ -147,7 +141,7 @@ export default function PantryPage() {
 
   {/* Monthly Grocery Plan */}
   <div className="fade-in animate-in slide-in-from-bottom-4 duration-700 delay-200 mb-14">
- <GroceryPlan records={records} viewingDate={viewingDate} />
+ <GroceryPlan records={records} viewingDate={viewingDate} onDateChange={setViewingDate} />
  </div>
 
   {/* Price Intelligence Tracker */}

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { setSyncedItem } from "@/lib/storage";
 import { getPrefixedKey } from "@/lib/keys";
 import { Text, SectionTitle } from "@/components/ui/Text";
-import { Plus } from "lucide-react";
+import { Plus, LayoutGrid, List } from "lucide-react";
 
 type Quote = {
  id: string;
@@ -24,6 +24,7 @@ export function Quotes() {
  const [isAdding, setIsAdding] = useState(false);
  const [newQuoteText, setNewQuoteText] = useState("");
  const [newQuoteAuthor, setNewQuoteAuthor] = useState("");
+ const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
  const quotesRef = React.useRef(quotes);
 
  useEffect(() => {
@@ -46,6 +47,12 @@ export function Quotes() {
  } else {
  setQuotes(defaultQuotes);
  }
+
+ const savedViewMode = localStorage.getItem('dashboard_quotes_view_mode');
+ if (savedViewMode === 'table' || savedViewMode === 'grid') {
+   setViewMode(savedViewMode);
+ }
+
  setIsLoaded(true);
 
  const handleLocalUpdate = (e: any) => {
@@ -101,87 +108,197 @@ export function Quotes() {
  setQuotes(quotes.filter((q) => q.id !== id));
  };
 
+ const toggleViewMode = (mode: 'grid' | 'table') => {
+   setViewMode(mode);
+   localStorage.setItem('dashboard_quotes_view_mode', mode);
+ };
+
+ const renderTableView = () => (
+   <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm animate-in fade-in duration-500">
+     <div className="overflow-x-auto custom-scrollbar">
+       <table className="w-full text-left border-collapse">
+         <thead>
+           <tr className="bg-zinc-50 dark:bg-zinc-950/50 border-b border-zinc-100 dark:border-zinc-800">
+             <th className="p-4 px-6 text-[11px] uppercase text-zinc-500 font-bold tracking-wider">Quote</th>
+             <th className="p-4 px-6 text-[11px] uppercase text-zinc-500 font-bold tracking-wider">Author</th>
+             <th className="p-4 px-6 text-[11px] uppercase text-zinc-500 font-bold tracking-wider text-right">Actions</th>
+           </tr>
+         </thead>
+         <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+           {isAdding && (
+             <tr className="bg-teal-50/10 dark:bg-teal-500/5">
+               <td colSpan={3} className="p-4 px-6">
+                 <form onSubmit={handleAddQuote} className="w-full flex flex-col gap-3">
+                   <textarea
+                     autoFocus
+                     placeholder="Type your quote here..."
+                     value={newQuoteText}
+                     onChange={(e) => setNewQuoteText(e.target.value)}
+                     className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500/50 resize-none"
+                     rows={2}
+                     required
+                   />
+                   <div className="flex gap-2 items-center justify-between">
+                     <input
+                       type="text"
+                       placeholder="Author..."
+                       value={newQuoteAuthor}
+                       onChange={(e) => setNewQuoteAuthor(e.target.value)}
+                       className="flex-1 max-w-xs bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-teal-500/50"
+                     />
+                     <div className="flex gap-1.5">
+                       <button
+                         type="button"
+                         onClick={() => setIsAdding(false)}
+                         className="text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 px-2 py-1.5"
+                       >
+                         Cancel
+                       </button>
+                       <button
+                         type="submit"
+                         disabled={!newQuoteText.trim()}
+                         className="text-xs font-semibold bg-teal-600 dark:bg-teal-500 text-white rounded-lg px-3 py-1.5 disabled:opacity-50 hover:bg-teal-700 dark:hover:bg-teal-400 transition-colors shadow-sm"
+                       >
+                         Save
+                       </button>
+                     </div>
+                   </div>
+                 </form>
+               </td>
+             </tr>
+           )}
+           {quotes.map((quote) => (
+             <tr key={quote.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group">
+               <td className="p-4 px-6">
+                 <p className="text-sm italic text-zinc-800 dark:text-zinc-200 line-clamp-2">"{quote.text}"</p>
+               </td>
+               <td className="p-4 px-6">
+                 <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{quote.author}</span>
+               </td>
+               <td className="p-4 px-6 text-right">
+                 <button
+                   onClick={() => handleDeleteQuote(quote.id)}
+                   className="p-1.5 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+                   aria-label="Delete quote"
+                 >
+                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
+                 </button>
+               </td>
+             </tr>
+           ))}
+         </tbody>
+       </table>
+     </div>
+   </div>
+ );
+
  if (!isLoaded) return <div className="animate-pulse h-40 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800/50"></div>;
 
   return (
     <div className="w-full flex flex-col gap-6">
       <div className="flex justify-between items-end">
         <SectionTitle className="mb-0">Daily Inspiration</SectionTitle>
-        <button
-          onClick={() => setIsAdding(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all border border-zinc-200 dark:border-zinc-700"
-        >
-          <Plus size={14} />
-          Add Quote
-        </button>
+        <div className="flex items-center gap-3">
+          {/* View Toggle */}
+          <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl border border-zinc-200 dark:border-zinc-700">
+            <button 
+              onClick={() => toggleViewMode('grid')}
+              className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 shadow-sm text-teal-600 dark:text-teal-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+              title="Grid View"
+            >
+              <LayoutGrid size={16} />
+            </button>
+            <button 
+              onClick={() => toggleViewMode('table')}
+              className={`p-1.5 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white dark:bg-zinc-700 shadow-sm text-teal-600 dark:text-teal-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+              title="Table View"
+            >
+              <List size={16} />
+            </button>
+          </div>
+
+          <button
+            onClick={() => setIsAdding(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all border border-zinc-200 dark:border-zinc-700 h-[34px]"
+          >
+            <Plus size={14} />
+            Add Quote
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {isAdding && (
-          <div className="w-full bg-white dark:bg-zinc-900 border border-teal-500/30 dark:border-teal-500/20 rounded-2xl p-4 flex flex-col shadow-md animate-in fade-in zoom-in duration-200 min-h-[140px]">
-            <form onSubmit={handleAddQuote} className="w-full h-full flex flex-col gap-3">
-              <textarea
-                autoFocus
-                placeholder="Type your quote here..."
-                value={newQuoteText}
-                onChange={(e) => setNewQuoteText(e.target.value)}
-                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500/50 resize-none flex-1"
-                rows={2}
-                required
-              />
-              <div className="flex gap-2 items-center">
-                <input
-                  type="text"
-                  placeholder="Author..."
-                  value={newQuoteAuthor}
-                  onChange={(e) => setNewQuoteAuthor(e.target.value)}
-                  className="flex-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-teal-500/50"
-                />
-                <div className="flex gap-1.5">
+      <div className="max-h-[350px] overflow-y-auto pr-2 -mr-2 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800">
+        {viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-2">
+            {isAdding && (
+              <div className="w-full bg-white dark:bg-zinc-900 border border-teal-500/30 dark:border-teal-500/20 rounded-2xl p-4 flex flex-col shadow-md animate-in fade-in zoom-in duration-200 min-h-[140px]">
+                <form onSubmit={handleAddQuote} className="w-full h-full flex flex-col gap-3">
+                  <textarea
+                    autoFocus
+                    placeholder="Type your quote here..."
+                    value={newQuoteText}
+                    onChange={(e) => setNewQuoteText(e.target.value)}
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500/50 resize-none flex-1"
+                    rows={2}
+                    required
+                  />
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      placeholder="Author..."
+                      value={newQuoteAuthor}
+                      onChange={(e) => setNewQuoteAuthor(e.target.value)}
+                      className="flex-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-teal-500/50"
+                    />
+                    <div className="flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setIsAdding(false)}
+                        className="text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 px-2 py-1.5"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={!newQuoteText.trim()}
+                        className="text-xs font-semibold bg-teal-600 dark:bg-teal-500 text-white rounded-lg px-3 py-1.5 disabled:opacity-50 hover:bg-teal-700 dark:hover:bg-teal-400 transition-colors shadow-sm"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {quotes.map((quote) => (
+              <div
+                key={quote.id}
+                className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 flex flex-col justify-between shadow-sm relative group transition-all hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-700 min-h-[110px]"
+              >
+                <div className="absolute top-0 left-0 w-1 h-full bg-teal-500/80 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <Text variant="heading" as="p" className="text-zinc-800 dark:text-zinc-200 leading-snug italic">
+                  "{quote.text}"
+                </Text>
+
+                <div className="flex justify-between items-start gap-3 mt-3">
+                  <Text variant="label" as="span" className="font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-500 leading-tight">
+                    — {quote.author}
+                  </Text>
                   <button
-                    type="button"
-                    onClick={() => setIsAdding(false)}
-                    className="text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 px-2 py-1.5"
+                    onClick={() => handleDeleteQuote(quote.id)}
+                    className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-500 transition-all p-1 mt-[-4px]"
+                    aria-label="Delete quote"
                   >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={!newQuoteText.trim()}
-                    className="text-xs font-semibold bg-teal-600 dark:bg-teal-500 text-white rounded-lg px-3 py-1.5 disabled:opacity-50 hover:bg-teal-700 dark:hover:bg-teal-400 transition-colors shadow-sm"
-                  >
-                    Save
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
                   </button>
                 </div>
               </div>
-            </form>
+            ))}
           </div>
+        ) : (
+          renderTableView()
         )}
-
-        {quotes.map((quote) => (
-          <div
-            key={quote.id}
-            className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 flex flex-col justify-between shadow-sm relative group transition-all hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-700 min-h-[140px]"
-          >
-            <div className="absolute top-0 left-0 w-1 h-full bg-teal-500/80 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <Text variant="heading" as="p" className="text-zinc-800 dark:text-zinc-200 leading-snug italic">
-              "{quote.text}"
-            </Text>
-
-            <div className="flex justify-between items-start gap-3 mt-6">
-              <Text variant="label" as="span" className="font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-500 leading-tight">
-                — {quote.author}
-              </Text>
-              <button
-                onClick={() => handleDeleteQuote(quote.id)}
-                className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-500 transition-all p-1 mt-[-4px]"
-                aria-label="Delete quote"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
-              </button>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );

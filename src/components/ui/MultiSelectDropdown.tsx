@@ -31,7 +31,21 @@ export function MultiSelectDropdown({ label, options, selected, onChange }: Mult
  }
  };
 
- const displayText = selected.length === 0 ? `Select ${label}` : selected.length === options.length ? `All ${label}s` : `${selected.length} ${label}${selected.length > 1 ? 's' : ''}`;
+  const getSelectedLabels = () => {
+    return selected.map(val => {
+      const option = typeof options[0] === 'string' ? options[val] : options.find(o => o === val);
+      return typeof option === 'string' ? option : option?.toString() || val.toString();
+    });
+  };
+
+  const selectedLabels = getSelectedLabels();
+  const displayText = selected.length === 0 
+    ? `Select ${label}` 
+    : selected.length === options.length 
+      ? `All ${label}s` 
+      : selected.length <= 2 
+        ? selectedLabels.join(', ')
+        : `${selected.length} ${label}s`;
 
  return (
  <div className="relative" ref={containerRef}>

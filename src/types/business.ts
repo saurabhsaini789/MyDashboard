@@ -8,6 +8,7 @@ export interface BusinessChannel {
  postingFrequency: number; // in days
  nextPostDueDate: string; // ISO date
  rowColor?: string;
+ about?: string;
 }
 
 export interface ContentIdea {

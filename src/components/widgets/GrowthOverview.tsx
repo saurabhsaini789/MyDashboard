@@ -12,7 +12,11 @@ import { MultiSelectDropdown } from '../ui/MultiSelectDropdown';
 import { MONTHS, YEARS } from '@/lib/constants';
 
 export function GrowthOverview() {
-  const [filter, setFilter] = useState<ScoreFilter>({ range: '7D' });
+  const [filter, setFilter] = useState<ScoreFilter>({ 
+    range: 'Custom',
+    month: new Date().getMonth(),
+    year: new Date().getFullYear()
+  });
   const [scores, setScores] = useState<CategoryScore[]>([]);
   const [mounted, setMounted] = useState(false);
 

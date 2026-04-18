@@ -22,6 +22,11 @@ export interface ExpenseItem {
  quality?: string;
 }
 
+export interface ManualCheck {
+ status: 'bought' | 'skipped' | 'pending';
+ date?: string;
+}
+
 export interface GroceryPlanItem {
  id: string;
  name: string;
@@ -31,7 +36,7 @@ export interface GroceryPlanItem {
  frequency: 'Daily' | 'Weekly' | 'Bi-Weekly' | 'Monthly' | 'As Needed';
  idealTiming: string; // e.g. "Start of month", "Every Sunday"
  expectedPrice: number;
- checkedUnits?: ('bought' | 'skipped' | 'pending')[]; 
+ checkedUnits?: (ManualCheck | 'bought' | 'skipped' | 'pending')[]; 
  skippedMonths?: string[]; // Array of 'YYYY-MM' strings where this item was skipped
  consumptionDays?: number; // How many days it takes to consume 1 unit
 }
@@ -44,9 +49,10 @@ export interface ExpenseRecord {
  date: string;
  type: ExpenseType; // Need vs Want
  assetId?: string; // Account used for payment
- paidToType: 'savings' | 'emergency' | 'asset' | 'other';
- paidToId?: string; // ID of Goal/Asset or 'emergency'
+ paidToType: 'savings' | 'emergency' | 'asset' | 'liability' | 'other';
+ paidToId?: string; // ID of Goal/Asset/Liability or 'emergency'
  paidToName?: string; // For 'other' recipient
+ liabilityPaymentType?: 'Regular EMI' | 'Prepayment';
  
  // Pantry / Detailed Fields
  entryType: EntryType;

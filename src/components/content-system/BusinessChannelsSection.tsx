@@ -14,7 +14,9 @@ import {
   Info,
   CheckCircle2,
   Rocket,
-  Circle
+  Circle,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { getPrefixedKey } from '@/lib/keys';
@@ -33,6 +35,7 @@ export function BusinessChannelsSection() {
   const [ideas, setIdeas] = useState<ContentIdea[]>([]);
   const [isIdeaModalOpen, setIsIdeaModalOpen] = useState(false);
   const [selectedChannelForPost, setSelectedChannelForPost] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   
   // Form State
   const [formData, setFormData] = useState({
@@ -44,7 +47,8 @@ export function BusinessChannelsSection() {
     status: 'Active' as 'Active' | 'Paused' | 'Idea',
     postingFrequency: 1,
     lastPostedDate: new Date().toISOString().split('T')[0],
-    rowColor: ''
+    rowColor: '',
+    about: ''
   });
 
   const LIGHT_COLORS = [
@@ -101,9 +105,17 @@ export function BusinessChannelsSection() {
       try { setIdeas(JSON.parse(savedIdeas)); } catch (e) {}
     }
 
+    const savedViewMode = localStorage.getItem('content_system_view_mode') as 'table' | 'grid';
+    if (savedViewMode) setViewMode(savedViewMode);
+
     window.addEventListener('local-storage-change', handleLocal);
     return () => window.removeEventListener('local-storage-change', handleLocal);
   }, []);
+
+  const toggleViewMode = (mode: 'table' | 'grid') => {
+    setViewMode(mode);
+    localStorage.setItem('content_system_view_mode', mode);
+  };
 
   const openAddModal = () => {
     setEditingChannel(null);
@@ -116,7 +128,8 @@ export function BusinessChannelsSection() {
       status: 'Active',
       postingFrequency: 1,
       lastPostedDate: new Date().toISOString().split('T')[0],
-      rowColor: ''
+      rowColor: '',
+      about: ''
     });
     setIsModalOpen(true);
   };
@@ -133,7 +146,8 @@ export function BusinessChannelsSection() {
       status: channel.status,
       postingFrequency: channel.postingFrequency,
       lastPostedDate: channel.lastPostedDate,
-      rowColor: channel.rowColor || ''
+      rowColor: channel.rowColor || '',
+      about: channel.about || ''
     });
     setIsModalOpen(true);
   };
@@ -157,7 +171,8 @@ export function BusinessChannelsSection() {
       postingFrequency: formData.postingFrequency,
       lastPostedDate: formData.lastPostedDate,
       nextPostDueDate: nextDueDate.toISOString().split('T')[0],
-      rowColor: formData.rowColor
+      rowColor: formData.rowColor,
+      about: formData.about
     };
 
     let updatedChannels;
@@ -273,17 +288,45 @@ export function BusinessChannelsSection() {
         </div>
 
         
-        <button 
-          onClick={openAddModal}
-          className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-semibold px-6 py-4 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-sm shadow-zinc-900/10 h-[54px] flex items-center gap-2"
-        >
-          <Plus size={16} />
-          New Channel
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center bg-zinc-100 dark:bg-zinc-800/50 p-1.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 h-[54px]">
+            <button
+              onClick={() => toggleViewMode('table')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all ${
+                viewMode === 'table'
+                  ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
+              }`}
+            >
+              <List size={16} />
+              Table
+            </button>
+            <button
+              onClick={() => toggleViewMode('grid')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all ${
+                viewMode === 'grid'
+                  ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
+              }`}
+            >
+              <LayoutGrid size={16} />
+              Cards
+            </button>
+          </div>
+
+          <button 
+            onClick={openAddModal}
+            className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-semibold px-6 py-4 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-sm shadow-zinc-900/10 h-[54px] flex items-center gap-2"
+          >
+            <Plus size={16} />
+            New Channel
+          </button>
+        </div>
       </div>
 
-      {/* Table View (Desktop) */}
-      <div className="hidden lg:block bg-white dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
+      {viewMode === 'table' ? (
+        /* Table View (Desktop-first, scrolls on mobile) */
+        <div className="bg-white dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -322,11 +365,19 @@ export function BusinessChannelsSection() {
                       </div>
                     </td>
                     <td className="px-6 py-6">
-                      <div className="flex flex-col">
-                        <Text variant="body" as="span" className="font-bold">
-                          {channel.name}
-                        </Text>
-                      </div>
+                        <div className="flex items-center gap-2">
+                          <Text variant="body" as="span" className="font-bold">
+                            {channel.name}
+                          </Text>
+                          {channel.about && (
+                            <div className="group/info relative">
+                              <Info size={12} className="text-zinc-400 cursor-help" />
+                              <div className="absolute left-0 bottom-full mb-2 w-64 p-3 bg-zinc-900 text-white text-[10px] rounded-xl opacity-0 group-hover/info:opacity-100 transition-opacity z-50 pointer-events-none shadow-xl border border-zinc-800">
+                                {channel.about}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                     </td>
                     <td className="px-6 py-6">
                       <div className="flex items-center gap-2">
@@ -393,90 +444,119 @@ export function BusinessChannelsSection() {
             </tbody>
           </table>
         </div>
-      </div>
+        </div>
+      ) : (
+        /* Card View (Grid) */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {sortedChannels.length > 0 ? sortedChannels.map(channel => {
+            const indicator = getStatusIndicator(channel);
+            const lastPosted = new Date(channel.lastPostedDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const daysSince = Math.floor((today.getTime() - lastPosted.getTime()) / (1000 * 60 * 60 * 24));
 
-      {/* Card View (Mobile) */}
-      <div className="lg:hidden space-y-4">
-        {sortedChannels.length > 0 ? sortedChannels.map(channel => {
-          const indicator = getStatusIndicator(channel);
-          const lastPosted = new Date(channel.lastPostedDate);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const daysSince = Math.floor((today.getTime() - lastPosted.getTime()) / (1000 * 60 * 60 * 24));
+            return (
+              <div key={channel.id} className="group p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all shadow-sm flex flex-col justify-between">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <Text variant="title" as="span" className="text-lg font-bold group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">
+                          {channel.name}
+                        </Text>
+                        {channel.about && (
+                           <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const el = document.getElementById(`about-${channel.id}`);
+                              if (el) el.classList.toggle('hidden');
+                            }}
+                            className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                           >
+                            <Info size={14} />
+                           </button>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Text variant="label" as="span" className="border border-zinc-200 dark:border-zinc-800 px-2 py-0.5 rounded-full flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-800/50">
+                          <div className={`w-1.5 h-1.5 rounded-full ${getDotColor(channel.rowColor)}`} />
+                          {channel.platform}
+                        </Text>
+                        <Text variant="label" as="span" className="border border-zinc-200 dark:border-zinc-800 px-2 py-0.5 rounded-full bg-zinc-50 dark:bg-zinc-800/50">
+                          {channel.contentType || 'Mixed'}
+                        </Text>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <Text variant="label" as="span" className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-semibold border ${ channel.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' : channel.status === 'Paused' ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20' : 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-500 dark:border-zinc-700' }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${channel.status === 'Active' ? 'bg-emerald-500 animate-pulse' : channel.status === 'Paused' ? 'bg-amber-500' : 'bg-zinc-400'}`} />
+                        {channel.status}
+                      </Text>
+                    </div>
+                  </div>
 
-          return (
-            <div key={channel.id} className="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 space-y-4">
-              <div className="flex justify-between items-start">
-                <div className="flex flex-col gap-2">
-                  <Text variant="title" as="span" className="text-lg">
-                    {channel.name}
-                  </Text>
-                  <div className="flex flex-wrap gap-2">
-                    <Text variant="label" as="span" className="border border-zinc-200 dark:border-zinc-800 px-2 py-0.5 rounded-full flex items-center gap-1.5">
-                      <div className={`w-1.5 h-1.5 rounded-full ${getDotColor(channel.rowColor)}`} />
-                      {channel.platform}
-                    </Text>
-                    <Text variant="label" as="span" className="border border-zinc-200 dark:border-zinc-800 px-2 py-0.5 rounded-full">
-                      {channel.contentType || 'Mixed'}
-                    </Text>
+                  {channel.about && (
+                    <div id={`about-${channel.id}`} className="hidden bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                      <Text variant="label" as="p" className="text-[10px] leading-relaxed italic text-zinc-500">
+                        {channel.about}
+                      </Text>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 py-2">
+                    {channel.status === 'Active' && (
+                      <div className={`px-3 py-1 rounded-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wider ${indicator.color}`}>
+                        {indicator.icon} {indicator.label}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 py-4 border-y border-zinc-100 dark:border-zinc-800">
+                    <div className="flex flex-col">
+                      <Text variant="label" as="span" className="font-semibold text-[10px] uppercase text-zinc-400">Freq</Text>
+                      <Text variant="body" as="span" className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{channel.postingFrequency}d</Text>
+                    </div>
+                    <div className="flex flex-col">
+                      <Text variant="label" as="span" className="font-semibold text-[10px] uppercase text-zinc-400">Days Ago</Text>
+                      <Text variant="body" as="span" className={`text-sm font-bold ${daysSince > channel.postingFrequency ? 'text-rose-500' : 'text-zinc-700 dark:text-zinc-300'}`}>{daysSince}d</Text>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <Text variant="label" as="span" className="font-semibold text-[10px] uppercase text-zinc-400">Next Due</Text>
+                      <Text variant="body" as="span" className={`text-sm font-bold ${indicator.label === 'Overdue' ? 'text-rose-500' : 'text-zinc-700 dark:text-zinc-300'}`}>
+                        {channel.nextPostDueDate ? new Date(channel.nextPostDueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '-'}
+                      </Text>
+                    </div>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <Text variant="label" as="span" className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-semibold border ${ channel.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' : channel.status === 'Paused' ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20' : 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-500 dark:border-zinc-700' }`}>
-                    {channel.status}
-                  </Text>
+
+                <div className="flex items-center justify-end gap-3 pt-6">
+                  <button 
+                    onClick={() => openEditModal(channel)}
+                    className="p-3 text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-zinc-800 rounded-xl transition-all"
+                    title="Edit Channel"
+                  >
+                    <Edit2 size={16} />
+                  </button>
                   {channel.status === 'Active' && (
-                    <Text variant="label" as="span" className={`flex items-center gap-1.5 font-semibold ${indicator.color}`}>
-                      {indicator.icon} {indicator.label}
-                    </Text>
+                    <button
+                      onClick={() => markAsPosted(channel.id)}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl font-bold text-xs uppercase shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all"
+                    >
+                      <CheckCircle2 size={16} />
+                      Mark Posted
+                    </button>
                   )}
                 </div>
               </div>
-
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
-                <div className="flex flex-col">
-                  <Text variant="label" as="span" className="font-semibold">Freq</Text>
-                  <Text variant="body" as="span" className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{channel.postingFrequency}d</Text>
-                </div>
-                <div className="flex flex-col">
-                  <Text variant="label" as="span" className="font-black">Last</Text>
-                  <Text variant="body" as="span" className={`text-sm font-semibold ${daysSince > channel.postingFrequency ? 'text-rose-500' : 'text-zinc-700 dark:text-zinc-300'}`}>{daysSince}d</Text>
-                </div>
-                <div className="flex flex-col items-end">
-                  <Text variant="label" as="span" className="font-semibold">Next Due</Text>
-                  <Text variant="body" as="span" className={`text-sm font-semibold ${indicator.label === 'Overdue' ? 'text-rose-500' : 'text-zinc-700 dark:text-zinc-300'}`}>
-                    {channel.nextPostDueDate ? new Date(channel.nextPostDueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '-'}
-                  </Text>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button 
-                  onClick={() => openEditModal(channel)}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 text-xs font-semibold uppercase text-zinc-500 bg-zinc-100 dark:bg-zinc-800 rounded-2xl"
-                >
-                  <Edit2 size={14} />
-                  Edit
-                </button>
-                {channel.status === 'Active' && (
-                  <button
-                    onClick={() => markAsPosted(channel.id)}
-                    className="flex-[2] flex items-center justify-center gap-2 py-3 text-xs font-semibold uppercase bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl shadow-lg"
-                  >
-                    <CheckCircle2 size={14} />
-                    Mark Posted
-                  </button>
-                )}
-              </div>
+            );
+          }) : (
+            <div className="col-span-full p-20 text-center bg-white dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+              <Info size={32} className="mx-auto text-zinc-300 mb-2" />
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase">No channels found. Add your first platform!</span>
             </div>
-          );
-        }) : (
-          <div className="p-12 text-center bg-white dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
-            <Info size={32} className="mx-auto text-zinc-300 mb-2" />
-            <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase">No channels found</span>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Modal Integration */}
       <Modal
@@ -505,7 +585,8 @@ export function BusinessChannelsSection() {
                 },
                 ...(formData.contentType === 'Other' ? [{ name: 'customContentType', label: 'Other Content Type', type: 'text' as const, required: true }] : []),
                 { name: 'postingFrequency', label: 'Posting Frequency (Days)', type: 'number', min: 1, required: true },
-                { name: 'lastPostedDate', label: 'Last Posted Date', type: 'date', required: true }
+                { name: 'lastPostedDate', label: 'Last Posted Date', type: 'date', required: true },
+                { name: 'about', label: 'About this Channel', type: 'textarea', placeholder: 'Describe the mission, target audience, or strategy...', fullWidth: true }
               ]
             }
           ]}

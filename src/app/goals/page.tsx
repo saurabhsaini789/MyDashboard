@@ -8,7 +8,7 @@ import { PageTitle, SectionTitle, Description } from '@/components/ui/Text';
 
 export default function GoalsPage() {
   const [mounted, setMounted] = useState(false);
-  const [filter, setFilter] = useState<TimeFilter>('1 Month');
+  const [filter, setFilter] = useState<TimeFilter>('Custom Month');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [view, setView] = useState<'grid' | 'gantt'>('grid');
@@ -33,7 +33,7 @@ export default function GoalsPage() {
         
         {/* Overview Section */}
         <section className="w-full relative fade-in mb-14">
-          <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
             <SectionTitle className="mb-0">Overview</SectionTitle>
             
             <div className="flex flex-wrap gap-2 items-center w-full md:w-auto">
@@ -71,7 +71,7 @@ export default function GoalsPage() {
                 <option value="1 Month">1 Month</option>
                 <option value="6 Months">6 Months</option>
                 <option value="1 Year">1 Year</option>
-                <option value="Custom Month">Custom Month</option>
+                <option value="Custom Month">Current Month</option>
               </select>
               <Link href="/goals" className="px-4 py-2 text-sm font-semibold rounded-xl bg-teal-50 text-teal-700 hover:bg-teal-100 dark:bg-teal-500/10 dark:text-teal-400 dark:hover:bg-teal-500/20 transition-colors border border-teal-200 dark:border-teal-900/50 whitespace-nowrap">View All</Link>
             </div>
@@ -86,7 +86,7 @@ export default function GoalsPage() {
 
         {/* Goals Tracker Section */}
         <section className="w-full relative fade-in">
-          <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
+          <div className="flex flex-row justify-between items-center gap-4 mb-8">
             <SectionTitle className="mb-0">Goals Tracker</SectionTitle>
             
             <div className="bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-xl flex items-center gap-1 shadow-inner">

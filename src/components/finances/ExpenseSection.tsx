@@ -21,6 +21,7 @@ export function ExpenseSection() {
  const [records, setRecords] = useState<ExpenseRecord[]>([]);
  const [assets, setAssets] = useState<any[]>([]); 
  const [savingsGoals, setSavingsGoals] = useState<any[]>([]);
+ const [liabilities, setLiabilities] = useState<any[]>([]);
  const [emergencyFund, setEmergencyFund] = useState<any | null>(null);
  const [isLoaded, setIsLoaded] = useState(false);
  const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,6 +43,7 @@ export function ExpenseSection() {
  paidToType: 'other' as ExpenseRecord['paidToType'],
  paidToId: '',
  paidToName: '',
+ liabilityPaymentType: 'Regular EMI' as ExpenseRecord['liabilityPaymentType'],
  entryType: 'Quick' as ExpenseRecord['entryType'],
  paymentMethod: 'UPI / Wallet' as ExpenseRecord['paymentMethod'],
  notes: ''
@@ -81,6 +83,12 @@ export function ExpenseSection() {
  if (savedAssets) {
  try { setAssets(JSON.parse(savedAssets)); } catch (e) {}
  }
+
+ // Load liabilities for dropdown
+ const savedLiabilities = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_LIABILITIES));
+ if (savedLiabilities) {
+ try { setLiabilities(JSON.parse(savedLiabilities)); } catch (e) {}
+ }
  }, []); // Run only once
 
  useEffect(() => {
@@ -109,6 +117,12 @@ export function ExpenseSection() {
  try { setEmergencyFund(JSON.parse(val)); } catch (err) {}
  }
  }
+ if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_LIABILITIES) {
+ const val = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_LIABILITIES));
+ if (val) {
+ try { setLiabilities(JSON.parse(val)); } catch (err) {}
+ }
+ }
  
  };
  window.addEventListener('local-storage-change', handleLocal);
@@ -130,6 +144,7 @@ export function ExpenseSection() {
  paidToType: 'other',
  paidToId: '',
  paidToName: '',
+ liabilityPaymentType: 'Regular EMI',
  entryType: 'Quick',
  paymentMethod: 'UPI / Wallet',
  notes: ''
@@ -150,6 +165,7 @@ export function ExpenseSection() {
  paidToType: record.paidToType || 'other',
  paidToId: record.paidToId || '',
  paidToName: record.paidToName || '',
+ liabilityPaymentType: record.liabilityPaymentType || 'Regular EMI',
  entryType: record.entryType || 'Quick',
  paymentMethod: record.paymentMethod || 'UPI / Wallet',
  notes: record.notes || ''
@@ -157,7 +173,7 @@ export function ExpenseSection() {
  setIsModalOpen(true);
  };
 
- const updateRecipientContribution = (expenseId: string, paidToType: string, paidToId: string | undefined, amount: number, date: string, isDelete = false) => {
+ const updateRecipientContribution = (expenseId: string, paidToType: string, paidToId: string | undefined, amount: number, date: string, isDelete = false, liabilityPaymentType: 'Regular EMI' | 'Prepayment' = 'Regular EMI') => {
  // Get exchange rate
  
  
@@ -225,6 +241,47 @@ export function ExpenseSection() {
  } catch (e) {}
  }
  }
+
+ // 4. Liability (Subtract from liability balance)
+ if (paidToType === 'liability' || !paidToType) {
+ const saved = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_LIABILITIES));
+ if (saved) {
+ try {
+ let liabilitiesList = JSON.parse(saved);
+ let changed = false;
+ liabilitiesList = liabilitiesList.map((l: any) => {
+ const initialLogLen = l.paymentLogs.length;
+ const initialBalance = l.remainingBalance;
+ 
+ // Remove old contribution if exists
+ const oldLog = l.paymentLogs.find((log: any) => log.id === `expense-${expenseId}`);
+ if (oldLog) {
+ l.remainingBalance += oldLog.amount; // Reverse the payment
+ l.paymentLogs = l.paymentLogs.filter((log: any) => log.id !== `expense-${expenseId}`);
+ changed = true;
+ }
+ 
+ // Add new payment if not deleting and this is the target liability
+ if (!isDelete && paidToType === 'liability' && l.id === paidToId) {
+ l.remainingBalance = Math.max(0, l.remainingBalance - amount);
+ l.paymentLogs.unshift({
+ id: `expense-${expenseId}`,
+ date,
+ amount,
+ type: liabilityPaymentType
+ });
+ changed = true;
+ }
+ 
+ if (changed) l.lastUpdated = new Date().toISOString().split('T')[0];
+ return l;
+ });
+ if (changed) setSyncedItem(SYNC_KEYS.FINANCES_LIABILITIES, JSON.stringify(liabilitiesList));
+ } catch (e) {
+ console.error("Failed to update liability from expense", e);
+ }
+ }
+ }
  };
 
  const updateAssetContribution = (expenseId: string, assetId: string | undefined, amount: number, date: string, isDelete = false) => {
@@ -289,6 +346,7 @@ export function ExpenseSection() {
  paidToType: formData.paidToType,
  paidToId: formData.paidToId || undefined,
  paidToName: formData.paidToName || undefined,
+ liabilityPaymentType: formData.paidToType === 'liability' ? formData.liabilityPaymentType : undefined,
  entryType: formData.entryType,
  paymentMethod: formData.paymentMethod,
  notes: formData.notes || undefined
@@ -297,8 +355,8 @@ export function ExpenseSection() {
  // Update Asset Sync: Subtract from account paid from
  updateAssetContribution(newRecord.id, newRecord.assetId, newRecord.amount, newRecord.date);
  
- // Update Recipient Sync: Add to savings/emergency/etc if applicable
- updateRecipientContribution(newRecord.id, newRecord.paidToType, newRecord.paidToId, newRecord.amount, newRecord.date);
+ // Update Recipient Sync: Add to savings/emergency/liabilities etc if applicable
+ updateRecipientContribution(newRecord.id, newRecord.paidToType, newRecord.paidToId, newRecord.amount, newRecord.date, false, newRecord.liabilityPaymentType);
 
  if (editingRecord) {
  const updated = records.map(r => r.id === editingRecord.id ? newRecord : r);
@@ -451,6 +509,8 @@ export function ExpenseSection() {
  ? (savingsGoals.find(g => g.id === record.paidToId)?.name || 'Savings Goal')
  : record.paidToType === 'asset'
  ? (assets.find(a => a.id === record.paidToId)?.name || 'Asset')
+ : record.paidToType === 'liability'
+ ? (liabilities.find(l => l.id === record.paidToId)?.name || 'Liability')
  : '-'}
  </Text>
  </td>
@@ -579,9 +639,24 @@ export function ExpenseSection() {
  <option key={asset.id} value={`asset:${asset.id}`}>{asset.name}</option>
  ))}
  </optgroup>}
+ {liabilities.length > 0 && <optgroup label="Liabilities">
+ {liabilities.map(l => (
+ <option key={l.id} value={`liability:${l.id}`}>{l.name}</option>
+ ))}
+ </optgroup>}
  </select>
  )
  },
+ ...(formData.paidToType === 'liability' ? [{
+ name: 'liabilityPaymentType',
+ label: 'Repayment Type',
+ type: 'select' as const,
+ fullWidth: true,
+ options: [
+ { label: 'Regular EMI', value: 'Regular EMI' },
+ { label: 'Prepayment', value: 'Prepayment' }
+ ]
+ }] : []),
  ...(formData.paidToType === 'other' ? [{
  name: 'paidToName',
  label: 'Recipient Name',

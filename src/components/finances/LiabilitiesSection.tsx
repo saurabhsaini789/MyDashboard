@@ -7,7 +7,8 @@ import { Modal } from '../ui/Modal';
 import { DynamicForm } from '../ui/DynamicForm';
 import { calculateLiabilityBalance, type Liability, type PaymentLog } from '@/lib/finances';
 import { SYNC_KEYS } from '@/lib/sync-keys';
-import { SectionTitle } from '../ui/Text';
+import { SectionTitle, Text } from '../ui/Text';
+import { LayoutGrid, List } from 'lucide-react';
 
 export type LiabilityType = 'Home Loan' | 'Car Loan' | 'Personal Loan' | 'Credit Card' | 'Education Loan' | 'Business Loan' | 'Other';
 
@@ -22,6 +23,17 @@ export function LiabilitiesSection() {
  const [isModalOpen, setIsModalOpen] = useState(false);
  const [editingLiability, setEditingLiability] = useState<Liability | null>(null);
  const [expandedLiabilities, setExpandedLiabilities] = useState<Record<string, boolean>>({});
+ const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+
+ useEffect(() => {
+   const savedView = localStorage.getItem('finances-liabilities-view');
+   if (savedView === 'table' || savedView === 'grid') setViewMode(savedView);
+ }, []);
+
+ const toggleViewMode = (mode: 'grid' | 'table') => {
+   setViewMode(mode);
+   localStorage.setItem('finances-liabilities-view', mode);
+ };
 
  const toggleExpand = (id: string) => {
  setExpandedLiabilities(prev => ({ ...prev, [id]: !prev[id] }));
@@ -37,6 +49,9 @@ export function LiabilitiesSection() {
  // Prepayment Simulation state
  const [isSimModalOpen, setIsSimModalOpen] = useState(false);
  const [simExtraPayment, setSimExtraPayment] = useState('');
+
+ // Payment History state
+ const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
  // Form state
  const [formData, setFormData] = useState({
@@ -117,10 +132,6 @@ export function LiabilitiesSection() {
  return () => window.removeEventListener('local-storage-change', handleLocal);
  }, []);
 
-
-
-
-
  const openAddModal = () => {
  setEditingLiability(null);
  setFormData({
@@ -185,14 +196,12 @@ export function LiabilitiesSection() {
  setIsModalOpen(false);
  };
 
-
  const deleteLiability = (id: string) => {
  const updated = liabilities.filter(l => l.id !== id);
  setLiabilities(updated);
  setSyncedItem(SYNC_KEYS.FINANCES_LIABILITIES, JSON.stringify(updated));
  setIsModalOpen(false);
  };
-
 
  const handleRepaySubmit = (e: React.FormEvent) => {
  e.preventDefault();
@@ -225,6 +234,24 @@ export function LiabilitiesSection() {
  setRepayAmount('');
  };
 
+ const deletePaymentLog = (liabilityId: string, logId: string) => {
+ const updated = liabilities.map(l => {
+ if (l.id === liabilityId) {
+ const logToDelete = l.paymentLogs.find(p => p.id === logId);
+ if (!logToDelete) return l;
+ 
+ return {
+ ...l,
+ remainingBalance: l.remainingBalance + logToDelete.amount,
+ paymentLogs: l.paymentLogs.filter(p => p.id !== logId),
+ lastUpdated: new Date().toISOString().split('T')[0]
+ };
+ }
+ return l;
+ });
+ setLiabilities(updated);
+ setSyncedItem(SYNC_KEYS.FINANCES_LIABILITIES, JSON.stringify(updated));
+ };
 
  // Prepayment Simulation Logic
  const calculateSim = (liability: Liability, extra: number) => {
@@ -275,12 +302,30 @@ export function LiabilitiesSection() {
  <SectionTitle>
  Liabilities &amp; Debt
  </SectionTitle>
- <button 
- onClick={openAddModal}
- className="bg-rose-600 text-white text-xs px-5 md:px-6 py-2.5 md:py-3 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg md:h-[46px] w-fit font-semibold"
- >
- Add Liability
- </button>
+ <div className="flex items-center gap-3">
+    <div className="hidden sm:flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl border border-zinc-200 dark:border-zinc-700">
+      <button 
+        onClick={() => toggleViewMode('grid')}
+        className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 shadow-sm text-rose-600 dark:text-rose-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+        title="Grid View"
+      >
+        <LayoutGrid size={18} />
+      </button>
+      <button 
+        onClick={() => toggleViewMode('table')}
+        className={`p-1.5 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white dark:bg-zinc-700 shadow-sm text-rose-600 dark:text-rose-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+        title="Table View"
+      >
+        <List size={18} />
+      </button>
+    </div>
+    <button 
+    onClick={openAddModal}
+    className="bg-rose-600 text-white text-xs px-5 md:px-6 py-2.5 md:py-3 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg md:h-[46px] w-fit font-semibold"
+    >
+    Add Liability
+    </button>
+  </div>
  </div>
 
  {/* Global Summary Cards */}
@@ -319,7 +364,8 @@ export function LiabilitiesSection() {
  </div>
  </div>
 
- {/* Liabilities Grid */}
+ {/* Liabilities Content based on View Mode */}
+ {viewMode === 'grid' ? (
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 px-1 md:px-2">
  {liabilities.map(liability => {
  const payoffProgress = ((liability.totalAmount - liability.remainingBalance) / liability.totalAmount) * 100;
@@ -354,6 +400,16 @@ export function LiabilitiesSection() {
  title="Edit Liability"
  >
  <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+ </button>
+ <button 
+ onClick={() => {
+ setActiveLiabilityId(liability.id);
+ setIsHistoryModalOpen(true);
+ }}
+ className="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
+ title="View History"
+ >
+ <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
  </button>
  <button 
  onClick={() => toggleExpand(liability.id)}
@@ -464,6 +520,117 @@ export function LiabilitiesSection() {
  );
  })}
  </div>
+ ) : (
+   <div className="bg-white dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm animate-in fade-in duration-500 mx-1 md:mx-2">
+     <div className="overflow-x-auto custom-scrollbar">
+       <table className="w-full text-left border-collapse min-w-[900px]">
+         <thead>
+           <tr className="bg-zinc-50 dark:bg-zinc-950/50 border-b border-zinc-100 dark:border-zinc-800">
+             <th className="p-4 px-6 text-[11px] uppercase text-zinc-500 font-bold tracking-wider">Liability</th>
+             <th className="p-4 px-6 text-[11px] uppercase text-zinc-500 font-bold tracking-wider">Outstanding Balance</th>
+             <th className="p-4 px-6 text-[11px] uppercase text-zinc-500 font-bold tracking-wider">Interest Rate</th>
+             <th className="p-4 px-6 text-[11px] uppercase text-zinc-500 font-bold tracking-wider">Monthly EMI</th>
+             <th className="p-4 px-6 text-[11px] uppercase text-zinc-500 font-bold tracking-wider">Tenure Left</th>
+             <th className="p-4 px-6 text-[11px] uppercase text-zinc-500 font-bold tracking-wider text-right">Actions</th>
+           </tr>
+         </thead>
+         <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
+           {liabilities.sort((a, b) => b.lastUpdated.localeCompare(a.lastUpdated)).map(liability => {
+             const isHighInterest = liability.interestRate >= 10;
+             const payoffProgress = ((liability.totalAmount - liability.remainingBalance) / liability.totalAmount) * 100;
+             return (
+               <tr key={liability.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group">
+                 <td className="p-4 px-6">
+                   <div className="flex flex-col gap-1">
+                     <div className="flex items-center gap-2">
+                       <span className="font-semibold text-zinc-900 dark:text-zinc-100">{liability.name}</span>
+                       {isHighInterest && (
+                         <span className="bg-rose-500 text-white text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full leading-none">
+                           High
+                         </span>
+                       )}
+                     </div>
+                     <span className="text-[10px] px-2 py-0.5 rounded-full border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 w-fit font-bold uppercase">
+                       {liability.type}
+                     </span>
+                   </div>
+                 </td>
+                 <td className="p-4 px-6">
+                   <div className="flex flex-col gap-1.5">
+                     <span className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                       ${calculateLiabilityBalance(liability).toLocaleString("en-CA", { maximumFractionDigits: 0 })}
+                     </span>
+                     <div className="w-24 h-1 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                       <div className="h-full bg-rose-500" style={{ width: `${payoffProgress}%` }} />
+                     </div>
+                   </div>
+                 </td>
+                 <td className="p-4 px-6">
+                   <span className={`text-sm font-bold ${isHighInterest ? 'text-rose-500' : 'text-zinc-900 dark:text-zinc-100'}`}>
+                     {liability.interestRate}%
+                   </span>
+                 </td>
+                 <td className="p-4 px-6">
+                   <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                     ${liability.emi.toLocaleString("en-CA", { maximumFractionDigits: 0 })}
+                   </span>
+                 </td>
+                 <td className="p-4 px-6">
+                   <span className="text-xs text-zinc-500 font-medium">
+                     {liability.tenureRemaining} Months
+                   </span>
+                 </td>
+                 <td className="p-4 px-6 text-right">
+                   <div className="flex items-center justify-end gap-1">
+                     <button 
+                       onClick={() => {
+                         setActiveLiabilityId(liability.id);
+                         setRepayType('Regular EMI');
+                         setRepayAmount(liability.emi.toString());
+                         setIsRepayModalOpen(true);
+                       }}
+                       className="p-2 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+                       title="Repay EMI"
+                     >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                     </button>
+                     <button 
+                       onClick={() => {
+                         setActiveLiabilityId(liability.id);
+                         setIsSimModalOpen(true);
+                       }}
+                       className="p-2 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+                       title="Preview Payoff"
+                     >
+                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                     </button>
+                     <button 
+                       onClick={() => {
+                         setActiveLiabilityId(liability.id);
+                         setIsHistoryModalOpen(true);
+                       }}
+                       className="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                       title="View History"
+                     >
+                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                     </button>
+                     <button 
+                       onClick={() => openEditModal(liability)}
+                       className="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                       title="Edit Liability"
+                     >
+                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                     </button>
+                   </div>
+                 </td>
+               </tr>
+             );
+           })}
+         </tbody>
+       </table>
+     </div>
+   </div>
+ )}
 
  {/* Schema-Driven Add/Edit Liability Modal */}
  <Modal
@@ -588,13 +755,57 @@ export function LiabilitiesSection() {
  {simExtraPayment && activeLiabilityId && (
  <div className="mt-6 grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
  <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-3xl p-6 flex flex-col gap-1 items-center text-center">
- <span className="text-xs text-zinc-600 dark:text-zinc-300 uppercase">Interest Saved</span>
- <span className="text-2xl text-indigo-700 dark:text-indigo-300">
+ <span className="text-xs text-zinc-600 dark:text-zinc-300 uppercase font-semibold">Interest Saved</span>
+ <span className="text-xl md:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+ ${calculateSim(liabilities.find(l => l.id === activeLiabilityId)!, parseFloat(simExtraPayment)).interestSaved.toLocaleString("en-CA", { maximumFractionDigits: 0 })}
+ </span>
+ </div>
+ <div className="bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-3xl p-6 flex flex-col gap-1 items-center text-center">
+ <span className="text-xs text-zinc-600 dark:text-zinc-300 uppercase font-semibold">Time Saved</span>
+ <span className="text-xl md:text-2xl font-bold text-indigo-600 dark:text-indigo-400">
  {calculateSim(liabilities.find(l => l.id === activeLiabilityId)!, parseFloat(simExtraPayment)).monthsSaved} Months
  </span>
  </div>
  </div>
  )}
+ </Modal>
+
+ {/* History Modal */}
+ <Modal
+ isOpen={isHistoryModalOpen}
+ onClose={() => setIsHistoryModalOpen(false)}
+ title="Payment History"
+ accentColor="rose"
+ >
+ <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+ {activeLiabilityId && (liabilities.find(l => l.id === activeLiabilityId)?.paymentLogs || []).length === 0 && (
+ <div className="text-center py-10">
+ <p className="text-zinc-500 text-sm uppercase font-semibold tracking-wider">No payment history found</p>
+ </div>
+ )}
+ {activeLiabilityId && (liabilities.find(l => l.id === activeLiabilityId)?.paymentLogs || []).map(log => (
+ <div key={log.id} className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 transition-all hover:border-rose-100/50 dark:hover:border-rose-900/30 group">
+ <div className="flex flex-col gap-0.5">
+ <span className={`text-[10px] uppercase font-bold tracking-wider ${log.type === 'Prepayment' ? 'text-rose-500' : 'text-zinc-500'}`}>
+ {log.type}
+ </span>
+ <span className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+ ${log.amount.toLocaleString("en-CA", { maximumFractionDigits: 0 })}
+ </span>
+ <span className="text-xs text-zinc-500 font-medium">
+ {new Date(log.date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}
+ </span>
+ </div>
+ <button 
+ onClick={() => deletePaymentLog(activeLiabilityId, log.id)}
+ className="p-2.5 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+ title="Delete Log"
+ >
+ <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+ </button>
+ </div>
+ ))}
+ </div>
  </Modal>
  </div>
  );

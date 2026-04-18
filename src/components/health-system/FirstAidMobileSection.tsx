@@ -7,8 +7,11 @@ import { Modal } from '../ui/Modal';
 import { DynamicForm } from '../ui/DynamicForm';
 import { MedicineItem, MEDICINE_CATEGORIES, type InventoryStatus } from '@/types/health-system';
 import { Text, SectionTitle } from '../ui/Text';
+import { SYNC_KEYS } from '@/lib/sync-keys';
+import { LayoutGrid, List } from 'lucide-react';
 
-const STORAGE_KEY = 'FIRST_AID_MOBILE';
+const STORAGE_KEY = SYNC_KEYS.HEALTH_FIRST_AID_MOBILE;
+const VIEW_MODE_KEY = 'health-first-aid-mobile-view-mode';
 
 interface FirstAidMobileSectionProps {
  externalFilter?: 'ALL' | 'LOW' | 'MISSING' | 'EXPIRED';
@@ -21,6 +24,7 @@ export function FirstAidMobileSection({ externalFilter }: FirstAidMobileSectionP
  const [editingItem, setEditingItem] = useState<MedicineItem | null>(null);
  const [selectedCategory, setSelectedCategory] = useState<string>('All');
  const [statusFilter, setStatusFilter] = useState<'ALL' | 'LOW' | 'MISSING' | 'EXPIRED'>('ALL');
+ const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
  // Form State
  const [formData, setFormData] = useState({
@@ -41,14 +45,20 @@ export function FirstAidMobileSection({ externalFilter }: FirstAidMobileSectionP
  }, [items]);
 
  useEffect(() => {
- const saved = localStorage.getItem(getPrefixedKey(STORAGE_KEY));
- if (saved) {
+ const savedData = localStorage.getItem(getPrefixedKey(STORAGE_KEY));
+ if (savedData) {
  try {
- setItems(JSON.parse(saved));
+ setItems(JSON.parse(savedData));
  } catch (e) {
- console.error("Failed to parse travel kit data", e);
+ console.error("Failed to parse first aid mobile data", e);
  }
  }
+
+ const savedView = localStorage.getItem(VIEW_MODE_KEY);
+ if (savedView === 'grid' || savedView === 'table') {
+   setViewMode(savedView);
+ }
+
  setIsLoaded(true);
 
  const handleLocal = (e: any) => {
@@ -63,6 +73,11 @@ export function FirstAidMobileSection({ externalFilter }: FirstAidMobileSectionP
  window.addEventListener('local-storage-change', handleLocal);
  return () => window.removeEventListener('local-storage-change', handleLocal);
  }, []);
+
+ const toggleViewMode = (mode: 'grid' | 'table') => {
+   setViewMode(mode);
+   localStorage.setItem(VIEW_MODE_KEY, mode);
+ };
 
  /**
  * Helper function to determine inventory status based on business rules
@@ -195,11 +210,11 @@ export function FirstAidMobileSection({ externalFilter }: FirstAidMobileSectionP
 
  let suggestion = null;
  if (expiredCount > 0) {
- suggestion = "Mobile first aid kit needs attention";
+ suggestion = "Mobile first aid kit needs attention — expired items found";
  } else if (missingCount > 0) {
- suggestion = "Restock mobile essentials";
+ suggestion = "Restock mobile first aid essentials";
  } else if (lowCount > 0) {
- suggestion = "Refill low mobile supplies";
+ suggestion = "Refill low mobile first aid supplies";
  }
 
  const borderColor = expiredCount > 0 
@@ -217,31 +232,49 @@ export function FirstAidMobileSection({ externalFilter }: FirstAidMobileSectionP
  return (
  <section className="w-full">
  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 px-2">
- <div>
- <SectionTitle>
- First Aid - Mobile
- </SectionTitle>
- </div>
+  <div>
+  <SectionTitle>
+  First Aid - Mobile
+  </SectionTitle>
+  </div>
 
- <div className="flex items-center gap-3">
- <select 
- value={selectedCategory}
- onChange={(e) => setSelectedCategory(e.target.value)}
- className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-xs font-bold px-4 h-[54px] rounded-2xl border-none focus:ring-2 focus:ring-zinc-500 appearance-none cursor-pointer min-w-[140px]"
- >
- <option value="All">ALL CATEGORIES</option>
- {MEDICINE_CATEGORIES.map(cat => (
- <option key={cat} value={cat}>{cat.toUpperCase()}</option>
- ))}
- </select>
+  <div className="flex items-center gap-3">
+    {/* View Toggle */}
+    <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl border border-zinc-200 dark:border-zinc-700 h-[54px] items-center">
+      <button 
+        onClick={() => toggleViewMode('grid')}
+        className={`p-2 rounded-lg transition-all h-full flex items-center gap-2 px-3 ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 shadow-sm text-rose-600 dark:text-rose-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+        title="Grid View"
+      >
+        <LayoutGrid size={18} />
+      </button>
+      <button 
+        onClick={() => toggleViewMode('table')}
+        className={`p-2 rounded-lg transition-all h-full flex items-center gap-2 px-3 ${viewMode === 'table' ? 'bg-white dark:bg-zinc-700 shadow-sm text-rose-600 dark:text-rose-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+        title="Table View"
+      >
+        <List size={18} />
+      </button>
+    </div>
 
- <button 
- onClick={openAddModal}
- className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold px-8 py-4 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-sm shadow-zinc-900/10 h-[54px]"
- >
- ADD MEDICINE
- </button>
- </div>
+    <select 
+      value={selectedCategory}
+      onChange={(e) => setSelectedCategory(e.target.value)}
+      className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-xs font-bold px-4 h-[54px] rounded-2xl border-none focus:ring-2 focus:ring-zinc-500 appearance-none cursor-pointer min-w-[140px]"
+    >
+      <option value="All">ALL CATEGORIES</option>
+      {MEDICINE_CATEGORIES.map(cat => (
+        <option key={cat} value={cat}>{cat.toUpperCase()}</option>
+      ))}
+    </select>
+  
+    <button 
+      onClick={openAddModal}
+      className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold px-8 py-4 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-sm shadow-zinc-900/10 h-[54px]"
+    >
+      ADD ITEM
+    </button>
+  </div>
  </div>
 
  <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border-2 border-l-[6px] bg-white dark:bg-zinc-900/40 ${borderColor} mb-8 shadow-sm transition-all shadow-zinc-200/50 dark:shadow-none`}>
@@ -299,134 +332,137 @@ export function FirstAidMobileSection({ externalFilter }: FirstAidMobileSectionP
   </div>
  </div>
 
- {/* Table View (Desktop) */}
- <div className="hidden lg:block bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
- <div className="overflow-x-auto max-h-[400px] overflow-y-auto custom-scrollbar">
- <table className="w-full text-left border-collapse">
- <thead className="bg-zinc-50 dark:bg-zinc-800">
- <tr className="border-b border-zinc-100 dark:border-zinc-800">
- <th className="px-6 py-4 text-[11px] uppercase text-zinc-500 font-bold">Status</th>
- <th className="px-6 py-4 text-[11px] uppercase text-zinc-500 font-bold">Item Name</th>
- <th className="px-6 py-4 text-[11px] uppercase text-zinc-500 font-bold">Category</th>
- <th className="px-6 py-4 text-[11px] uppercase text-zinc-500 font-bold">Purpose / Use</th>
- <th className="px-6 py-4 text-[11px] uppercase text-zinc-500 font-bold">When to Use</th>
- <th className="px-6 py-4 text-[11px] uppercase text-zinc-500 font-bold text-center">Quantity</th>
- <th className="px-6 py-4 text-[11px] uppercase text-zinc-500 font-bold">Expiry</th>
- </tr>
- </thead>
- <tbody>
- {finalItems.length > 0 ? finalItems.map(item => {
- const status = getStatus(item);
- const statusStyle = getStatusStyles(status);
+ {/* Integrated View Logic */}
+ {viewMode === 'table' ? (
+   <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm animate-in fade-in duration-500">
+     <div className="overflow-x-auto max-h-[400px] overflow-y-auto custom-scrollbar">
+       <table className="w-full text-left border-collapse">
+         <thead className="bg-zinc-50 dark:bg-zinc-800">
+           <tr className="border-b border-zinc-100 dark:border-zinc-800">
+             <th className="px-6 py-4 text-[11px] uppercase text-zinc-500 font-bold">Status</th>
+             <th className="px-6 py-4 text-[11px] uppercase text-zinc-500 font-bold">Item Name</th>
+             <th className="px-6 py-4 text-[11px] uppercase text-zinc-500 font-bold">Category</th>
+             <th className="px-6 py-4 text-[11px] uppercase text-zinc-500 font-bold">Purpose / Use</th>
+             <th className="px-6 py-4 text-[11px] uppercase text-zinc-500 font-bold">When to Use</th>
+             <th className="px-6 py-4 text-[11px] uppercase text-zinc-500 font-bold text-center">Quantity</th>
+             <th className="px-6 py-4 text-[11px] uppercase text-zinc-500 font-bold">Expiry</th>
+           </tr>
+         </thead>
+         <tbody>
+           {finalItems.length > 0 ? finalItems.map(item => {
+             const status = getStatus(item);
+             const statusStyle = getStatusStyles(status);
 
- return (
- <tr 
- key={item.id} 
- onClick={() => openEditModal(item)}
- className="group cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors border-b border-zinc-100 dark:border-zinc-800 last:border-0"
- >
- <td className="px-6 py-4">
- <span className={statusStyle}>
- {status}
- </span>
- </td>
- <td className="px-6 py-4">
- <Text variant="body" as="span" className="font-bold">
- {item.itemName}
- </Text>
- </td>
- <td className="px-6 py-4">
- <Text variant="label" as="span" className="border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
- {item.category}
- </Text>
- </td>
- <td className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
- {item.purpose}
- </td>
- <td className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
- {item.whenToUse}
- </td>
- <td className="px-6 py-4 text-center text-sm font-medium text-zinc-700 dark:text-zinc-300">
- {item.quantity}
- </td>
- <td className="px-6 py-4">
- <span className={`text-sm font-medium ${status === 'EXPIRED' ? 'text-rose-500' : 'text-zinc-500 dark:text-zinc-400'}`}>
- {new Date(item.expiryDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' })}
- </span>
- </td>
- </tr>
- );
- }) : (
- <tr>
- <td colSpan={7} className="px-8 py-20 text-center">
- <div className="flex flex-col items-center gap-2">
- <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase">No items found.</span>
- </div>
- </td>
- </tr>
+             return (
+               <tr 
+                 key={item.id} 
+                 onClick={() => openEditModal(item)}
+                 className="group cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors border-b border-zinc-100 dark:border-zinc-800 last:border-0"
+               >
+                 <td className="px-6 py-4">
+                   <span className={statusStyle}>
+                     {status}
+                   </span>
+                 </td>
+                 <td className="px-6 py-4">
+                   <Text variant="body" as="span" className="font-bold">
+                     {item.itemName}
+                   </Text>
+                 </td>
+                 <td className="px-6 py-4">
+                   <Text variant="label" as="span" className="border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+                     {item.category}
+                   </Text>
+                 </td>
+                 <td className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
+                   {item.purpose}
+                 </td>
+                 <td className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
+                   {item.whenToUse}
+                 </td>
+                 <td className="px-6 py-4 text-center text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                   {item.quantity}
+                 </td>
+                 <td className="px-6 py-4">
+                   <span className={`text-sm font-medium ${status === 'EXPIRED' ? 'text-rose-500' : 'text-zinc-500 dark:text-zinc-400'}`}>
+                     {new Date(item.expiryDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' })}
+                   </span>
+                 </td>
+               </tr>
+             );
+           }) : (
+             <tr>
+               <td colSpan={7} className="px-8 py-20 text-center">
+                 <div className="flex flex-col items-center gap-2">
+                   <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase">No items found.</span>
+                 </div>
+               </td>
+             </tr>
+           )}
+         </tbody>
+       </table>
+     </div>
+   </div>
+ ) : (
+    <div className="max-h-[650px] overflow-y-auto custom-scrollbar p-1">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 animate-in fade-in duration-500">
+        {finalItems.length > 0 ? finalItems.map(item => {
+          const status = getStatus(item);
+          const statusStyle = getStatusStyles(status);
+
+          return (
+            <div 
+              key={item.id} 
+              onClick={() => openEditModal(item)}
+              className="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all shadow-sm group hover:-translate-y-1 duration-300"
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex flex-col gap-2">
+                  <Text variant="title" as="span" className="text-lg">
+                    {item.itemName}
+                  </Text>
+                  <Text variant="label" as="span" className="border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800 px-2 py-0.5 rounded-md w-fit">
+                    {item.category}
+                  </Text>
+                </div>
+                <span className={statusStyle}>
+                  {status}
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-400 uppercase">Purpose</span>
+                  <span className="text-xs text-zinc-700 dark:text-zinc-300 line-clamp-2">{item.purpose}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-400 uppercase">When to use</span>
+                  <span className="text-xs text-zinc-700 dark:text-zinc-300">{item.whenToUse}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                <div className="flex flex-col">
+                  <Text variant="label" as="span" className="text-zinc-400">Qty</Text>
+                  <Text variant="body" as="span" className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{item.quantity} / {item.targetQuantity}</Text>
+                </div>
+                <div className="flex flex-col items-end">
+                  <Text variant="label" as="span" className="text-zinc-400">Expiry</Text>
+                  <Text variant="body" as="span" className={`text-sm font-bold ${status === 'EXPIRED' ? 'text-rose-500' : 'text-zinc-700 dark:text-zinc-300'}`}>
+                    {new Date(item.expiryDate).toLocaleDateString(undefined, { month: 'short', year: '2-digit' })}
+                  </Text>
+                </div>
+              </div>
+            </div>
+          );
+        }) : (
+          <div className="col-span-full p-12 text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase">No items found</span>
+          </div>
+        )}
+      </div>
+    </div>
  )}
- </tbody>
- </table>
- </div>
- </div>
-
- {/* Card View (Mobile) */}
- <div className="lg:hidden space-y-4">
- {sortedItems.length > 0 ? sortedItems.map(item => {
- const status = getStatus(item);
- const statusStyle = getStatusStyles(status);
-
- return (
- <div 
- key={item.id} 
- onClick={() => openEditModal(item)}
- className="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
- >
- <div className="flex justify-between items-start">
- <div className="flex flex-col gap-2">
- <Text variant="title" as="span" className="text-lg">
- {item.itemName}
- </Text>
- <Text variant="label" as="span" className="border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800 px-2 py-0.5 rounded-md w-fit">
- {item.category}
- </Text>
- </div>
- <span className={statusStyle}>
- {status}
- </span>
- </div>
-
- <div className="space-y-2">
- <div className="flex flex-col">
- <span className="text-[11px] font-bold text-zinc-400 uppercase">Purpose</span>
- <span className="text-xs text-zinc-700 dark:text-zinc-300">{item.purpose}</span>
- </div>
- <div className="flex flex-col">
- <span className="text-[11px] font-bold text-zinc-400 uppercase">When to use</span>
- <span className="text-xs text-zinc-700 dark:text-zinc-300">{item.whenToUse}</span>
- </div>
- </div>
-
- <div className="grid grid-cols-2 gap-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
- <div className="flex flex-col">
- <Text variant="label" as="span" className="text-zinc-400">Qty</Text>
- <Text variant="body" as="span" className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{item.quantity}</Text>
- </div>
- <div className="flex flex-col items-end">
- <Text variant="label" as="span" className="text-zinc-400">Expiry</Text>
- <Text variant="body" as="span" className={`text-sm font-bold ${status === 'EXPIRED' ? 'text-rose-500' : 'text-zinc-700 dark:text-zinc-300'}`}>
- {new Date(item.expiryDate).toLocaleDateString(undefined, { month: 'short', year: '2-digit' })}
- </Text>
- </div>
- </div>
- </div>
- );
- }) : (
- <div className="p-12 text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
- <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase">No medications found</span>
- </div>
- )}
- </div>
 
  {/* Modal Integration */}
  <Modal
@@ -457,7 +493,6 @@ export function FirstAidMobileSection({ externalFilter }: FirstAidMobileSectionP
  { name: 'notes', label: 'Notes', type: 'text', fullWidth: true }
  ]
  }
-
  ]}
  formData={formData}
  accentColor="rose"
@@ -471,7 +506,7 @@ export function FirstAidMobileSection({ externalFilter }: FirstAidMobileSectionP
  onClick={() => deleteItem(editingItem.id)} 
  className="text-sm font-bold text-rose-500 hover:text-rose-700 transition-colors"
  >
- DELETE MEDICINE
+ DELETE ITEM
  </button>
  </div>
  )}

@@ -7,7 +7,7 @@ import { PageTitle, SectionTitle, Text, Description } from '@/components/ui/Text
 
 export default function HabitsPage() {
   const [mounted, setMounted] = useState(false);
-  const [filter, setFilter] = useState<TimeFilter>('1 Month');
+  const [filter, setFilter] = useState<TimeFilter>('Custom Month');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
@@ -18,7 +18,7 @@ export default function HabitsPage() {
   if (!mounted) return null;
 
   return (
-    <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 selection:bg-teal-500/30 font-sans p-4 md:p-8 xl:p-12">
+    <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 selection:bg-teal-500/30 font-sans p-4 md:p-8 xl:p-12 transition-colors duration-200">
       <div className="mx-auto w-full max-w-7xl">
         <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="flex flex-col items-start">
@@ -67,7 +67,7 @@ export default function HabitsPage() {
                 <option value="1 Month">1 Month</option>
                 <option value="6 Months">6 Months</option>
                 <option value="1 Year">1 Year</option>
-                <option value="Custom Month">Custom Month</option>
+                <option value="Custom Month">Current Month</option>
               </select>
               <Link href="/habits" className="px-4 py-2 text-sm font-semibold rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20 transition-colors border border-rose-200 dark:border-rose-900/50 whitespace-nowrap">View All</Link>
             </div>
