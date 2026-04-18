@@ -82,6 +82,16 @@ const getDaysUntilExpiry = (expiryDate: string): number => {
   return Math.round((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 };
 
+const getFrequencyGroup = (freq: string): string => {
+  const f = freq.toLowerCase();
+  if (f.includes('day') || f.includes('daily') || f.includes('/d')) return 'Daily';
+  if (f.includes('week') || f.includes('weekly') || f.includes('/w')) return 'Weekly';
+  if (f.includes('month') || f.includes('monthly')) return 'Monthly';
+  return 'Other';
+};
+
+const FREQ_ORDER = ['Daily', 'Weekly', 'Monthly', 'Other'];
+
 
 
 const statsFromItems = (items: Array<{ quantity: number; targetQuantity: number; expiryDate: string }>) => ({
@@ -372,6 +382,13 @@ export function HealthInsightsPanel({ activeFilter, onFilterChange }: HealthInsi
     };
   });
   const maxSuppCount = Math.max(...supplementCategoryStats.map(s => s.count), 1);
+
+  const supplementsByFreq = supplementItems.reduce<Record<string, SupplementItem[]>>((acc, item) => {
+    const g = getFrequencyGroup(item.frequency);
+    if (!acc[g]) acc[g] = [];
+    acc[g].push(item);
+    return acc;
+  }, {});
 
   /* ── Tabs ── */
   const TABS: { id: InsightTab; label: string; icon: React.ReactNode; badge?: number }[] = [

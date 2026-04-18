@@ -45,13 +45,13 @@ export function HabitsOverview({ filter, selectedMonth, selectedYear }: HabitsOv
       let cCount = 0;
       let mCount = 0;
       let pCount = 0;
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const habitStats: { name: string; done: number; total: number; streak: number; recentMisses: number }[] = [];
 
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          const now = new Date();
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
           if (Array.isArray(parsed)) {
             parsed.forEach((h: any) => {

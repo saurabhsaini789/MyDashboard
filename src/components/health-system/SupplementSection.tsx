@@ -593,7 +593,7 @@ export function SupplementSection({ externalFilter }: SupplementSectionProps) {
     options: [...DOSE_UNITS, 'Other'].map(u => ({ label: u, value: u }))
     },
     ...(formData.doseUnit === 'Other' ? [
-    { name: 'doseOther', label: 'Custom Unit', type: 'text', required: true }
+    { name: 'doseOther', label: 'Custom Unit', type: 'text' as any, required: true }
     ] : []),
     { name: 'frequency', label: 'Frequency (e.g. 1/day)', type: 'text', required: true },
     { name: 'quantity', label: 'Current Quantity', type: 'number', min: 0, required: true },
