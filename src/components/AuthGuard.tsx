@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
 import { LoginPage } from './LoginPage';
 import { clearUserCache } from '@/lib/security';
 import { setCurrentUserId } from '@/lib/storage';
@@ -17,7 +17,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     setIsMounted(true);
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log('[AuthGuard] Initial session check:', session ? 'User logged in' : 'No session');
+      if (!session && isDevelopment()) {
+        const success = await attemptDevAutoLogin();
+        if (success) return; // onAuthStateChange will handle the state update
+      }
+      
       setCurrentUserId(session?.user?.id || null);
       setSession(session);
       checkAuthorization(session);
@@ -27,7 +33,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log(`[AuthGuard] Auth state change event: ${event}`, session ? 'User logged in' : 'No session');
       if (!session) {
         clearUserCache();
       }
@@ -54,6 +61,39 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
 
     setAuthorized(true);
+  };
+
+  const isDevelopment = () => {
+    return process.env.NODE_ENV === 'development' && window.location.hostname === 'localhost';
+  };
+
+  const attemptDevAutoLogin = async () => {
+    const email = process.env.NEXT_PUBLIC_AUTH_EMAIL;
+    const password = process.env.NEXT_PUBLIC_DEV_AUTH_PASSWORD;
+
+    if (!email || !password) {
+      console.log('[DevAuth] Auto-login skipped: Missing email or password in .env.local');
+      return false;
+    }
+
+    try {
+      console.log('[DevAuth] Attempting automatic developer login...');
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('[DevAuth] Auto-login failed:', error.message);
+        return false;
+      }
+
+      console.log('[DevAuth] Successfully logged in as developer.');
+      return true;
+    } catch (err) {
+      console.error('[DevAuth] Unexpected error during auto-login:', err);
+      return false;
+    }
   };
 
   if (!isMounted) {

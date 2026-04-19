@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
 import { SyncStatus } from './SyncStatus';
 import { useSyncReady, useSyncIndicator } from '@/context/SyncContext';
 import { Menu, X } from 'lucide-react';

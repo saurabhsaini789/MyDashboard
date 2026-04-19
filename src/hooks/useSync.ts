@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useCallback, useRef, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
 import { getPrefixedKey } from '@/lib/keys';
 import { ALL_SYNC_KEYS, LEGACY_KEY_MIGRATION } from '@/lib/sync-keys';
 import { Session } from '@supabase/supabase-js';

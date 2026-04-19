@@ -1,3 +1,4 @@
+"use client";
 import React from 'react';
 import { Quotes } from '@/components/widgets/Quotes';
 import { TasksCalendar } from '@/components/widgets/TasksCalendar';
@@ -61,4 +62,3 @@ export default function Home() {
         </main>
     );
 }
-

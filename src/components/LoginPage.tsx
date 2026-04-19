@@ -1,48 +1,81 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
 import { PageTitle } from './ui/Text';
 
 export function LoginPage() {
  const [email, setEmail] = useState('');
+ const [password, setPassword] = useState('');
  const [loading, setLoading] = useState(false);
  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
  const [isMounted, setIsMounted] = useState(false);
+ const [isDev, setIsDev] = useState(false);
+ const [isRecovery, setIsRecovery] = useState(false);
 
  useEffect(() => {
- setIsMounted(true);
+  setIsMounted(true);
+  
+  // Detect recovery mode from URL hash
+  if (window.location.hash.includes('type=recovery')) {
+   setIsRecovery(true);
+  }
+
+  const isLocalhost = window.location.hostname === 'localhost';
+  setIsDev(isLocalhost && process.env.NODE_ENV === 'development');
+  
+  // Auto-fill email if configured
+  const devEmail = process.env.NEXT_PUBLIC_AUTH_EMAIL;
+  if (isLocalhost && devEmail) {
+   setEmail(devEmail);
+  }
  }, []);
 
  const handleLogin = async (e: React.FormEvent) => {
- e.preventDefault();
- setLoading(true);
- setMessage(null);
+  e.preventDefault();
+  setLoading(true);
+  setMessage(null);
 
- const authorizedEmail = process.env.NEXT_PUBLIC_AUTH_EMAIL;
- 
- // Strict client-side check for the authorized email
- if (authorizedEmail && email.toLowerCase() !== authorizedEmail.toLowerCase()) {
- setMessage({ type: 'error', text: 'Unauthorized email address. Access denied.' });
- setLoading(false);
- return;
- }
+  const authorizedEmail = process.env.NEXT_PUBLIC_AUTH_EMAIL;
+  
+  // Strict client-side check for the authorized email
+  if (authorizedEmail && email.toLowerCase() !== authorizedEmail.toLowerCase()) {
+   setMessage({ type: 'error', text: 'Unauthorized email address. Access denied.' });
+   setLoading(false);
+   return;
+  }
 
- try {
- const { error } = await supabase.auth.signInWithOtp({
- email,
- options: {
- emailRedirectTo: `${window.location.origin}/my-dashboard/`,
- },
- });
-
- if (error) throw error;
- setMessage({ type: 'success', text: 'Check your email for the magic link!' });
- } catch (error: any) {
- setMessage({ type: 'error', text: error.message || 'An error occurred during sign in.' });
- } finally {
- setLoading(false);
- }
+  try {
+   if (isRecovery) {
+    // Password Recovery Flow
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+    setMessage({ type: 'success', text: 'Password updated successfully! You can now log in.' });
+    setIsRecovery(false);
+    setPassword('');
+   } else if (isDev && password) {
+    // Developer Password Login Bypassing OTP
+    const { error } = await supabase.auth.signInWithPassword({
+     email,
+     password,
+    });
+    if (error) throw error;
+   } else {
+    // Standard OTP Magic Link
+    const { error } = await supabase.auth.signInWithOtp({
+     email,
+     options: {
+      emailRedirectTo: `${window.location.origin}/my-dashboard/`,
+     },
+    });
+    if (error) throw error;
+    setMessage({ type: 'success', text: 'Check your email for the magic link!' });
+   }
+  } catch (error: any) {
+   setMessage({ type: 'error', text: error.message || 'An error occurred during sign in.' });
+  } finally {
+   setLoading(false);
+  }
  };
 
  if (!isMounted) return null;
@@ -62,45 +95,75 @@ export function LoginPage() {
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
  </svg>
  </div>
- <PageTitle className="text-white">Access Locked</PageTitle>
- <p className="text-gray-400 mt-2 text-center text-sm">
- Enter your authorized email to receive a magic link.
- </p>
+  <PageTitle className="text-white">
+   {isRecovery ? 'Set New Password' : 'Access Locked'}
+  </PageTitle>
+  <p className="text-gray-400 mt-2 text-center text-sm">
+   {isRecovery 
+     ? 'Create a secure password for your account.' 
+     : 'Enter your authorized email to receive a magic link.'}
+  </p>
  </div>
 
- <form onSubmit={handleLogin} className="space-y-4">
- <div>
- <label htmlFor="email" className="block text-xs font-medium text-gray-400 uppercase mb-1.5 ml-1">
- Email Address
- </label>
- <input
- id="email"
- type="email"
- placeholder="name@example.com"
- value={email}
- onChange={(e) => setEmail(e.target.value)}
- required
- className="w-full px-4 py-3 bg-[#1a1a1a] border border-white/5 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all duration-200"
- />
- </div>
+  <form onSubmit={handleLogin} className="space-y-4">
+  {!isRecovery && (
+  <div>
+  <label htmlFor="email" className="block text-xs font-medium text-gray-400 uppercase mb-1.5 ml-1">
+  Email Address
+  </label>
+  <input
+  id="email"
+  type="email"
+  placeholder="name@example.com"
+  value={email}
+  onChange={(e) => setEmail(e.target.value)}
+  required
+  className="w-full px-4 py-3 bg-[#1a1a1a] border border-white/5 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all duration-200"
+  />
+  </div>
+  )}
 
- <button
- type="submit"
- disabled={loading}
- className="group relative w-full flex items-center justify-center px-4 py-3.5 bg-white text-black font-semibold rounded-xl hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 overflow-hidden"
- >
- {loading ? (
- <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
- ) : (
- <span className="flex items-center">
- Send Magic Link
- <svg xmlns="http://www.w3.org/2000/svg" className="ml-2 w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
- </svg>
- </span>
- )}
- </button>
- </form>
+  {(isDev || isRecovery) && (
+  <div className="animate-in fade-in slide-in-from-top-2 duration-500">
+  <label htmlFor="password" d-id="dev-password-label" className="flex items-center justify-between text-xs font-medium text-amber-500/80 uppercase mb-1.5 ml-1">
+  <span>{isRecovery ? 'New Password' : 'Developer Password'}</span>
+  <span className="text-[10px] bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+   {isRecovery ? 'Security Update' : 'Local Bypass'}
+  </span>
+  </label>
+  <input
+  id="password"
+  type="password"
+  placeholder={isRecovery ? 'Min 6 characters' : 'Enter local dev password'}
+  value={password}
+  onChange={(e) => setPassword(e.target.value)}
+  required={isRecovery}
+  className="w-full px-4 py-3 bg-[#1a1a1a] border border-amber-500/20 rounded-xl text-white placeholder-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/40 transition-all duration-200"
+  />
+  </div>
+  )}
+
+  <button
+  type="submit"
+  disabled={loading}
+  className={`group relative w-full flex items-center justify-center px-4 py-3.5 font-semibold rounded-xl transition-all duration-200 overflow-hidden ${
+  (isDev && password) || isRecovery 
+  ? 'bg-amber-500 text-black hover:bg-amber-400' 
+  : 'bg-white text-black hover:bg-gray-100'
+  } disabled:opacity-50 disabled:cursor-not-allowed`}
+  >
+  {loading ? (
+  <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+  ) : (
+  <span className="flex items-center">
+  {isRecovery ? 'Update Password' : (isDev && password ? 'Developer Login' : 'Send Magic Link')}
+  <svg xmlns="http://www.w3.org/2000/svg" className="ml-2 w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+  </svg>
+  </span>
+  )}
+  </button>
+  </form>
 
  {message && (
  <div className={`mt-6 p-4 rounded-xl text-sm font-medium border ${ message.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400' } animate-in fade-in slide-in-from-top-2 duration-300`}>
