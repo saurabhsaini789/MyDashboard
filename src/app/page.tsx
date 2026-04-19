@@ -5,36 +5,21 @@ import { GrowthOverview } from '@/components/widgets/GrowthOverview';
 import { OneNoteJournal } from '@/components/widgets/OneNoteJournal';
 import { PageTitle, Text, Description } from '@/components/ui/Text';
 import { SYNC_KEYS } from '@/lib/sync-keys';
-import { getDashboardData } from '@/lib/supabase/data';
 import { PulseDashboard } from '@/components/widgets/PulseDashboard';
 import { PulseDataDependencies } from '@/lib/pulse-logic';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export default function Home() {
+  const pulseInitialData: PulseDataDependencies = {
+    medicine: [],
+    travelKit: [],
+    aidHome: [],
+    aidMobile: [],
+    supplements: [],
+    projects: [],
+    habits: []
+  };
 
-export default async function Home() {
-    // Fetch initial data for the Pulse widget on the server
-    const rawData = await getDashboardData([
-        SYNC_KEYS.HEALTH_MEDICINE,
-        SYNC_KEYS.HEALTH_TRAVEL_KIT,
-        SYNC_KEYS.HEALTH_FIRST_AID_HOME,
-        SYNC_KEYS.HEALTH_FIRST_AID_MOBILE,
-        SYNC_KEYS.HEALTH_SUPPLEMENTS,
-        SYNC_KEYS.GOALS_PROJECTS,
-        SYNC_KEYS.HABITS
-    ]);
-
-    const pulseInitialData: PulseDataDependencies = {
-        medicine: rawData[SYNC_KEYS.HEALTH_MEDICINE] || [],
-        travelKit: rawData[SYNC_KEYS.HEALTH_TRAVEL_KIT] || [],
-        aidHome: rawData[SYNC_KEYS.HEALTH_FIRST_AID_HOME] || [],
-        aidMobile: rawData[SYNC_KEYS.HEALTH_FIRST_AID_MOBILE] || [],
-        supplements: rawData[SYNC_KEYS.HEALTH_SUPPLEMENTS] || [],
-        projects: rawData[SYNC_KEYS.GOALS_PROJECTS] || [],
-        habits: rawData[SYNC_KEYS.HABITS] || []
-    };
-
-    return (
+  return (
         <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 selection:bg-teal-500/30 font-sans p-4 md:p-8 xl:p-12">
             <div className="mx-auto w-full max-w-7xl">
 
