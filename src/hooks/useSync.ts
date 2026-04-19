@@ -66,7 +66,10 @@ export function useSync() {
 
     // Prevent pushing empty/default datasets
     if (!shouldPushData(rawValue)) {
-      console.log(`[Sync] Push skipped for ${key}: Dataset is empty or mock.`);
+      // Only log if it's a real user action, not part of a broad migration check
+      if (!isSyncingFromRemote.current) {
+        console.log(`[Sync] Push skipped for ${key}: Dataset is empty or mock.`);
+      }
       return;
     }
 
@@ -155,10 +158,6 @@ export function useSync() {
         }
       });
       
-      isSyncingFromRemote.current = false;
-      hasSyncedFromServer.current = true; // UNLOCK PUSHING
-      console.log(`[Sync] Synchronized ${projectRemoteData.length} authoritative records from cloud.`);
-
       // 1. Initial Migration (Local untagged data -> Cloud)
       // Only happens for keys NOT already on remote
       const remoteKeysMap = new Map(projectRemoteData.map(r => [r.key, r.value]));
@@ -176,6 +175,9 @@ export function useSync() {
           }
         }
       }
+
+      isSyncingFromRemote.current = false;
+      hasSyncedFromServer.current = true; // UNLOCK PUSHING
 
       setIsReady(true);
       setSyncStatus('connected');
