@@ -46,7 +46,7 @@ export function useSync() {
   // --- 1. Push Local Changes to Supabase ---
   const pushToSupabase = useCallback(async (key: string, taggedValue: string | null) => {
     if (!session || !session.user) return;
-    if (isSyncingFromRemote.current) return;
+    if (isSyncingFromRemote.current && !hasSyncedFromServer.current) return;
     if (!hasSyncedFromServer.current) {
       console.warn(`[Sync] Push blocked for ${key}: Initial pull not complete.`);
       return;
@@ -148,6 +148,7 @@ export function useSync() {
       ) || [];
 
       // Load remote data into local storage (TAGGED with userId)
+      console.log(`[Sync] Project ID: ${projectID || 'none'}`);
       isSyncingFromRemote.current = true;
       projectRemoteData.forEach((row) => {
         const parts = row.key.split(':');
@@ -176,9 +177,8 @@ export function useSync() {
         }
       }
 
+      console.log(`[Sync] Synchronized ${projectRemoteData.length} authoritative records from cloud.`);
       isSyncingFromRemote.current = false;
-      hasSyncedFromServer.current = true; // UNLOCK PUSHING
-
       setIsReady(true);
       setSyncStatus('connected');
       setTimeout(() => setSyncStatus('idle'), 1000);
