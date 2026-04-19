@@ -75,6 +75,8 @@ export function useSync() {
       try {
         setSyncStatus('syncing');
         
+        const { error } = await supabase
+          .from('dashboard_data')
           .upsert({ 
             key: prefixedKey, 
             value: rawValue, 
