@@ -16,6 +16,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@google/generative-ai": "^0.24.1",
     "@microsoft/microsoft-graph-client": "^3.0.7",
+    "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.100.1",
     "@tiptap/extension-bullet-list": "^3.22.2",
     "@tiptap/extension-character-count": "^3.22.2",
@@ -38,7 +39,8 @@
     "openai": "^6.33.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "recharts": "^3.8.1"
+    "recharts": "^3.8.1",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -1,15 +1,24 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis
-} from 'recharts';
+import React, { useState, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { TrendingUp, Target, CreditCard, ShoppingBag, Package, Calendar } from 'lucide-react';
 import { calculateCategoryScores, getOverallGrowthScore, getGrowthTrendData, CategoryScore, ScoreRange, ScoreFilter } from '@/lib/growth-score';
 import { SectionTitle, Text, Description } from '../ui/Text';
 import { MultiSelectDropdown } from '../ui/MultiSelectDropdown';
 import { MONTHS, YEARS } from '@/lib/constants';
+import { useStorageSubscription } from '@/hooks/useStorageSubscription';
+import { SYNC_KEYS } from '@/lib/sync-keys';
+
+const GrowthTrendChart = dynamic(() => import('./charts/GrowthTrendChart'), { 
+  ssr: false,
+  loading: () => <div className="w-full h-full bg-zinc-50 dark:bg-zinc-800/50 animate-pulse rounded-xl" />
+});
+
+const GrowthRadarChart = dynamic(() => import('./charts/GrowthRadarChart'), { 
+  ssr: false,
+  loading: () => <div className="w-full h-full flex items-center justify-center bg-zinc-50 dark:bg-zinc-800/50 animate-pulse rounded-xl" />
+});
 
 export function GrowthOverview() {
   const [filter, setFilter] = useState<ScoreFilter>({ 
@@ -17,24 +26,40 @@ export function GrowthOverview() {
     month: new Date().getMonth(),
     year: new Date().getFullYear()
   });
-  const [scores, setScores] = useState<CategoryScore[]>([]);
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-    setScores(calculateCategoryScores(filter));
+  // Authoritative Subscriptions
+  const habits = useStorageSubscription(SYNC_KEYS.HABITS, []);
+  const projects = useStorageSubscription(SYNC_KEYS.GOALS_PROJECTS, []);
+  const income = useStorageSubscription(SYNC_KEYS.FINANCES_INCOME, []);
+  const expenses = useStorageSubscription(SYNC_KEYS.FINANCES_EXPENSES, []);
+  const wardrobe = useStorageSubscription(SYNC_KEYS.WARDROBE_INVENTORY, []);
+  
+  // Inventory Subscriptions
+  const med = useStorageSubscription(SYNC_KEYS.HEALTH_MEDICINE, []);
+  const travel = useStorageSubscription(SYNC_KEYS.HEALTH_TRAVEL_KIT, []);
+  const aidHome = useStorageSubscription(SYNC_KEYS.HEALTH_FIRST_AID_HOME, []);
+  const aidMobile = useStorageSubscription(SYNC_KEYS.HEALTH_FIRST_AID_MOBILE, []);
+  const supplements = useStorageSubscription(SYNC_KEYS.HEALTH_SUPPLEMENTS, []);
 
-    const handleLocal = (e: any) => {
-      setScores(calculateCategoryScores(filter));
-    };
-    window.addEventListener('local-storage-change', handleLocal);
-    return () => window.removeEventListener('local-storage-change', handleLocal);
-  }, [filter]);
+  // Consolidate dependencies for pure calculation
+  const growthData = useMemo(() => ({
+    habits,
+    projects,
+    income,
+    expenses,
+    wardrobe,
+    inventory: {
+      HEALTH_MEDICINE: med,
+      HEALTH_TRAVEL_KIT: travel,
+      HEALTH_FIRST_AID_HOME: aidHome,
+      HEALTH_FIRST_AID_MOBILE: aidMobile,
+      HEALTH_SUPPLEMENTS: supplements
+    }
+  }), [habits, projects, income, expenses, wardrobe, med, travel, aidHome, aidMobile, supplements]);
 
+  const scores = useMemo(() => calculateCategoryScores(growthData, filter), [growthData, filter]);
   const overallScore = useMemo(() => getOverallGrowthScore(scores), [scores]);
-  const trendData = useMemo(() => getGrowthTrendData(filter), [filter]);
-
-  if (!mounted) return null;
+  const trendData = useMemo(() => getGrowthTrendData(growthData, filter), [growthData, filter]);
 
   const ranges: { label: string; value: ScoreRange }[] = [
     { label: '7D', value: '7D' },
@@ -46,13 +71,11 @@ export function GrowthOverview() {
 
   return (
     <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Header & Main Score */}
       <div className="flex flex-col md:flex-row gap-6 md:items-start justify-between">
         <div className="flex flex-col gap-1">
           <SectionTitle className="mb-0">Life Growth Index</SectionTitle>
           <Description>A composite metric reflecting your progress across habits, projects, finances, and systems.</Description>
           
-          {/* Filters Bar */}
           <div className="flex flex-wrap items-center gap-3 mt-4">
             <div className="flex p-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/30">
               {ranges.map((r) => (
@@ -104,7 +127,6 @@ export function GrowthOverview() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Trend Chart */}
         <div className="lg:col-span-3 bg-white dark:bg-zinc-900/60 p-6 md:p-8 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm flex flex-col h-[350px]">
           <div className="flex items-center justify-between mb-6">
              <Text variant="label" className="font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-tight flex items-center gap-2">
@@ -117,98 +139,20 @@ export function GrowthOverview() {
              </div>
           </div>
           <div className="flex-1 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#14b8a6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" opacity={0.5} />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 10, fill: '#A1A1AA' }}
-                  dy={10}
-                />
-                <YAxis 
-                  domain={[0, 100]} 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 10, fill: '#A1A1AA' }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                    borderRadius: '12px', 
-                    border: '1px solid #e4e4e7',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                    fontSize: '12px',
-                    fontWeight: '600'
-                  }} 
-                  itemStyle={{ color: '#14b8a6' }}
-                  cursor={{ stroke: '#14b8a6', strokeWidth: 1, strokeDasharray: '4 4' }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="score" 
-                  stroke="#14b8a6" 
-                  strokeWidth={3} 
-                  dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} 
-                  activeDot={{ r: 6, strokeWidth: 0 }}
-                  animationDuration={1500}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <GrowthTrendChart data={trendData} />
           </div>
         </div>
 
-        {/* Breakdown Radar Chart */}
         <div className="lg:col-span-2 bg-white dark:bg-zinc-900/60 p-6 md:p-8 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm flex flex-col h-[350px]">
           <div className="flex items-center justify-between mb-2">
              <Text variant="label" className="font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-tight">Focus Balance</Text>
           </div>
-          <div className="flex-1 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={scores}>
-                <PolarGrid stroke="#e4e4e7" strokeDasharray="3 3" />
-                <PolarAngleAxis 
-                  dataKey="name" 
-                  tick={{ fontSize: 10, fill: '#71717A', fontWeight: '500' }} 
-                />
-                <PolarRadiusAxis 
-                  angle={30} 
-                  domain={[0, 100]} 
-                  tick={false} 
-                  axisLine={false} 
-                />
-                <Radar
-                  name="Score"
-                  dataKey="score"
-                  stroke="#14b8a6"
-                  fill="#14b8a6"
-                  fillOpacity={0.4}
-                  animationDuration={1500}
-                />
-                <Tooltip 
-                   contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                    borderRadius: '12px', 
-                    border: '1px solid #e4e4e7',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                    fontSize: '12px',
-                    fontWeight: '600'
-                  }} 
-                />
-              </RadarChart>
-            </ResponsiveContainer>
+          <div className="flex-1 w-full relative">
+            <GrowthRadarChart data={scores} />
           </div>
         </div>
       </div>
 
-      {/* Category Mini Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {scores.map((s, i) => (
           <div 
@@ -229,7 +173,7 @@ export function GrowthOverview() {
               </div>
               <Text variant="bodySmall" className="font-bold text-zinc-900 dark:text-zinc-100">{s.score}%</Text>
             </div>
-            <Text variant="label" className="text-[10px] uppercase font-bold text-zinc-500 group-hover:text-teal-600 transition-colors uppercase tracking-tight">{s.name}</Text>
+            <Text variant="label" className="text-[10px] uppercase font-bold text-zinc-500 group-hover:text-teal-600 transition-colors tracking-tight">{s.name}</Text>
             <div className="w-full h-1 bg-zinc-100 dark:bg-zinc-800 rounded-full mt-2 overflow-hidden">
                <div 
                 className="h-full transition-all duration-1000 ease-out"

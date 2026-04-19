@@ -8,18 +8,13 @@ import { GoalsInsights } from '@/components/widgets/GoalsInsights';
 import { PageTitle, SectionTitle, Description } from '@/components/ui/Text';
 
 export default function GoalsPage() {
-  const [mounted, setMounted] = useState(false);
   const [filter, setFilter] = useState<TimeFilter>('Custom Month');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [view, setView] = useState<'grid' | 'gantt'>('grid');
   const [showInsights, setShowInsights] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
-  if (!mounted) return null;
 
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 selection:bg-teal-500/30 font-sans p-4 md:p-8 xl:p-12 transition-colors duration-200">

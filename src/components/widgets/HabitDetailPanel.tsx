@@ -70,7 +70,7 @@ function calcStreaks(habit: Habit) {
   let longestMiss = 0;
   let tempMiss = 0;
 
-  let checkDate = new Date(today);
+  const checkDate = new Date(today);
   const todayKey = `${today.getFullYear()}-${today.getMonth()}`;
   const todayStatus = habit.records?.[todayKey]?.[today.getDate() - 1];
   if (!todayStatus || todayStatus === "none") {
@@ -284,7 +284,7 @@ export function HabitDetailPanel({ habit, onClose }: HabitDetailPanelProps) {
     const end = new Date(viewYear, viewMonth + 1, 0);
     const start = new Date(viewYear, viewMonth - 11, 1); 
     
-    let curr = new Date(start);
+    const curr = new Date(start);
     while (curr <= end) {
       const y = curr.getFullYear(), m = curr.getMonth(), d = curr.getDate();
       const key = `${y}-${m}`;

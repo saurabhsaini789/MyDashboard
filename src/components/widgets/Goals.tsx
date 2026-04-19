@@ -5,6 +5,8 @@ import { setSyncedItem } from '@/lib/storage';
 import { getPrefixedKey } from '@/lib/keys';
 import { SectionTitle } from '@/components/ui/Text';
 import { ProjectModal, type Project, getProjectPriorityInfo, sortProjects } from './ProjectModal';
+import { useStorageSubscription } from '@/hooks/useStorageSubscription';
+import { SYNC_KEYS } from '@/lib/sync-keys';
 
 import { GanttView } from './GanttView';
 
@@ -21,66 +23,17 @@ interface GoalsProps {
 }
 
 export function Goals({ view, setView }: GoalsProps) {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const projects = useStorageSubscription<Project[]>(SYNC_KEYS.GOALS_PROJECTS, []);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [creatingForBucket, setCreatingForBucket] = useState<string | null>(null);
-  const projectsRef = React.useRef(projects);
 
-  React.useEffect(() => {
-    projectsRef.current = projects;
+  useEffect(() => {
+    if (selectedProject) {
+      const updated = projects.find(p => p.id === selectedProject.id);
+      if (updated) setSelectedProject(updated);
+      else setSelectedProject(null);
+    }
   }, [projects]);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(getPrefixedKey('goals_projects'));
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setProjects(Array.isArray(parsed) ? parsed : []);
-      } catch (e) {
-        // ignore
-      }
-    }
-    setIsLoaded(true);
-
-    const handleLocalUpdate = (e: any) => {
-      if (e.detail && e.detail.key === 'goals_projects') {
-        const val = localStorage.getItem(getPrefixedKey('goals_projects'));
-        if (val && val !== JSON.stringify(projectsRef.current)) {
-          try {
-            setProjects(JSON.parse(val));
-          } catch (e) {}
-        }
-      }
-    };
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === getPrefixedKey('goals_projects') && e.newValue && e.newValue !== JSON.stringify(projectsRef.current)) {
-        try {
-          setProjects(JSON.parse(e.newValue));
-        } catch (e) {}
-      }
-    };
-
-    window.addEventListener('local-storage-change', handleLocalUpdate);
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('local-storage-change', handleLocalUpdate);
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isLoaded) {
-      setSyncedItem('goals_projects', JSON.stringify(projects));
-
-      if (selectedProject) {
-        const updated = projects.find(p => p.id === selectedProject.id);
-        if (updated) setSelectedProject(updated);
-        else setSelectedProject(null);
-      }
-    }
-  }, [projects, isLoaded]);
 
   // --- Handlers ---
   const handleCreateProject = (newProj: Project) => {
@@ -90,20 +43,22 @@ export function Goals({ view, setView }: GoalsProps) {
       tasks: [],
       createdAt: new Date().toISOString()
     };
-    setProjects([...projects, finalProject]);
+    setSyncedItem(SYNC_KEYS.GOALS_PROJECTS, JSON.stringify([...projects, finalProject]));
   };
 
   const handleUpdateProject = (updatedProject: Project) => {
-    setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p));
+    const newProjects = projects.map(p => p.id === updatedProject.id ? updatedProject : p);
+    setSyncedItem(SYNC_KEYS.GOALS_PROJECTS, JSON.stringify(newProjects));
   };
 
 
   const handleDeleteProject = (projectId: string) => {
-    setProjects(projects.filter(p => p.id !== projectId));
+    const newProjects = projects.filter(p => p.id !== projectId);
+    setSyncedItem(SYNC_KEYS.GOALS_PROJECTS, JSON.stringify(newProjects));
     if (selectedProject?.id === projectId) setSelectedProject(null);
   };
 
-  if (!isLoaded) return <div className="animate-pulse h-96 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800/50"></div>;
+  // if (!isLoaded) return <div className="animate-pulse h-96 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800/50"></div>;
 
   return (
     <div className="w-full relative">

@@ -41,10 +41,16 @@ export const SYNC_KEYS = {
 
  // Settings & UI
  DASHBOARD_QUOTES: 'dashboard_quotes',
+ PANTRY_INVENTORY_VIEW: 'pantry-inventory-view',
+ PANTRY_GROCERY_VIEW_MODE: 'pantry_grocery_view_mode',
+ FINANCES_ASSETS_VIEW: 'finances-assets-view',
+ FINANCES_LIABILITIES_VIEW: 'finances-liabilities-view',
+ FINANCES_SAVINGS_VIEW: 'finances-savings-view',
  
  // Legacy / Migration Seeds
  GOALS_SEEDED_V2: 'goals_seeded_v2',
  GOALS_SEEDED_V3: 'goals_seeded_v3',
+ MOCK_SEEDED_V1: 'MOCK_SEEDED_V1',
 };
 
 /**

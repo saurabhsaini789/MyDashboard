@@ -64,7 +64,7 @@ const FormFieldComponent: React.FC<FormFieldProps> = (props) => {
  }
 
  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
- let newValue: any = e.target.value;
+ let newValue: string | number = e.target.value;
  if (type === 'number') {
  newValue = newValue === '' ? '' : parseFloat(newValue);
  }

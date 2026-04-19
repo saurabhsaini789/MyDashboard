@@ -8,6 +8,7 @@ import { MONTHS, YEARS } from '@/lib/constants';
 import { calculateAssetBalance, calculateLiabilityBalance, type Asset, type Liability } from '@/lib/finances';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 import { Text, SectionTitle } from '../ui/Text';
+import { useStorageSubscription } from '@/hooks/useStorageSubscription';
 
 interface MetricProps {
   label: string;
@@ -73,6 +74,12 @@ interface EmergencyFundData {
 }
 
 export function FinanceOverview() {
+  const incomes = useStorageSubscription<any[]>(SYNC_KEYS.FINANCES_INCOME, []);
+  const expensesList = useStorageSubscription<any[]>(SYNC_KEYS.FINANCES_EXPENSES, []);
+  const assets = useStorageSubscription<Asset[]>(SYNC_KEYS.FINANCES_ASSETS, []);
+  const liabilities = useStorageSubscription<Liability[]>(SYNC_KEYS.FINANCES_LIABILITIES, []);
+  const efData = useStorageSubscription<EmergencyFundData | null>(SYNC_KEYS.FINANCES_EMERGENCY_FUND, null);
+
   const [income, setIncome] = useState(0);
   const [expenses, setExpenses] = useState(0);
   const [netWorth, setNetWorth] = useState(0);
@@ -81,74 +88,8 @@ export function FinanceOverview() {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Filter states
-  const [selectedMonths, setSelectedMonths] = useState<number[]>([]); // Initialize empty for SSR
+  const [selectedMonths, setSelectedMonths] = useState<number[]>([]); 
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
-
-  const calculateFinance = () => {
-    // 1. Calculate Income
-    const incomeData = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_INCOME));
-    let totalIncomeCount = 0;
-    if (incomeData) {
-      try {
-        const records = JSON.parse(incomeData);
-        totalIncomeCount = records
-          .filter((r: any) => {
-            const d = new Date(r.date);
-            return selectedMonths.includes(d.getMonth()) && selectedYears.includes(d.getFullYear());
-          })
-          .reduce((sum: number, r: any) => sum + r.amount, 0);
-      } catch (e) { }
-    }
-    setIncome(totalIncomeCount);
-
-    // 2. Calculate Expenses
-    const expenseData = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_EXPENSES));
-    let totalExpensesCount = 0;
-    if (expenseData) {
-      try {
-        const records = JSON.parse(expenseData);
-        totalExpensesCount = records
-          .filter((r: any) => {
-            const d = new Date(r.date);
-            return selectedMonths.includes(d.getMonth()) && selectedYears.includes(d.getFullYear());
-          })
-          .reduce((sum: number, r: any) => sum + r.amount, 0);
-      } catch (e) { }
-    }
-    setExpenses(totalExpensesCount);
-
-    // 3. Calculate Net Worth
-    let totalAssets = 0;
-    const assetsData = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_ASSETS));
-    if (assetsData) {
-      try {
-        const assets: Asset[] = JSON.parse(assetsData);
-        totalAssets = assets.reduce((sum, a) => sum + calculateAssetBalance(a), 0);
-      } catch (e) {}
-    }
-
-    let totalLiabilities = 0;
-    const liabilitiesData = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_LIABILITIES));
-    if (liabilitiesData) {
-      try {
-        const liabilities: Liability[] = JSON.parse(liabilitiesData);
-        totalLiabilities = liabilities.reduce((sum, l) => sum + calculateLiabilityBalance(l), 0);
-      } catch (e) {}
-    }
-    setNetWorth(totalAssets - totalLiabilities);
-
-    // 4. Calculate Emergency Fund
-    const efData = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_EMERGENCY_FUND));
-    let monthsCovered = 0;
-    if (efData) {
-      try {
-        const data: EmergencyFundData = JSON.parse(efData);
-        const totalSaved = data.contributions.reduce((sum, c) => sum + c.amount, 0);
-        monthsCovered = data.monthlyExpenses > 0 ? totalSaved / data.monthlyExpenses : 0;
-      } catch (e) {}
-    }
-    setEmergencyFundMonths(monthsCovered);
-  };
 
   useEffect(() => {
     setSelectedMonths([new Date().getMonth()]);
@@ -157,27 +98,44 @@ export function FinanceOverview() {
   }, []);
 
   useEffect(() => {
-    if (isLoaded) {
-      calculateFinance();
-    }
-    
-    const handleLocal = (e: any) => {
-      if (e.detail && [
-        SYNC_KEYS.FINANCES_INCOME, 
-        SYNC_KEYS.FINANCES_EXPENSES, 
-        SYNC_KEYS.FINANCES_ASSETS, 
-        SYNC_KEYS.FINANCES_LIABILITIES, 
-        SYNC_KEYS.FINANCES_EMERGENCY_FUND,
-      ].includes(e.detail.key)) {
-        calculateFinance();
+    if (!isLoaded) return;
+
+    const calculateFinance = () => {
+      // 1. Calculate Income
+      const totalIncomeCount = (incomes || [])
+        .filter((r: any) => {
+          const d = new Date(r.date);
+          return selectedMonths.includes(d.getMonth()) && selectedYears.includes(d.getFullYear());
+        })
+        .reduce((sum: number, r: any) => sum + (r.amount || 0), 0);
+      setIncome(totalIncomeCount);
+
+      // 2. Calculate Expenses
+      const totalExpensesCount = (expensesList || [])
+        .filter((r: any) => {
+          const d = new Date(r.date);
+          return selectedMonths.includes(d.getMonth()) && selectedYears.includes(d.getFullYear());
+        })
+        .reduce((sum: number, r: any) => sum + (r.amount || 0), 0);
+      setExpenses(totalExpensesCount);
+
+      // 3. Calculate Net Worth
+      const totalAssets = (assets || []).reduce((sum, a) => sum + calculateAssetBalance(a), 0);
+      const totalLiabilities = (liabilities || []).reduce((sum, l) => sum + calculateLiabilityBalance(l), 0);
+      setNetWorth(totalAssets - totalLiabilities);
+
+      // 4. Calculate Emergency Fund
+      let monthsCovered = 0;
+      if (efData) {
+        const totalSaved = (efData.contributions || []).reduce((sum, c) => sum + (c.amount || 0), 0);
+        monthsCovered = efData.monthlyExpenses > 0 ? totalSaved / efData.monthlyExpenses : 0;
       }
+      setEmergencyFundMonths(monthsCovered);
     };
 
-    window.addEventListener('local-storage-change', handleLocal);
-    return () => window.removeEventListener('local-storage-change', handleLocal);
-  }, [selectedMonths, selectedYears, isLoaded]);
+    calculateFinance();
+  }, [selectedMonths, selectedYears, isLoaded, incomes, expensesList, assets, liabilities, efData]);
 
-  if (!isLoaded) return null;
 
   const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0;
 

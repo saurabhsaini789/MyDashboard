@@ -10,7 +10,8 @@ import {
   TrendingUp, Target, Package, Calendar, Clock, AlertCircle, 
   ChevronRight, ArrowRight, Zap, ListTodo, BarChart2 
 } from 'lucide-react';
-import { getPrefixedKey } from '@/lib/keys';
+import { useStorageSubscription } from '@/hooks/useStorageSubscription';
+import { SYNC_KEYS } from '@/lib/sync-keys';
 import { Project, Task, getProjectPriorityInfo } from './ProjectModal';
 import { SectionTitle, Text, Description } from '../ui/Text';
 import { TimeFilter } from './GoalsSummary';
@@ -30,29 +31,8 @@ interface GoalsInsightsProps {
 type VelocityView = 'daily' | 'weekly' | 'monthly';
 
 export function GoalsInsights({ filter, selectedMonth, selectedYear }: GoalsInsightsProps) {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const projects = useStorageSubscription<Project[]>(SYNC_KEYS.GOALS_PROJECTS, []);
   const [velocityView, setVelocityView] = useState<VelocityView>('weekly');
-
-  useEffect(() => {
-    const loadData = () => {
-      const stored = localStorage.getItem(getPrefixedKey('goals_projects'));
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          setProjects(Array.isArray(parsed) ? parsed : []);
-        } catch (e) {}
-      }
-      setIsLoaded(true);
-    };
-
-    loadData();
-    const handleLocal = (e: any) => {
-      if (e.detail && e.detail.key === 'goals_projects') loadData();
-    };
-    window.addEventListener('local-storage-change', handleLocal);
-    return () => window.removeEventListener('local-storage-change', handleLocal);
-  }, []);
 
   // --- Data Processing ---
 
@@ -223,7 +203,6 @@ export function GoalsInsights({ filter, selectedMonth, selectedYear }: GoalsInsi
     return { avgDays, healthRatio, activeCount: activeProjects.length };
   }, [projects]);
 
-  if (!isLoaded) return null;
 
   return (
     <div className="space-y-6 pt-2 pb-10">

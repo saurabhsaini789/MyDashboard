@@ -5,7 +5,7 @@ import { MsalProvider } from "@azure/msal-react";
 import { getMsalInstance, loginRequest } from "@/lib/msalConfig";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { SyncProvider } from "@/context/SyncContext";
-import { EventType } from "@azure/msal-browser";
+import { EventType, EventMessage, AuthenticationResult } from "@azure/msal-browser";
 
 export function Providers({ children }: { children: React.ReactNode }) {
  const [initialized, setInitialized] = useState(false);
@@ -35,9 +35,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
  }
 
  // Add event callback for future login/logout events
- msalInstance.addEventCallback((event) => {
+ msalInstance.addEventCallback((event: EventMessage) => {
  if ((event.eventType === EventType.LOGIN_SUCCESS || event.eventType === EventType.ACQUIRE_TOKEN_SUCCESS) && event.payload) {
- const payload = event.payload as any;
+ const payload = event.payload as AuthenticationResult;
  const account = payload.account;
  if (account) {
  msalInstance.setActiveAccount(account);

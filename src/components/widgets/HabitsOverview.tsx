@@ -5,6 +5,8 @@ import Link from "next/link";
 import { getPrefixedKey } from "@/lib/keys";
 import { Text, SectionTitle } from "@/components/ui/Text";
 import { Flame, Trophy, AlertTriangle, TrendingUp, TrendingDown, Star, Activity, Users } from 'lucide-react';
+import { useStorageSubscription } from "@/hooks/useStorageSubscription";
+import { SYNC_KEYS } from "@/lib/sync-keys";
 
 export type TimeFilter = '1 Day' | '7 Days' | '1 Month' | '6 Months' | '1 Year' | 'Custom Month';
 
@@ -21,6 +23,8 @@ interface HabitInsight {
 }
 
 export function HabitsOverview({ filter, selectedMonth, selectedYear }: HabitsOverviewProps) {
+  const habits = useStorageSubscription<any[]>(SYNC_KEYS.HABITS, []);
+  
   const [completed, setCompleted] = useState(0);
   const [missed, setMissed] = useState(0);
   const [pendingHabitsCount, setPendingHabitsCount] = useState(0);
@@ -39,9 +43,7 @@ export function HabitsOverview({ filter, selectedMonth, selectedYear }: HabitsOv
   const [worstDayOfWeek, setWorstDayOfWeek] = useState<{ day: string; missRate: number } | null>(null);
 
   useEffect(() => {
-    const loadData = () => {
-      const saved = localStorage.getItem(getPrefixedKey('os_habits'));
-      
+    const calculateStats = () => {
       let cCount = 0;
       let mCount = 0;
       let pCount = 0;
@@ -49,306 +51,181 @@ export function HabitsOverview({ filter, selectedMonth, selectedYear }: HabitsOv
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const habitStats: { name: string; done: number; total: number; streak: number; recentMisses: number }[] = [];
 
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
+      if (Array.isArray(habits)) {
+        habits.forEach((h: any) => {
+          let hDone = 0;
+          let hMissed = 0;
+          let hPending = 0;
+          let hRecentMisses = 0;
+          
+          const isHabitActive = (mKey: string) => {
+            if (!h.monthScope || !Array.isArray(h.monthScope) || h.monthScope.length === 0) return true;
+            return h.monthScope.includes(mKey);
+          };
 
-          if (Array.isArray(parsed)) {
-            parsed.forEach((h: any) => {
-              let hDone = 0;
-              let hMissed = 0;
-              let hPending = 0;
-              let hRecentMisses = 0;
-              
-              // Helper to check if habit is active for a given 'YYYY-M' month key
-              const isHabitActive = (mKey: string) => {
-                if (!h.monthScope || !Array.isArray(h.monthScope) || h.monthScope.length === 0) return true;
-                return h.monthScope.includes(mKey);
-              };
-
-              // Logic for counting statuses based on the selected filter
-              if (filter === 'Custom Month') {
-                const mKey = `${selectedYear}-${selectedMonth}`;
-                const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-                
-                if (isHabitActive(mKey)) {
-                  for (let d = 1; d <= daysInMonth; d++) {
-                    const dateOfRecord = new Date(selectedYear, selectedMonth, d);
-                    // Do not count future days as pending
-                    if (dateOfRecord > today) continue;
-
-                    const status = h.records?.[mKey]?.[d - 1];
-                    if (status === 'done') {
-                      cCount++;
-                      hDone++;
-                    } else if (status === 'missed') {
-                      mCount++;
-                      hMissed++;
-                    } else {
-                      // Note: 'none', undefined, or null are all considered 'pending' if the date is past/present
-                      pCount++;
-                      hPending++;
-                    }
-                  }
-                }
-              } else {
-                let daysToLookBack = 30;
-                if (filter === '1 Day') daysToLookBack = 1;
-                else if (filter === '7 Days') daysToLookBack = 7;
-                else if (filter === '1 Month') daysToLookBack = 30;
-                else if (filter === '6 Months') daysToLookBack = 180;
-                else if (filter === '1 Year') daysToLookBack = 365;
-
-                for (let i = 0; i < daysToLookBack; i++) {
-                  const checkDate = new Date(today);
-                  checkDate.setDate(today.getDate() - i);
-                  const mKey = `${checkDate.getFullYear()}-${checkDate.getMonth()}`;
-                  const dIdx = checkDate.getDate() - 1;
-
-                  if (isHabitActive(mKey)) {
-                    const status = h.records?.[mKey]?.[dIdx];
-                    if (status === 'done') {
-                      cCount++;
-                      hDone++;
-                    } else if (status === 'missed') {
-                      mCount++;
-                      hMissed++;
-                    } else {
-                      pCount++;
-                      hPending++;
-                    }
-
-                    // Track recent misses regardless of filter for insights
-                    if (i < 7 && status === 'missed') {
-                      hRecentMisses++;
-                    }
-                  }
-                }
+          if (filter === 'Custom Month') {
+            const mKey = `${selectedYear}-${selectedMonth}`;
+            const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+            
+            if (isHabitActive(mKey)) {
+              for (let d = 1; d <= daysInMonth; d++) {
+                const dateOfRecord = new Date(selectedYear, selectedMonth, d);
+                if (dateOfRecord > today) continue;
+                const status = h.records?.[mKey]?.[d - 1];
+                if (status === 'done') { cCount++; hDone++; } 
+                else if (status === 'missed') { mCount++; hMissed++; } 
+                else { pCount++; hPending++; }
               }
+            }
+          } else {
+            let daysToLookBack = 30;
+            if (filter === '1 Day') daysToLookBack = 1;
+            else if (filter === '7 Days') daysToLookBack = 7;
+            else if (filter === '1 Month') daysToLookBack = 30;
+            else if (filter === '6 Months') daysToLookBack = 180;
+            else if (filter === '1 Year') daysToLookBack = 365;
 
-              // Update stats for insight cards
-              if (hDone > 0 || hMissed > 0 || hPending > 0 || hRecentMisses > 0 || (filter === 'Custom Month' && isHabitActive(`${selectedYear}-${selectedMonth}`))) {
-                habitStats.push({
-                  name: h.name,
-                  done: hDone,
-                  total: hDone + hMissed, // Rate is calculated on logged vs missed
-                  streak: 0,
-                  recentMisses: hRecentMisses
-                });
+            for (let i = 0; i < daysToLookBack; i++) {
+              const checkDate = new Date(today);
+              checkDate.setDate(today.getDate() - i);
+              const mKey = `${checkDate.getFullYear()}-${checkDate.getMonth()}`;
+              const dIdx = checkDate.getDate() - 1;
+
+              if (isHabitActive(mKey)) {
+                const status = h.records?.[mKey]?.[dIdx];
+                if (status === 'done') { cCount++; hDone++; } 
+                else if (status === 'missed') { mCount++; hMissed++; } 
+                else { pCount++; hPending++; }
+                if (i < 7 && status === 'missed') hRecentMisses++;
               }
-            });
-
-            // Calculate Current Streaks for active habits
-            habitStats.forEach(stat => {
-              const h = parsed.find((p: any) => p.name === stat.name);
-              if (!h) return;
-
-              let currentStreak = 0;
-              let streakBroken = false;
-              let streakDate = new Date(today);
-              
-              const todayKey = `${today.getFullYear()}-${today.getMonth()}`;
-              const todayIdx = today.getDate() - 1;
-              const todayStatus = h.records?.[todayKey]?.[todayIdx];
-              
-              // If today is not marked yet, look starting from yesterday
-              if (!todayStatus || todayStatus === 'none') {
-                streakDate.setDate(streakDate.getDate() - 1);
-              }
-
-              while (!streakBroken) {
-                const sKey = `${streakDate.getFullYear()}-${streakDate.getMonth()}`;
-                const sIdx = streakDate.getDate() - 1;
-                const wasActive = !h.monthScope || !Array.isArray(h.monthScope) || h.monthScope.length === 0 || h.monthScope.includes(sKey);
-                
-                if (!wasActive) {
-                  streakBroken = true;
-                  break;
-                }
-
-                const sStatus = h.records?.[sKey]?.[sIdx];
-                if (sStatus === 'done') {
-                  currentStreak++;
-                  streakDate.setDate(streakDate.getDate() - 1);
-                } else {
-                  streakBroken = true;
-                }
-                if (currentStreak > 1000) break;
-              }
-              stat.streak = currentStreak;
-            });
+            }
           }
-        } catch (e) {
-          console.error("Habit Stats Parse Error:", e);
-        }
-      }
 
-      // Update State
-      setCompleted(cCount);
-      setMissed(mCount);
-      setPendingHabitsCount(pCount);
+          if (hDone > 0 || hMissed > 0 || hPending > 0 || hRecentMisses > 0 || (filter === 'Custom Month' && isHabitActive(`${selectedYear}-${selectedMonth}`))) {
+            habitStats.push({ name: h.name, done: hDone, total: hDone + hMissed, streak: 0, recentMisses: hRecentMisses });
+          }
+        });
 
-      // Insights: Top consistent
-      const sortedByRate = [...habitStats]
-        .filter(s => s.total > 0)
-        .sort((a, b) => (b.done / b.total) - (a.done / a.total));
+        // Calculate Streaks
+        habitStats.forEach(stat => {
+          const h = habits.find((p: any) => p.name === stat.name);
+          if (!h) return;
+          let currentStreak = 0;
+          let streakBroken = false;
+          const streakDate = new Date(today);
+          const todayKey = `${today.getFullYear()}-${today.getMonth()}`;
+          const todayIdx = today.getDate() - 1;
+          const todayStatus = h.records?.[todayKey]?.[todayIdx];
+          if (!todayStatus || todayStatus === 'none') streakDate.setDate(streakDate.getDate() - 1);
 
-      setTopHabits(sortedByRate.slice(0, 3).map(s => ({
-        name: s.name,
-        value: `${Math.round((s.done / s.total) * 100)}%`,
-        percentage: (s.done / s.total) * 100
-      })));
+          while (!streakBroken) {
+            const sKey = `${streakDate.getFullYear()}-${streakDate.getMonth()}`;
+            const sIdx = streakDate.getDate() - 1;
+            const wasActive = !h.monthScope || !Array.isArray(h.monthScope) || h.monthScope.length === 0 || h.monthScope.includes(sKey);
+            if (!wasActive) { streakBroken = true; break; }
+            const sStatus = h.records?.[sKey]?.[sIdx];
+            if (sStatus === 'done') { currentStreak++; streakDate.setDate(streakDate.getDate() - 1); } 
+            else streakBroken = true;
+            if (currentStreak > 1000) break;
+          }
+          stat.streak = currentStreak;
+        });
 
-      // Insights: Needs attention
-      const sortedByNeedsAttention = [...habitStats]
-        .filter(s => s.total > 0 || s.recentMisses > 0)
-        .sort((a, b) => {
+        setCompleted(cCount);
+        setMissed(mCount);
+        setPendingHabitsCount(pCount);
+
+        const sortedByRate = [...habitStats].filter(s => s.total > 0).sort((a, b) => (b.done / b.total) - (a.done / a.total));
+        setTopHabits(sortedByRate.slice(0, 3).map(s => ({ name: s.name, value: `${Math.round((s.done / s.total) * 100)}%`, percentage: (s.done / s.total) * 100 })));
+
+        const sortedByAttention = [...habitStats].filter(s => s.total > 0 || s.recentMisses > 0).sort((a,b) => {
           const rateA = a.total > 0 ? a.done / a.total : 0;
           const rateB = b.total > 0 ? b.done / b.total : 0;
           if (rateA !== rateB) return rateA - rateB;
           return b.recentMisses - a.recentMisses;
         });
+        setBottomHabits(sortedByAttention.slice(0, 3).map(s => ({ name: s.name, value: s.total > 0 ? `${Math.round((s.done / s.total) * 100)}%` : 'Pending', percentage: s.total > 0 ? (s.done / s.total) * 100 : 0 })));
 
-      setBottomHabits(sortedByNeedsAttention.slice(0, 3).map(s => ({
-        name: s.name,
-        value: s.total > 0 ? `${Math.round((s.done / s.total) * 100)}%` : 'Pending',
-        percentage: s.total > 0 ? (s.done / s.total) * 100 : 0
-      })));
+        const streakWinner = [...habitStats].sort((a, b) => b.streak - a.streak)[0];
+        setBestStreak(streakWinner && streakWinner.streak > 0 ? { name: streakWinner.name, value: streakWinner.streak } : null);
 
-      const streakWinner = [...habitStats].sort((a, b) => b.streak - a.streak)[0];
-      if (streakWinner && streakWinner.streak > 0) {
-        setBestStreak({
-          name: streakWinner.name,
-          value: streakWinner.streak
-        });
-      } else {
-        setBestStreak(null);
-      }
+        // NEW INSIGHTS
+        const mKey = `${selectedYear}-${selectedMonth}`;
+        const active = habits.filter((h: any) => !h.monthScope || h.monthScope.length === 0 || h.monthScope.includes(mKey));
+        setActiveHabitsCount(active.length);
 
-      // ── NEW INSIGHTS ────────────────────────────────────────
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            // Active habits count
-            const mKey = `${selectedYear}-${selectedMonth}`;
-            const active = parsed.filter((h: any) => {
-              if (!h.monthScope || h.monthScope.length === 0) return true;
-              return h.monthScope.includes(mKey);
-            });
-            setActiveHabitsCount(active.length);
-
-            // Perfect Days (all active habits done that day)
-            if (filter === 'Custom Month') {
-              const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-              let perfectCount = 0;
-              for (let d = 1; d <= daysInMonth; d++) {
-                const dateOfRecord = new Date(selectedYear, selectedMonth, d);
-                if (dateOfRecord > today) continue;
-                const allDone = active.length > 0 && active.every((h: any) => {
-                  const s = h.records?.[mKey]?.[d - 1];
-                  return s === 'done';
-                });
-                if (allDone) perfectCount++;
-              }
-              setPerfectDays(perfectCount);
-
-              // Month trend: this month vs last month (only for Custom Month mode)
-              const lastMonthDate = new Date(selectedYear, selectedMonth - 1, 1);
-              const lastMKey = `${lastMonthDate.getFullYear()}-${lastMonthDate.getMonth()}`;
-              const lastDaysInMonth = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth() + 1, 0).getDate();
-              let lDone = 0, lMissed = 0;
-              parsed.forEach((h: any) => {
-                const isActiveInLast = !h.monthScope || h.monthScope.length === 0 || h.monthScope.includes(lastMKey);
-                if (!isActiveInLast) return;
-                for (let d = 0; d < lastDaysInMonth; d++) {
-                  const s = h.records?.[lastMKey]?.[d];
-                  if (s === 'done') lDone++;
-                  else if (s === 'missed') lMissed++;
-                }
-              });
-              const lTotal = lDone + lMissed;
-              setLastMonthRate(lTotal > 0 ? Math.round((lDone / lTotal) * 100) : null);
-              const curTotal = cCount + mCount;
-              setThisMonthRate(curTotal > 0 ? Math.round((cCount / curTotal) * 100) : null);
-            } else {
-              setPerfectDays(0);
-              setLastMonthRate(null);
-              setThisMonthRate(null);
-            }
-
-            // All-time best streak (across all habits, ever)
-            let globalBestStreak = 0;
-            let globalBestHabit = '';
-            parsed.forEach((h: any) => {
-              let tempS = 0;
-              let best = 0;
-              const allKeys = Object.keys(h.records || {}).sort();
-              for (const k of allKeys) {
-                const days: string[] = h.records[k] || [];
-                for (const s of days) {
-                  if (s === 'done') { tempS++; best = Math.max(best, tempS); }
-                  else tempS = 0;
-                }
-              }
-              if (best > globalBestStreak) {
-                globalBestStreak = best;
-                globalBestHabit = h.name;
-              }
-            });
-            if (globalBestStreak > 0) {
-              setAllTimeBestStreak({ name: globalBestHabit, value: globalBestStreak });
-            } else {
-              setAllTimeBestStreak(null);
-            }
-
-            // Worst day of week (most misses by weekday, across all habits all time)
-            const dowMiss: number[] = Array(7).fill(0);
-            const dowTotal: number[] = Array(7).fill(0);
-            const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-            parsed.forEach((h: any) => {
-              Object.entries(h.records || {}).forEach(([k, days]: [string, any]) => {
-                const [yr, mo] = k.split('-').map(Number);
-                (days as string[]).forEach((s, dIdx) => {
-                  if (s !== 'done' && s !== 'missed') return;
-                  const dow = new Date(yr, mo, dIdx + 1).getDay();
-                  dowTotal[dow]++;
-                  if (s === 'missed') dowMiss[dow]++;
-                });
-              });
-            });
-            let worstIdx = -1;
-            let worstRate = -1;
-            dowTotal.forEach((total, i) => {
-              if (total < 3) return;
-              const rate = dowMiss[i] / total;
-              if (rate > worstRate) { worstRate = rate; worstIdx = i; }
-            });
-            setWorstDayOfWeek(worstIdx >= 0 ? { day: DAY_NAMES[worstIdx], missRate: Math.round(worstRate * 100) } : null);
+        if (filter === 'Custom Month') {
+          const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+          let perfectCount = 0;
+          for (let d = 1; d <= daysInMonth; d++) {
+            const dateOfRecord = new Date(selectedYear, selectedMonth, d);
+            if (dateOfRecord > today) continue;
+            const allDone = active.length > 0 && active.every((h: any) => h.records?.[mKey]?.[d - 1] === 'done');
+            if (allDone) perfectCount++;
           }
-        } catch (e) {}
+          setPerfectDays(perfectCount);
+
+          const lastMonthDate = new Date(selectedYear, selectedMonth - 1, 1);
+          const lastMKey = `${lastMonthDate.getFullYear()}-${lastMonthDate.getMonth()}`;
+          const lastDaysInMonth = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth() + 1, 0).getDate();
+          let lDone = 0, lMissed = 0;
+          habits.forEach((h: any) => {
+            const isActiveInLast = !h.monthScope || h.monthScope.length === 0 || h.monthScope.includes(lastMKey);
+            if (!isActiveInLast) return;
+            for (let d = 0; d < lastDaysInMonth; d++) {
+              const s = h.records?.[lastMKey]?.[d];
+              if (s === 'done') lDone++; else if (s === 'missed') lMissed++;
+            }
+          });
+          const lTotal = lDone + lMissed;
+          setLastMonthRate(lTotal > 0 ? Math.round((lDone / lTotal) * 100) : null);
+          const curTotal = cCount + mCount;
+          setThisMonthRate(curTotal > 0 ? Math.round((cCount / curTotal) * 100) : null);
+        } else {
+          setPerfectDays(0); setLastMonthRate(null); setThisMonthRate(null);
+        }
+
+        let globalBestStreak = 0;
+        let globalBestHabit = '';
+        habits.forEach((h: any) => {
+          let tempS = 0; let best = 0;
+          const allKeys = Object.keys(h.records || {}).sort();
+          for (const k of allKeys) {
+            const days: string[] = h.records[k] || [];
+            for (const s of days) {
+              if (s === 'done') { tempS++; best = Math.max(best, tempS); } else tempS = 0;
+            }
+          }
+          if (best > globalBestStreak) { globalBestStreak = best; globalBestHabit = h.name; }
+        });
+        setAllTimeBestStreak(globalBestStreak > 0 ? { name: globalBestHabit, value: globalBestStreak } : null);
+
+        const dowMiss: number[] = Array(7).fill(0);
+        const dowTotal: number[] = Array(7).fill(0);
+        const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        habits.forEach((h: any) => {
+          Object.entries(h.records || {}).forEach(([k, days]: [string, any]) => {
+            const [yr, mo] = k.split('-').map(Number);
+            (days as string[]).forEach((s, dIdx) => {
+              if (s !== 'done' && s !== 'missed') return;
+              const dow = new Date(yr, mo, dIdx + 1).getDay();
+              dowTotal[dow]++; if (s === 'missed') dowMiss[dow]++;
+            });
+          });
+        });
+        let worstIdx = -1; let worstRate = -1;
+        dowTotal.forEach((total, i) => {
+          if (total < 3) return;
+          const rate = dowMiss[i] / total;
+          if (rate > worstRate) { worstRate = rate; worstIdx = i; }
+        });
+        setWorstDayOfWeek(worstIdx >= 0 ? { day: DAY_NAMES[worstIdx], missRate: Math.round(worstRate * 100) } : null);
       }
     };
 
-    loadData();
+    calculateStats();
     setIsLoaded(true);
-
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === getPrefixedKey('os_habits')) loadData();
-    };
-    
-    const handleLocal = (e: any) => {
-      if (e.detail && e.detail.key === 'os_habits') loadData();
-    };
-
-    window.addEventListener('storage', handleStorage);
-    window.addEventListener('local-storage-change', handleLocal);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('local-storage-change', handleLocal);
-    };
-  }, [filter, selectedMonth, selectedYear]);
+  }, [filter, selectedMonth, selectedYear, habits]);
 
   if (!isLoaded) return <div className="animate-pulse h-40 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800/50"></div>;
 

@@ -12,13 +12,6 @@ import { PageTitle, Text, Description } from '@/components/ui/Text';
 
 
 export default function FinancesPage() {
- const [mounted, setMounted] = useState(false);
-
- useEffect(() => {
- setMounted(true);
- }, []);
-
- if (!mounted) return null;
 
  return (
  <main className="min-h-screen bg-[#fcfcfc] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 selection:bg-teal-500/10 p-4 md:p-8 xl:p-12 relative overflow-hidden">

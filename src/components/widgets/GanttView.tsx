@@ -36,7 +36,7 @@ export function GanttView({ projects, buckets, onSelectProject }: GanttViewProps
  end.setDate(0); // Last day of the current month
 
  const days: Date[] = [];
- let current = new Date(start);
+ const current = new Date(start);
  while (current <= end) {
  days.push(new Date(current));
  current.setDate(current.getDate() + 1);

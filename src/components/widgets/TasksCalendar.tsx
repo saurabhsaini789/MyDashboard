@@ -5,11 +5,12 @@ import { setSyncedItem } from "@/lib/storage";
 import { getPrefixedKey } from "@/lib/keys";
 import { Text, SectionTitle } from "@/components/ui/Text";
 import { ProjectModal, type Project, getProjectPriorityInfo } from "./ProjectModal";
+import { useStorageSubscription } from "@/hooks/useStorageSubscription";
+import { SYNC_KEYS } from "@/lib/sync-keys";
 
 export function TasksCalendar() {
  const [currentDate, setCurrentDate] = useState(new Date());
- const [projects, setProjects] = useState<Project[]>([]);
- const [isLoaded, setIsLoaded] = useState(false);
+ const projects = useStorageSubscription<Project[]>(SYNC_KEYS.GOALS_PROJECTS, []);
  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
  
  const todayDate = new Date();
@@ -18,46 +19,9 @@ export function TasksCalendar() {
  const currentYear = currentDate.getFullYear();
  const currentMonth = currentDate.getMonth();
 
- useEffect(() => {
- const loadProjects = () => {
- const saved = localStorage.getItem(getPrefixedKey('goals_projects'));
- if (saved) {
- try {
- const parsed = JSON.parse(saved);
- setProjects(parsed || []);
- } catch (e) { }
- }
- };
- 
- loadProjects();
- setIsLoaded(true);
-
- // Sync with other widgets
- const handleStorageChange = (e: StorageEvent) => {
- if (e.key === getPrefixedKey('goals_projects')) {
- loadProjects();
- }
- };
-
- const handleLocalUpdate = (e: any) => {
- if (e.detail && e.detail.key === 'goals_projects') {
- loadProjects();
- }
- };
-
- window.addEventListener('storage', handleStorageChange);
- window.addEventListener('local-storage-change', handleLocalUpdate);
- 
- return () => {
- window.removeEventListener('storage', handleStorageChange);
- window.removeEventListener('local-storage-change', handleLocalUpdate);
- };
- }, []);
-
  const handleUpdateProject = (updatedProject: Project) => {
  const newProjects = projects.map(p => p.id === updatedProject.id ? updatedProject : p);
- setProjects(newProjects);
- setSyncedItem('goals_projects', JSON.stringify(newProjects));
+ setSyncedItem(SYNC_KEYS.GOALS_PROJECTS, JSON.stringify(newProjects));
  };
 
  const handleDeleteProject = (projectId: string) => {
@@ -66,12 +30,11 @@ export function TasksCalendar() {
  // safety check for accidental non-string IDs
  return (p as any).id !== projectId;
  });
- setProjects(newProjects);
- setSyncedItem('goals_projects', JSON.stringify(newProjects));
+ setSyncedItem(SYNC_KEYS.GOALS_PROJECTS, JSON.stringify(newProjects));
  setSelectedProject(null);
  };
 
- if (!isLoaded) return <div className="animate-pulse h-40 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800/50"></div>;
+ // if (!isLoaded) return <div className="animate-pulse h-40 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800/50"></div>;
 
  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
  const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();

@@ -1,44 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import { AlertCircle, Clock, CheckCircle2, TrendingUp, Sparkles } from 'lucide-react';
-import { getPrefixedKey } from '@/lib/keys';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 import { type BusinessChannel } from '@/types/business';
 import { Text, SectionTitle } from '../ui/Text';
+import { useStorageSubscription } from '@/hooks/useStorageSubscription';
 
 export function Insights() {
-  const [channels, setChannels] = useState<BusinessChannel[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  const channelsRef = useRef(channels);
-  useEffect(() => {
-    channelsRef.current = channels;
-  }, [channels]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_BUSINESS));
-    if (saved) {
-      try {
-        setChannels(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse business data", e);
-      }
-    }
-    setIsLoaded(true);
-
-    const handleLocal = (e: any) => {
-      if (e.detail && e.detail.key === SYNC_KEYS.FINANCES_BUSINESS) {
-        const val = localStorage.getItem(getPrefixedKey(SYNC_KEYS.FINANCES_BUSINESS));
-        if (val && val !== JSON.stringify(channelsRef.current)) {
-          try { setChannels(JSON.parse(val)); } catch (e) {}
-        }
-      }
-    };
-
-    window.addEventListener('local-storage-change', handleLocal);
-    return () => window.removeEventListener('local-storage-change', handleLocal);
-  }, []);
+  const channels = useStorageSubscription<BusinessChannel[]>(SYNC_KEYS.FINANCES_BUSINESS, []);
 
   const generateInsights = () => {
     const insights: { type: 'urgent' | 'warning' | 'positive', icon: React.ReactNode, message: string }[] = [];
@@ -48,27 +18,11 @@ export function Insights() {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
     const sevenDaysAgo = new Date(today);
     sevenDaysAgo.setDate(today.getDate() - 7);
 
-    // 1. Post Ratio - "You posted X out of Y expected this week"
-    let totalExpectedWeekly = 0;
-    let actualOnTrack = 0;
-    
-    activeChannels.forEach(c => {
-      const weeklyFrequency = Math.max(1, Math.floor(7 / c.postingFrequency));
-      totalExpectedWeekly += weeklyFrequency;
-      
-      const lastPosted = new Date(c.lastPostedDate);
-      if (lastPosted >= sevenDaysAgo) {
-        // Simple heuristic: if they posted in the last 7 days, they are "active" for this week
-        actualOnTrack++;
-      }
-    });
-
     const onTrackChannels = activeChannels.filter(c => {
-      const due = new Date(c.nextPostDueDate);
+      const due = new Date(c.nextPostDueDate || '');
       due.setHours(0, 0, 0, 0);
       return due >= today;
     }).length;
@@ -79,9 +33,8 @@ export function Insights() {
       message: `You are on track for ${onTrackChannels} out of ${activeChannels.length} active channels this week.`
     });
 
-    // Attention Required
     const overdue = activeChannels.filter(c => {
-      const due = new Date(c.nextPostDueDate);
+      const due = new Date(c.nextPostDueDate || '');
       due.setHours(0, 0, 0, 0);
       return due < today;
     });
@@ -96,14 +49,13 @@ export function Insights() {
       });
     }
 
-    // Smart Tips & Moderate Signals
     const mostConsistent = activeChannels.reduce((prev, curr) => {
-      const prevDate = new Date(prev.lastPostedDate);
-      const currDate = new Date(curr.lastPostedDate);
+      const prevDate = new Date(prev.lastPostedDate || 0);
+      const currDate = new Date(curr.lastPostedDate || 0);
       return currDate > prevDate ? curr : prev;
     }, activeChannels[0]);
 
-    if (mostConsistent && new Date(mostConsistent.lastPostedDate) >= sevenDaysAgo) {
+    if (mostConsistent && new Date(mostConsistent.lastPostedDate || 0) >= sevenDaysAgo) {
       insights.push({
         type: 'positive',
         icon: <Sparkles size={16} />,
@@ -114,7 +66,7 @@ export function Insights() {
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
     const dueTomorrow = activeChannels.filter(c => {
-      const due = new Date(c.nextPostDueDate);
+      const due = new Date(c.nextPostDueDate || '');
       due.setHours(0, 0, 0, 0);
       return due.getTime() === tomorrow.getTime();
     });
@@ -127,7 +79,6 @@ export function Insights() {
       });
     }
 
-    // Positive Signals
     if (overdue.length === 0 && onTrackChannels === activeChannels.length) {
       insights.push({
         type: 'positive',
@@ -136,57 +87,32 @@ export function Insights() {
       });
     }
 
-    // Limit to 3-6 insights
     return insights.slice(0, 6);
   };
 
-  if (!isLoaded) return null;
-
   const insightsList = generateInsights();
-
   if (insightsList.length === 0) return null;
 
   return (
     <section className="w-full">
       <div className="flex flex-col mb-6 px-2">
-        <SectionTitle className="flex items-center gap-2">
-          Insights
-        </SectionTitle>
-        <Text variant="label" as="p" className="mt-1">
-          Quick, actionable guidance for your content activity
-        </Text>
+        <SectionTitle>Insights</SectionTitle>
+        <Text variant="label" className="mt-1">Quick, actionable guidance for your content activity</Text>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {insightsList.map((insight, idx) => (
-          <div 
-            key={idx}
-            className={`flex items-start gap-4 p-5 rounded-xl border border-l-4 transition-all shadow-sm hover:shadow-md sm:hover:-translate-y-0.5 bg-white dark:bg-zinc-900/60 ${
-              insight.type === 'urgent' 
-                ? 'border-rose-100 dark:border-rose-900/50' 
-                : insight.type === 'warning' 
-                  ? 'border-amber-100 dark:border-amber-900/50' 
-                  : 'border-emerald-100 dark:border-emerald-900/50'
-            }`}
-          >
+          <div key={idx} className={`flex items-start gap-4 p-5 rounded-2xl border transition-all shadow-sm bg-white dark:bg-zinc-900 ${
+            insight.type === 'urgent' ? 'border-rose-100' : insight.type === 'warning' ? 'border-amber-100' : 'border-emerald-100'
+          }`}>
             <div className={`mt-1 p-2 rounded-xl ${
-              insight.type === 'urgent' 
-                ? 'text-rose-500 bg-rose-100/50 dark:bg-rose-500/20' 
-                : insight.type === 'warning' 
-                  ? 'text-amber-500 bg-amber-100/50 dark:bg-amber-500/20' 
-                  : 'text-emerald-500 bg-emerald-100/50 dark:bg-emerald-500/20'
-            }`}>
-              {insight.icon}
-            </div>
+              insight.type === 'urgent' ? 'text-rose-500 bg-rose-50' : insight.type === 'warning' ? 'text-amber-500 bg-amber-50' : 'text-emerald-500 bg-emerald-50'
+            }`}>{insight.icon}</div>
             <div className="flex flex-col gap-0.5 mt-1">
-              <Text variant="label" as="span" className={`${
+              <span className={`text-[10px] font-bold uppercase ${
                 insight.type === 'urgent' ? 'text-rose-500' : insight.type === 'warning' ? 'text-amber-500' : 'text-emerald-500'
-              }`}>
-                {insight.type === 'urgent' ? 'Attention Required' : insight.type === 'warning' ? 'Moderate Signal' : 'Positive Signal'}
-              </Text>
-              <Text variant="body" as="p" className="font-bold leading-snug">
-                {insight.message}
-              </Text>
+              }`}>{insight.type}</span>
+              <Text variant="body" className="font-bold leading-tight">{insight.message}</Text>
             </div>
           </div>
         ))}

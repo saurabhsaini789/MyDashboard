@@ -4,288 +4,246 @@ import { useEffect, useCallback, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getPrefixedKey } from '@/lib/keys';
 import { ALL_SYNC_KEYS, LEGACY_KEY_MIGRATION } from '@/lib/sync-keys';
+import { Session } from '@supabase/supabase-js';
+import { shouldPushData, validateLocalData } from '@/lib/security';
+import { setSyncedItem } from '@/lib/storage';
 
 export function useSync() {
- const [isReady, setIsReady] = useState(false);
- const [session, setSession] = useState<any>(null);
- const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error' | 'unauthenticated' | 'connected' | 'initializing' | 'local'>('initializing');
- const isSyncingFromRemote = useRef(false);
- const isDevelopment = process.env.NODE_ENV === 'development' || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
+  const [isReady, setIsReady] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error' | 'unauthenticated' | 'connected' | 'initializing' | 'local'>('initializing');
+  
+  const isSyncingFromRemote = useRef(false);
+  const hasSyncedFromServer = useRef(false);
+  
+  // Kill switch for rest sync rollout
+  const IS_PUSH_DISABLED = process.env.NEXT_PUBLIC_DISABLE_REST_SYNC === 'true';
 
- // Diagnostic Log (Runs once)
- useEffect(() => {
- const projectID = process.env.NEXT_PUBLIC_DASHBOARD_ID;
- console.log(`[Sync] Dashboard ID: ${projectID || 'NONE (unprefixed)'}`);
- }, []);
+  // --- 0. Session Management ---
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (!session) {
+        setSyncStatus('unauthenticated');
+      }
+    });
 
- // --- 0. Session Management ---
- useEffect(() => {
- supabase.auth.getSession().then(({ data: { session } }) => {
- setSession(session);
- if (!session) {
- console.warn('[Sync] No session found. Cloud sync will be disabled.');
- setSyncStatus('unauthenticated');
- } else {
- console.log('[Sync] Session established for:', session.user?.email);
- }
- });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) {
+        setSyncStatus('idle');
+      } else {
+        setSyncStatus('unauthenticated');
+        hasSyncedFromServer.current = false;
+        // Optionally clear cache here if needed, but AuthGuard handles cleanup
+      }
+    });
 
- const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
- setSession(session);
- if (session) {
- console.log('[Sync] Auth change: Authenticated');
- setSyncStatus('idle');
- } else {
- console.warn('[Sync] Auth change: Unauthenticated');
- setSyncStatus('unauthenticated');
- }
- });
+    return () => subscription.unsubscribe();
+  }, []);
 
- return () => subscription.unsubscribe();
- }, []);
+  // --- 1. Push Local Changes to Supabase ---
+  const pushToSupabase = useCallback(async (key: string, taggedValue: string | null) => {
+    if (!session || !session.user) return;
+    if (isSyncingFromRemote.current) return;
+    if (!hasSyncedFromServer.current) {
+      console.warn(`[Sync] Push blocked for ${key}: Initial pull not complete.`);
+      return;
+    }
+    if (IS_PUSH_DISABLED) {
+      console.log(`[Sync] Push disabled via global flag.`);
+      return;
+    }
+    if (!taggedValue) return;
 
- // --- 1. Push Local Changes to Supabase ---
- const pushToSupabase = useCallback(async (key: string, value: string | null) => {
- if (isSyncingFromRemote.current) return;
- if (!value) return;
- if (!session) {
- // Don't log error here as it might be normal on localhost
- return;
- }
+    // Validate and extract raw data for cloud storage
+    const rawValue = validateLocalData<any>(taggedValue, session.user.id);
+    if (rawValue === null) {
+      console.warn(`[Sync] Push rejected for ${key}: Data userId mismatch or invalid format.`);
+      return;
+    }
 
- if (isDevelopment) {
- console.log(`[Sync] Development: Skipping push for ${key} to protect cloud data.`);
- setSyncStatus('local');
- setTimeout(() => setSyncStatus('idle'), 2000);
- return;
- }
+    // Prevent pushing empty/default datasets
+    if (!shouldPushData(rawValue)) {
+      console.log(`[Sync] Push skipped for ${key}: Dataset is empty or mock.`);
+      return;
+    }
 
- const prefixedKey = getPrefixedKey(key);
+    const prefixedKey = getPrefixedKey(key);
 
- const performPush = async (attempt = 0): Promise<boolean> => {
- try {
- const parsedValue = JSON.parse(value);
- setSyncStatus('syncing');
- 
- const { error } = await supabase
- .from('dashboard_data')
- .upsert({ 
- key: prefixedKey, 
- value: parsedValue, 
- updated_at: new Date().toISOString() 
- }, { onConflict: 'key' });
+    const performPush = async (attempt = 0): Promise<boolean> => {
+      try {
+        setSyncStatus('syncing');
+        
+          .upsert({ 
+            key: prefixedKey, 
+            value: rawValue, 
+            user_id: session.user.id,
+            updated_at: new Date().toISOString() 
+          }, { onConflict: 'key' });
 
- if (error) {
- // If it's a network/transient error and we have retries left
- if (attempt < 2 && !['401', '403', '409', '42P01'].includes(error.code)) {
- const delay = Math.pow(2, attempt) * 1000;
- console.warn(`[Sync] Push failed for ${prefixedKey}, retrying in ${delay}ms...`, error.message);
- await new Promise(r => setTimeout(r, delay));
- return performPush(attempt + 1);
- }
- 
- // Final failure or non-retryable error
- if (error.code === '401' || error.code === '403') {
- setSyncStatus('unauthenticated');
- } else {
- console.error(`[Sync] Error pushing ${prefixedKey} (Code: ${error.code}):`, error.message || error);
- setSyncStatus('error');
- }
- return false;
- }
+        if (error) {
+          if (attempt < 2 && !['401', '403', '409', '42P01'].includes(error.code)) {
+            const delay = Math.pow(2, attempt) * 1000;
+            await new Promise(r => setTimeout(r, delay));
+            return performPush(attempt + 1);
+          }
+          
+          if (error.code === '401' || error.code === '403') {
+            setSyncStatus('unauthenticated');
+          } else {
+            console.error(`[Sync] Error pushing ${prefixedKey}:`, error.message);
+            setSyncStatus('error');
+          }
+          return false;
+        }
 
- setSyncStatus('connected'); // Show we are talking to the cloud
- setTimeout(() => setSyncStatus('idle'), 2000); // Back to idle after showing success
- console.log(`[Sync] Cloud update: ${prefixedKey} pushed.`);
- return true;
- } catch (e: any) {
- console.error(`[Sync] Failed to parse ${prefixedKey} for push:`, e.message || e);
- setSyncStatus('error');
- return false;
- }
- };
+        setSyncStatus('connected');
+        setTimeout(() => setSyncStatus('idle'), 2000);
+        return true;
+      } catch (e) {
+        setSyncStatus('error');
+        return false;
+      }
+    };
 
- await performPush();
- }, [session]);
+    await performPush();
+  }, [session, IS_PUSH_DISABLED]);
 
- // --- 2. Pull Initial Data from Supabase & Initial Push ---
- useEffect(() => {
- const initSync = async () => {
- console.log('[Sync] Initializing pull from cloud...');
- setSyncStatus('initializing');
+  // --- 2. Pull Initial Data from Supabase ---
+  useEffect(() => {
+    const initSync = async () => {
+      if (!session) return;
+      
+      console.log('[Sync] Initializing authoritative pull from Supabase...');
+      setSyncStatus('initializing');
 
- // 0. Legacy Key Migration (Local)
- for (const [legacyKey, newKey] of Object.entries(LEGACY_KEY_MIGRATION)) {
- const legacyPrefixed = getPrefixedKey(legacyKey);
- const newPrefixed = getPrefixedKey(newKey);
- const legacyVal = localStorage.getItem(legacyPrefixed);
- 
- if (legacyVal && !localStorage.getItem(newPrefixed)) {
- console.log(`[Sync] Migrating legacy local data: ${legacyKey} -> ${newKey}`);
- localStorage.setItem(newPrefixed, legacyVal);
- }
- }
- 
- // 1. Pull from Supabase (Skipped in development)
- let projectRemoteData: any[] = [];
- if (session && !isDevelopment) {
- const { data: remoteData, error } = await supabase.from('dashboard_data').select('*');
+      // 0. Pull from Supabase (PRIMARY SOURCE OF TRUTH)
+      const { data: remoteData, error } = await supabase
+        .from('dashboard_data')
+        .select('*')
+        .eq('user_id', session.user.id);
 
- if (error) {
- console.error('[Sync] Error loading initial cloud data:', error.message || error);
- setSyncStatus('error');
- setIsReady(true);
- return;
- }
+      if (error) {
+        console.error('[Sync] Failed to pull initial cloud data:', error.message);
+        setSyncStatus('error');
+        setIsReady(true);
+        return;
+      }
 
- // Filter for keys that belong to this project
- const projectID = process.env.NEXT_PUBLIC_DASHBOARD_ID;
- projectRemoteData = remoteData?.filter(r => 
- projectID ? r.key.startsWith(`${projectID}:`) : !r.key.includes(':')
- ) || [];
- } else if (isDevelopment) {
- console.log('[Sync] Development mode: Skipping initial cloud pull.');
- }
+      // Filter for keys that belong to this project/dashboard
+      const projectID = process.env.NEXT_PUBLIC_DASHBOARD_ID;
+      const projectRemoteData = remoteData?.filter(r => 
+        projectID ? r.key.startsWith(`${projectID}:`) : !r.key.includes(':')
+      ) || [];
 
- const remoteKeysMap = new Map(projectRemoteData.map(r => [r.key, r.value]));
+      // Load remote data into local storage (TAGGED with userId)
+      isSyncingFromRemote.current = true;
+      projectRemoteData.forEach((row) => {
+        const parts = row.key.split(':');
+        const baseKey = parts[parts.length - 1];
+        if (baseKey && ALL_SYNC_KEYS.includes(baseKey)) {
+          // Wrap in tagged format before storing locally
+          setSyncedItem(baseKey, JSON.stringify(row.value), session.user.id);
+        }
+      });
+      
+      isSyncingFromRemote.current = false;
+      hasSyncedFromServer.current = true; // UNLOCK PUSHING
+      console.log(`[Sync] Synchronized ${projectRemoteData.length} authoritative records from cloud.`);
 
- // a) Load remote data into local storage
- if (projectRemoteData.length > 0) {
- isSyncingFromRemote.current = true;
- projectRemoteData.forEach((row) => {
- const parts = row.key.split(':');
- const baseKey = parts[parts.length - 1];
- if (baseKey && ALL_SYNC_KEYS.includes(baseKey)) {
- const currentLocal = localStorage.getItem(row.key);
- const remoteVal = JSON.stringify(row.value);
- 
- // Only update if different
- if (currentLocal !== remoteVal) {
- console.log(`[Sync] Updating local '${baseKey}' from cloud.`);
- localStorage.setItem(row.key, remoteVal);
- window.dispatchEvent(new CustomEvent('local-storage-change', { detail: { key: baseKey } }));
- }
- }
- });
- isSyncingFromRemote.current = false;
- console.log(`[Sync] Synchronized ${projectRemoteData.length} records from Supabase.`);
- }
+      // 1. Initial Migration (Local untagged data -> Cloud)
+      // Only happens for keys NOT already on remote
+      const remoteKeysMap = new Map(projectRemoteData.map(r => [r.key, r.value]));
+      for (const baseKey of ALL_SYNC_KEYS) {
+        const prefixedKey = getPrefixedKey(baseKey);
+        if (!remoteKeysMap.has(prefixedKey)) {
+          const localVal = localStorage.getItem(prefixedKey);
+          if (localVal) {
+            // Check if it's untagged (Legacy) or belongs to us
+            const validated = validateLocalData(localVal, session.user.id);
+            if (validated) {
+              console.log(`[Sync] Migrating local '${baseKey}' to cloud.`);
+              await pushToSupabase(baseKey, localVal);
+            }
+          }
+        }
+      }
 
- // c) Push local data that isn't on remote yet (Migration) (Skipped in development)
- if (session && !isDevelopment) {
- for (const baseKey of ALL_SYNC_KEYS) {
- const prefixedKey = getPrefixedKey(baseKey);
- if (!remoteKeysMap.has(prefixedKey)) {
- const localVal = localStorage.getItem(prefixedKey);
- if (localVal) {
- console.log(`[Sync] Initial push of '${baseKey}' to cloud.`);
- await pushToSupabase(baseKey, localVal);
- }
- }
- }
- } else if (session && isDevelopment) {
- console.log('[Sync] Development mode: Initial push/migrations skipped.');
- }
+      setIsReady(true);
+      setSyncStatus('connected');
+      setTimeout(() => setSyncStatus('idle'), 1000);
+    };
 
- setIsReady(true);
- if (session) setSyncStatus('connected');
- setTimeout(() => setSyncStatus('idle'), 1000);
- console.log('[Sync] Ready.');
- };
+    if (session) {
+      initSync();
+    }
+  }, [session, pushToSupabase]);
 
- if (session !== undefined) {
- initSync();
- }
- }, [pushToSupabase, session]);
+  // --- 3. Listen for Local Storage Changes ---
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key && !isSyncingFromRemote.current) {
+        const baseKey = ALL_SYNC_KEYS.find(k => getPrefixedKey(k) === e.key);
+        if (baseKey) {
+          pushToSupabase(baseKey, e.newValue);
+        }
+      }
+    };
 
- // --- 3. Listen for Local Storage Changes ---
- useEffect(() => {
- // Other tabs
- const handleStorageChange = (e: StorageEvent) => {
- if (e.key && !isSyncingFromRemote.current) {
- // Find if this prefixed key matches one of our sync keys
- const baseKey = ALL_SYNC_KEYS.find(k => getPrefixedKey(k) === e.key);
- if (baseKey) {
- pushToSupabase(baseKey, e.newValue);
- }
- }
- };
+    const handleLocalUpdate = (e: CustomEvent | Event) => {
+      const event = e as CustomEvent<{ key: string, value: string }>;
+      if (event.detail && ALL_SYNC_KEYS.includes(event.detail.key) && !isSyncingFromRemote.current) {
+        pushToSupabase(event.detail.key, event.detail.value);
+      }
+    };
 
- // Current tab (via setSyncedItem)
- const handleLocalUpdate = (e: any) => {
- if (e.detail && ALL_SYNC_KEYS.includes(e.detail.key) && !isSyncingFromRemote.current) {
- const val = localStorage.getItem(getPrefixedKey(e.detail.key));
- pushToSupabase(e.detail.key, val);
- }
- };
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('local-storage-change', handleLocalUpdate);
 
- window.addEventListener('storage', handleStorageChange);
- window.addEventListener('local-storage-change', handleLocalUpdate);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('local-storage-change', handleLocalUpdate);
+    };
+  }, [pushToSupabase]);
 
- return () => {
- window.removeEventListener('storage', handleStorageChange);
- window.removeEventListener('local-storage-change', handleLocalUpdate);
- };
- }, [pushToSupabase]);
+  // --- 4. Listen for Remote Changes (Realtime) ---
+  useEffect(() => {
+    if (!session) return;
 
- // --- 4. Listen for Remote Changes (Realtime) ---
- useEffect(() => {
- if (!session || isDevelopment) return;
+    const channel = supabase
+      .channel('dashboard-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'dashboard_data' },
+        (payload) => {
+          const newRow = payload.new as { key: string; value: unknown };
+          if (!newRow || !newRow.key) return;
 
- const channel = supabase
- .channel('dashboard-changes')
- .on(
- 'postgres_changes',
- { event: '*', schema: 'public', table: 'dashboard_data' },
- (payload) => {
- const newRow = payload.new as any;
- if (!newRow || !newRow.key) return;
+          const projectID = process.env.NEXT_PUBLIC_DASHBOARD_ID;
+          const isProjectKey = projectID ? newRow.key.startsWith(`${projectID}:`) : !newRow.key.includes(':');
+          
+          if (isProjectKey) {
+            const parts = newRow.key.split(':');
+            const baseKey = parts[parts.length - 1];
+            
+            if (baseKey && ALL_SYNC_KEYS.includes(baseKey)) {
+              isSyncingFromRemote.current = true;
+              setSyncedItem(baseKey, JSON.stringify(newRow.value), session.user.id);
+              isSyncingFromRemote.current = false;
+              
+              setSyncStatus('connected');
+              setTimeout(() => setSyncStatus('idle'), 2000);
+            }
+          }
+        }
+      )
+      .subscribe();
 
- // Check if key belongs to this project
- const projectID = process.env.NEXT_PUBLIC_DASHBOARD_ID;
- const isProjectKey = projectID ? newRow.key.startsWith(`${projectID}:`) : !newRow.key.includes(':');
- 
- if (isProjectKey) {
- const parts = newRow.key.split(':');
- const baseKey = parts[parts.length - 1];
- 
- if (baseKey && ALL_SYNC_KEYS.includes(baseKey)) {
- console.log(`[Sync] Incoming cloud update: ${newRow.key}`);
- 
- const currentLocal = localStorage.getItem(newRow.key);
- const remoteVal = JSON.stringify(newRow.value);
- 
- if (currentLocal !== remoteVal) {
- isSyncingFromRemote.current = true;
- localStorage.setItem(newRow.key, remoteVal);
- window.dispatchEvent(new CustomEvent('local-storage-change', { detail: { key: baseKey } }));
- 
- // Visual feedback of sync
- setSyncStatus('connected');
- setTimeout(() => setSyncStatus('idle'), 2000);
- 
- isSyncingFromRemote.current = false;
- }
- }
- }
- }
- )
- .subscribe((status: string) => {
- console.log(`[Sync] Realtime channel status: ${status}`);
- if (status === 'SUBSCRIBED') {
- setSyncStatus('connected');
- setTimeout(() => setSyncStatus('idle'), 1000);
- }
- if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
- console.error('[Sync] Realtime connection failed. Check if Realtime is enabled on the table and RLS allows access.');
- setSyncStatus('error');
- }
- });
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session]);
 
- return () => {
- supabase.removeChannel(channel);
- };
- }, [session]);
-
- return { isReady, syncStatus, isDevelopment };
+  return { isReady, syncStatus };
 }

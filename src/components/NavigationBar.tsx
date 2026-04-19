@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { SyncStatus } from './SyncStatus';
-import { useSyncStatus } from '@/context/SyncContext';
+import { useSyncReady, useSyncIndicator } from '@/context/SyncContext';
 import { Menu, X } from 'lucide-react';
 
 export function NavigationBar() {
  const pathname = usePathname();
- const { syncStatus, isDevelopment } = useSyncStatus();
+ const { isDevelopment } = useSyncReady();
+ const { syncStatus } = useSyncIndicator();
  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
  const navLinks = [

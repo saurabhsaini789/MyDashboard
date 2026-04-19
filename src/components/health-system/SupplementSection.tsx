@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { getPrefixedKey } from '@/lib/keys';
+import React, { useState, useEffect } from 'react';
 import { setSyncedItem } from '@/lib/storage';
 import { Modal } from '../ui/Modal';
 import { DynamicForm } from '../ui/DynamicForm';
@@ -9,666 +8,245 @@ import { SupplementItem, SUPPLEMENT_CATEGORIES, FAMILY_MEMBERS, DOSE_UNITS, type
 import { Text, SectionTitle } from '../ui/Text';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 import { LayoutGrid, List, User, Plus, Trash2, Settings } from 'lucide-react';
+import { useStorageSubscription } from '@/hooks/useStorageSubscription';
 
 const STORAGE_KEY = SYNC_KEYS.HEALTH_SUPPLEMENTS;
-const VIEW_MODE_KEY = 'health-supplements-view-mode';
 
 interface SupplementSectionProps {
- externalFilter?: 'ALL' | 'LOW' | 'MISSING' | 'EXPIRED';
+  externalFilter?: 'ALL' | 'LOW' | 'MISSING' | 'EXPIRED';
 }
 
 export function SupplementSection({ externalFilter }: SupplementSectionProps) {
- const [items, setItems] = useState<SupplementItem[]>([]);
- const [isLoaded, setIsLoaded] = useState(false);
- const [isModalOpen, setIsModalOpen] = useState(false);
- const [editingItem, setEditingItem] = useState<SupplementItem | null>(null);
- const [selectedCategory, setSelectedCategory] = useState<string>('All');
- const [selectedPerson, setSelectedPerson] = useState<string>('All');
- const [statusFilter, setStatusFilter] = useState<'ALL' | 'LOW' | 'MISSING' | 'EXPIRED'>('ALL');
- const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
- const [familyMembers, setFamilyMembers] = useState<string[]>([]);
- const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
- const [newPersonName, setNewPersonName] = useState('');
+  const items = useStorageSubscription<SupplementItem[]>(STORAGE_KEY, []);
+  const familyMembers = useStorageSubscription<string[]>(SYNC_KEYS.HEALTH_FAMILY_MEMBERS, []);
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<SupplementItem | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [selectedPerson, setSelectedPerson] = useState<string>('All');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'LOW' | 'MISSING' | 'EXPIRED'>('ALL');
+  const viewMode = useStorageSubscription<'grid' | 'table'>('health-supplements-view-mode', 'grid');
+  const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
+  const [newPersonName, setNewPersonName] = useState('');
 
- // Form State
- const [formData, setFormData] = useState({
- itemName: '',
- category: SUPPLEMENT_CATEGORIES[0],
- person: 'Shared',
- purpose: '',
- doseAmount: '',
- doseUnit: DOSE_UNITS[0],
- doseOther: '',
- frequency: '',
- quantity: 0,
- targetQuantity: 1,
- expiryDate: new Date().toISOString().split('T')[0],
- instructions: '',
- notes: ''
- });
+  // Form State
+  const [formData, setFormData] = useState({
+    itemName: '',
+    category: SUPPLEMENT_CATEGORIES[0],
+    person: 'Shared',
+    purpose: '',
+    doseAmount: '',
+    doseUnit: DOSE_UNITS[0],
+    doseOther: '',
+    frequency: '',
+    quantity: 0,
+    targetQuantity: 1,
+    expiryDate: '',
+    instructions: '',
+    notes: ''
+  });
 
- const itemsRef = useRef(items);
- useEffect(() => {
- itemsRef.current = items;
- }, [items]);
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, expiryDate: new Date().toISOString().split('T')[0] }));
+  }, []);
 
- useEffect(() => {
- const savedData = localStorage.getItem(getPrefixedKey(STORAGE_KEY));
- if (savedData) {
- try {
- setItems(JSON.parse(savedData));
- } catch (e) {
- console.error("Failed to parse supplement data", e);
- }
- }
+  const toggleViewMode = (mode: 'grid' | 'table') => {
+    setSyncedItem('health-supplements-view-mode', mode);
+  };
 
- const savedView = localStorage.getItem(VIEW_MODE_KEY);
- if (savedView === 'grid' || savedView === 'table') {
-   setViewMode(savedView);
- }
+  const addFamilyMember = () => {
+    if (!newPersonName.trim()) return;
+    const updated = [...familyMembers, newPersonName.trim()];
+    setSyncedItem(SYNC_KEYS.HEALTH_FAMILY_MEMBERS, JSON.stringify(updated));
+    setNewPersonName('');
+  };
 
- const savedFamily = localStorage.getItem(getPrefixedKey(SYNC_KEYS.HEALTH_FAMILY_MEMBERS));
- if (savedFamily) {
-   try {
-     setFamilyMembers(JSON.parse(savedFamily));
-   } catch {
-     setFamilyMembers(FAMILY_MEMBERS);
-   }
- } else {
-   setFamilyMembers(FAMILY_MEMBERS);
- }
+  const removeFamilyMember = (name: string) => {
+    setSyncedItem(SYNC_KEYS.HEALTH_FAMILY_MEMBERS, JSON.stringify(familyMembers.filter(m => m !== name)));
+  };
 
- setIsLoaded(true);
+  const getStatus = (item: SupplementItem): InventoryStatus => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expiry = new Date(item.expiryDate);
+    expiry.setHours(0, 0, 0, 0);
 
- const handleLocal = (e: any) => {
-   if (e.detail && (e.detail.key === STORAGE_KEY || e.detail.key === SYNC_KEYS.HEALTH_FAMILY_MEMBERS)) {
-     const val = localStorage.getItem(getPrefixedKey(e.detail.key));
-     if (val) {
-       try {
-         const parsed = JSON.parse(val);
-         if (e.detail.key === STORAGE_KEY) {
-           if (JSON.stringify(parsed) !== JSON.stringify(itemsRef.current)) {
-             setItems(parsed);
-           }
-         } else {
-           setFamilyMembers(parsed);
-         }
-       } catch (e) {}
-     }
-   }
- };
+    if (expiry < today) return 'EXPIRED';
+    if (item.quantity === 0) return 'MISSING';
+    if (item.quantity < item.targetQuantity) return 'LOW';
+    return 'OK';
+  };
 
- window.addEventListener('local-storage-change', handleLocal);
- return () => window.removeEventListener('local-storage-change', handleLocal);
- }, []);
+  const getStatusStyles = (status: InventoryStatus) => {
+    const base = "text-[13px] font-bold uppercase px-2 py-1 rounded-md inline-block";
+    switch (status) {
+      case 'OK': return `${base} text-emerald-600 bg-emerald-50`;
+      case 'LOW': return `${base} text-amber-600 bg-amber-50`;
+      case 'MISSING': return `${base} text-rose-600 bg-rose-50`;
+      case 'EXPIRED': return `${base} text-zinc-500 bg-zinc-100`;
+      default: return `${base} text-zinc-500 bg-zinc-100`;
+    }
+  };
 
- const toggleViewMode = (mode: 'grid' | 'table') => {
-   setViewMode(mode);
-   localStorage.setItem(VIEW_MODE_KEY, mode);
- };
-
- const addFamilyMember = () => {
-   if (!newPersonName.trim()) return;
-   const updated = [...familyMembers, newPersonName.trim()];
-   setFamilyMembers(updated);
-   setSyncedItem(SYNC_KEYS.HEALTH_FAMILY_MEMBERS, JSON.stringify(updated));
-   setNewPersonName('');
- };
-
- const removeFamilyMember = (name: string) => {
-   const updated = familyMembers.filter(m => m !== name);
-   setFamilyMembers(updated);
-   setSyncedItem(SYNC_KEYS.HEALTH_FAMILY_MEMBERS, JSON.stringify(updated));
- };
-
- /**
- * Helper function to determine inventory status based on business rules
- */
- const getStatus = (item: SupplementItem): InventoryStatus => {
- const today = new Date();
- today.setHours(0, 0, 0, 0);
- const expiry = new Date(item.expiryDate);
- expiry.setHours(0, 0, 0, 0);
-
- if (expiry < today) return 'EXPIRED';
- if (item.quantity === 0) return 'MISSING';
- if (item.quantity < item.targetQuantity) return 'LOW';
- return 'OK';
- };
-
- const getStatusStyles = (status: InventoryStatus) => {
- const base = "text-[13px] font-bold uppercase px-2 py-1 rounded-md inline-block";
- switch (status) {
- case 'OK': 
- return `${base} text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400`;
- case 'LOW': 
- return `${base} text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-400`;
- case 'MISSING': 
- return `${base} text-rose-600 bg-rose-50 dark:bg-rose-500/10 dark:text-rose-400`;
- case 'EXPIRED': 
- return `${base} text-zinc-500 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400`;
- default: 
- return `${base} text-zinc-500 bg-zinc-100 dark:bg-zinc-800`;
- }
- };
-
- const openAddModal = () => {
- setEditingItem(null);
- setFormData({
- itemName: '',
- category: SUPPLEMENT_CATEGORIES[0],
- person: 'Shared',
- purpose: '',
- doseAmount: '',
- doseUnit: DOSE_UNITS[0],
- doseOther: '',
- frequency: '',
- quantity: 0,
- targetQuantity: 1,
- expiryDate: new Date().toISOString().split('T')[0],
- instructions: '',
- notes: ''
- });
- setIsModalOpen(true);
- };
-
-  const openEditModal = (item: SupplementItem) => {
-    setEditingItem(item);
-    
-    // Parse dose (e.g. "500 mg")
-    const doseStr = item.dose || '';
-    const doseMatch = doseStr.match(/^(\d+(?:\.\d+)?)\s*(.*)$/);
-    const amount = doseMatch ? doseMatch[1] : doseStr;
-    const unit = doseMatch ? doseMatch[2] : '';
-    const isStandardUnit = DOSE_UNITS.includes(unit);
-
+  const openAddModal = () => {
+    setEditingItem(null);
     setFormData({
-      itemName: item.itemName,
-      category: item.category,
-      person: item.person || 'Shared',
-      purpose: item.purpose,
-      doseAmount: amount,
-      doseUnit: isStandardUnit ? unit : (unit ? 'Other' : DOSE_UNITS[0]),
-      doseOther: isStandardUnit ? '' : unit,
-      frequency: item.frequency,
-      quantity: item.quantity,
-      targetQuantity: item.targetQuantity,
-      expiryDate: item.expiryDate,
-      instructions: item.instructions,
-      notes: item.notes || ''
+      itemName: '', category: SUPPLEMENT_CATEGORIES[0], person: 'Shared', purpose: '',
+      doseAmount: '', doseUnit: DOSE_UNITS[0], doseOther: '', frequency: '',
+      quantity: 0, targetQuantity: 1, expiryDate: new Date().toISOString().split('T')[0],
+      instructions: '', notes: ''
     });
     setIsModalOpen(true);
   };
 
- const handleSubmit = (e: React.FormEvent) => {
- e.preventDefault();
- 
- const finalUnit = formData.doseUnit === 'Other' ? formData.doseOther : formData.doseUnit;
- const finalDose = `${formData.doseAmount} ${finalUnit}`.trim();
+  const openEditModal = (item: SupplementItem) => {
+    setEditingItem(item);
+    const doseMatch = (item.dose || '').match(/^(\d+(?:\.\d+)?)\s*(.*)$/);
+    const amount = doseMatch ? doseMatch[1] : (item.dose || '');
+    const unit = doseMatch ? doseMatch[2] : '';
+    const isStandard = DOSE_UNITS.includes(unit);
 
- const newItem: SupplementItem = {
- id: editingItem ? editingItem.id : crypto.randomUUID(),
- itemName: formData.itemName,
- category: formData.category,
- person: formData.person,
- purpose: formData.purpose,
- dose: finalDose,
- frequency: formData.frequency,
- quantity: Number(formData.quantity),
- targetQuantity: Number(formData.targetQuantity),
- expiryDate: formData.expiryDate,
- instructions: formData.instructions,
- notes: formData.notes
- };
+    setFormData({
+      itemName: item.itemName, category: item.category, person: item.person || 'Shared',
+      purpose: item.purpose, doseAmount: amount, doseUnit: isStandard ? unit : (unit ? 'Other' : DOSE_UNITS[0]),
+      doseOther: isStandard ? '' : unit, frequency: item.frequency,
+      quantity: item.quantity, targetQuantity: item.targetQuantity, expiryDate: item.expiryDate,
+      instructions: item.instructions, notes: item.notes || ''
+    });
+    setIsModalOpen(true);
+  };
 
- let updatedItems;
- if (editingItem) {
- updatedItems = items.map(i => i.id === editingItem.id ? newItem : i);
- } else {
- updatedItems = [newItem, ...items];
- }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const finalDose = `${formData.doseAmount} ${formData.doseUnit === 'Other' ? formData.doseOther : formData.doseUnit}`.trim();
+    const newItem: SupplementItem = {
+      id: editingItem ? editingItem.id : crypto.randomUUID(),
+      itemName: formData.itemName, category: formData.category, person: formData.person,
+      purpose: formData.purpose, dose: finalDose, frequency: formData.frequency,
+      quantity: Number(formData.quantity), targetQuantity: Number(formData.targetQuantity),
+      expiryDate: formData.expiryDate, instructions: formData.instructions, notes: formData.notes
+    };
 
- setItems(updatedItems);
- setSyncedItem(STORAGE_KEY, JSON.stringify(updatedItems));
- setIsModalOpen(false);
- };
+    const updated = editingItem ? items.map(i => i.id === editingItem.id ? newItem : i) : [newItem, ...items];
+    setSyncedItem(STORAGE_KEY, JSON.stringify(updated));
+    setIsModalOpen(false);
+  };
 
- const deleteItem = (id: string) => {
- const updated = items.filter(i => i.id !== id);
- setItems(updated);
- setSyncedItem(STORAGE_KEY, JSON.stringify(updated));
- if (editingItem?.id === id) setIsModalOpen(false);
- };
+  const deleteItem = (id: string) => {
+    setSyncedItem(STORAGE_KEY, JSON.stringify(items.filter(i => i.id !== id)));
+    if (editingItem?.id === id) setIsModalOpen(false);
+  };
 
- if (!isLoaded) return null;
+  const sortedItems = [...items].sort((a, b) => {
+    const map = { EXPIRED: 0, MISSING: 1, LOW: 2, OK: 3 };
+    return map[getStatus(a)] - map[getStatus(b)];
+  });
 
- const priorityMap = {
- EXPIRED: 0,
- MISSING: 1,
- LOW: 2,
- OK: 3
- };
+  const effectiveFilter = externalFilter && externalFilter !== 'ALL' ? externalFilter : statusFilter;
+  const filtered = sortedItems.filter(i => {
+    const matchesCat = selectedCategory === 'All' || i.category === selectedCategory;
+    const matchesPerson = selectedPerson === 'All' || i.person === selectedPerson || (!i.person && selectedPerson === 'Shared');
+    const matchesStatus = effectiveFilter === 'ALL' || getStatus(i) === effectiveFilter;
+    return matchesCat && matchesPerson && matchesStatus;
+  });
 
- const sortedItems = [...items].sort((a, b) => {
- const priorityDiff = priorityMap[getStatus(a)] - priorityMap[getStatus(b)];
- if (priorityDiff !== 0) return priorityDiff;
- return 0; // preserve original order
- });
+  const stats = {
+    low: items.filter(i => getStatus(i) === 'LOW').length,
+    missing: items.filter(i => getStatus(i) === 'MISSING').length,
+    expired: items.filter(i => getStatus(i) === 'EXPIRED').length
+  };
 
- const effectiveFilter =
- externalFilter && externalFilter !== 'ALL'
- ? externalFilter
- : statusFilter;
-
- const categoryItems = selectedCategory === 'All'
-    ? sortedItems
-    : sortedItems.filter(item => item.category === selectedCategory);
-
- const finalItems = (effectiveFilter !== 'ALL'
-    ? sortedItems.filter(item => getStatus(item) === effectiveFilter)
-    : categoryItems).filter(item => 
-      selectedPerson === 'All' ? true : (item.person === selectedPerson || (!item.person && selectedPerson === 'Shared'))
-    );
-
- const lowCount = items.filter(i => getStatus(i) === 'LOW').length;
- const missingCount = items.filter(i => getStatus(i) === 'MISSING').length;
- const expiredCount = items.filter(i => getStatus(i) === 'EXPIRED').length;
- const allGood = lowCount === 0 && missingCount === 0 && expiredCount === 0;
-
- let suggestion = null;
- if (expiredCount > 0) {
- suggestion = "Replace expired supplements";
- } else if (missingCount > 0) {
- suggestion = "Restock missing supplements";
- } else if (lowCount > 0) {
- suggestion = "Refill low supplement stock";
- }
-
- const borderColor = expiredCount > 0 
-  ? 'border-rose-200 dark:border-rose-900/30 border-l-rose-500' 
-  : missingCount > 0 
-   ? 'border-amber-200 dark:border-amber-900/30 border-l-amber-500' 
-   : 'border-emerald-200 dark:border-emerald-900/30 border-l-emerald-500';
-
- const pipColor = expiredCount > 0 
-  ? 'bg-rose-500' 
-  : missingCount > 0 
-   ? 'bg-amber-500' 
-   : 'bg-emerald-500';
-
- return (
- <section className="w-full">
- <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 px-2">
-  <div>
-  <SectionTitle>
-  Supplement Section
-  </SectionTitle>
-  </div>
-
-  <div className="flex items-center gap-1.5 sm:gap-3">
-    {/* View Toggle */}
-    <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl border border-zinc-200 dark:border-zinc-700 h-[54px] items-center">
-      <button 
-        onClick={() => toggleViewMode('grid')}
-        className={`p-2 rounded-lg transition-all h-full flex items-center gap-2 px-2 sm:px-3 ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
-        title="Grid View"
-      >
-        <LayoutGrid size={18} />
-      </button>
-      <button 
-        onClick={() => toggleViewMode('table')}
-        className={`p-2 rounded-lg transition-all h-full flex items-center gap-2 px-2 sm:px-3 ${viewMode === 'table' ? 'bg-white dark:bg-zinc-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
-        title="Table View"
-      >
-        <List size={18} />
-      </button>
-    </div>
-
-    <select 
-      value={selectedPerson}
-      onChange={(e) => setSelectedPerson(e.target.value)}
-      className="bg-zinc-100 dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 text-xs font-bold px-2 sm:px-4 h-[54px] rounded-2xl border-none focus:ring-2 focus:ring-zinc-500 appearance-none cursor-pointer min-w-[100px] sm:min-w-[120px] flex-1 sm:flex-none"
-    >
-      <option value="All">FOR: ANYONE</option>
-      <option value="Shared">FOR: SHARED</option>
-      {familyMembers.map(person => (
-        <option key={person} value={person}>FOR: {person.toUpperCase()}</option>
-      ))}
-    </select>
-
-    <button 
-      onClick={() => setIsFamilyModalOpen(true)}
-      className="bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 p-4 rounded-2xl border-none transition-colors h-[54px]"
-      title="Manage Family Members"
-    >
-      <Settings size={20} />
-    </button>
-
-    <select 
-      value={selectedCategory}
-      onChange={(e) => setSelectedCategory(e.target.value)}
-      className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-xs font-bold px-2 sm:px-4 h-[54px] rounded-2xl border-none focus:ring-2 focus:ring-zinc-500 appearance-none cursor-pointer min-w-[100px] sm:min-w-[140px] flex-1 sm:flex-none"
-    >
-      <option value="All">ALL CATEGORIES</option>
-      {SUPPLEMENT_CATEGORIES.map(cat => (
-        <option key={cat} value={cat}>{cat.toUpperCase()}</option>
-      ))}
-    </select>
-  
-    <button 
-      onClick={openAddModal}
-      className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold px-3 sm:px-8 py-4 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-sm shadow-zinc-900/10 h-[54px] whitespace-nowrap"
-    >
-      <span className="sm:hidden">+ ADD</span>
-      <span className="hidden sm:inline">ADD SUPPLEMENT</span>
-    </button>
-  </div>
- </div>
-
- <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border-2 border-l-[6px] bg-white dark:bg-zinc-900/40 ${borderColor} mb-8 shadow-sm transition-all shadow-zinc-200/50 dark:shadow-none`}>
-  <div className="flex items-center gap-4">
-   <div className={`w-2 h-2 rounded-full ${pipColor} shrink-0`} />
-   <Text variant="body" className="font-semibold text-zinc-900 dark:text-zinc-100">
-    {suggestion || (allGood ? "All supplements in good stock" : "Inventory needs attention")}
-   </Text>
-  </div>
-
-  <div className="flex items-center gap-4 flex-wrap sm:flex-nowrap">
-   {!allGood ? (
-    <div className="flex gap-4">
-     {lowCount > 0 && (
-      <button 
-      onClick={() => setStatusFilter('LOW')}
-      className={`text-sm font-medium transition-colors ${statusFilter === 'LOW' ? 'text-amber-600 underline underline-offset-4' : 'text-amber-600/60 hover:text-amber-600'}`}
-      >
-      {lowCount} low
-      </button>
-     )}
-     {missingCount > 0 && (
-      <button 
-      onClick={() => setStatusFilter('MISSING')}
-      className={`text-sm font-medium transition-colors ${statusFilter === 'MISSING' ? 'text-rose-600 underline underline-offset-4' : 'text-rose-600/60 hover:text-rose-600'}`}
-      >
-      {missingCount} missing
-      </button>
-     )}
-     {expiredCount > 0 && (
-      <button 
-      onClick={() => setStatusFilter('EXPIRED')}
-      className={`text-sm font-medium transition-colors ${statusFilter === 'EXPIRED' ? 'text-zinc-600 underline underline-offset-4 dark:text-zinc-400' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'}`}
-      >
-      {expiredCount} expired
-      </button>
-     )}
-    </div>
-   ) : (
-    <div className="flex gap-4">
-     <Text variant="bodySmall" className="text-emerald-600 dark:text-emerald-400 font-medium">
-      System Stable
-     </Text>
-    </div>
-   )}
-   
-   {statusFilter !== 'ALL' && (
-   <button 
-   onClick={() => setStatusFilter('ALL')}
-   className="ml-auto text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 uppercase text-xs font-bold tracking-wider"
-   >
-   Clear Filter
-   </button>
-   )}
-  </div>
- </div>
-
- {/* Integrated View Logic */}
- {viewMode === 'table' ? (
-   <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm animate-in fade-in duration-500">
-     <div className="overflow-x-auto max-h-[400px] overflow-y-auto custom-scrollbar">
-       <table className="w-full text-left border-collapse">
-         <thead className="bg-zinc-50 dark:bg-zinc-800">
-           <tr className="border-b border-zinc-100 dark:border-zinc-800">
-             <th className="px-6 py-4 text-[13px] uppercase text-zinc-500 font-bold">Status</th>
-             <th className="px-6 py-4 text-[13px] uppercase text-zinc-500 font-bold">Supplement Name</th>
-             <th className="px-6 py-4 text-[13px] uppercase text-zinc-500 font-bold">Category</th>
-             <th className="px-6 py-4 text-[13px] uppercase text-zinc-500 font-bold">Person</th>
-             <th className="px-6 py-4 text-[13px] uppercase text-zinc-500 font-bold">Purpose / Use</th>
-             <th className="px-6 py-4 text-[13px] uppercase text-zinc-500 font-bold">Dosage</th>
-             <th className="px-6 py-4 text-[13px] uppercase text-zinc-500 font-bold text-center">Quantity</th>
-             <th className="px-6 py-4 text-[13px] uppercase text-zinc-500 font-bold">Expiry</th>
-           </tr>
-         </thead>
-         <tbody>
-           {finalItems.length > 0 ? finalItems.map(item => {
-             const status = getStatus(item);
-             const statusStyle = getStatusStyles(status);
-
-             return (
-               <tr 
-                 key={item.id} 
-                 onClick={() => openEditModal(item)}
-                 className="group cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors border-b border-zinc-100 dark:border-zinc-800 last:border-0"
-               >
-                 <td className="px-6 py-4">
-                   <span className={statusStyle}>
-                     {status}
-                   </span>
-                 </td>
-                 <td className="px-6 py-4">
-                   <Text variant="body" as="span" className="font-bold">
-                     {item.itemName}
-                   </Text>
-                 </td>
-                 <td className="px-6 py-4">
-                   <Text variant="label" as="span" className="border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
-                     {item.category}
-                   </Text>
-                 </td>
-                 <td className="px-6 py-4">
-                   <Text variant="label" as="span" className="text-emerald-600 dark:text-emerald-400 font-bold">
-                     {item.person || 'Shared'}
-                   </Text>
-                 </td>
-                 <td className="px-6 py-4 text-[15px] text-zinc-500 dark:text-zinc-400">
-                   {item.purpose}
-                 </td>
-                 <td className="px-6 py-4 text-[15px] text-zinc-500 dark:text-zinc-400">
-                   {item.dose} {item.frequency}
-                 </td>
-                 <td className="px-6 py-4 text-center text-[15px] font-medium text-zinc-700 dark:text-zinc-300">
-                   {item.quantity}
-                 </td>
-                 <td className="px-6 py-4">
-                   <span className={`text-[15px] font-medium ${status === 'EXPIRED' ? 'text-rose-500' : 'text-zinc-500 dark:text-zinc-400'}`}>
-                     {new Date(item.expiryDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' })}
-                   </span>
-                 </td>
-               </tr>
-             );
-           }) : (
-             <tr>
-               <td colSpan={7} className="px-8 py-20 text-center">
-                 <div className="flex flex-col items-center gap-2">
-                   <span className="text-sm text-zinc-500 dark:text-zinc-400 uppercase">No supplements found.</span>
-                 </div>
-               </td>
-             </tr>
-           )}
-         </tbody>
-       </table>
-     </div>
-   </div>
- ) : (
-    <div className="max-h-[650px] overflow-y-auto custom-scrollbar p-1">
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 animate-in fade-in duration-500">
-        {finalItems.length > 0 ? finalItems.map(item => {
-          const status = getStatus(item);
-          const statusStyle = getStatusStyles(status);
-
-          return (
-            <div 
-              key={item.id} 
-              onClick={() => openEditModal(item)}
-              className="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all shadow-sm group hover:-translate-y-1 duration-300"
-            >
-              <div className="flex justify-between items-start">
-                <div className="flex flex-col gap-2">
-                  <Text variant="title" as="span" className="text-lg">
-                    {item.itemName}
-                  </Text>
-                  <Text variant="label" as="span" className="border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800 px-2 py-0.5 rounded-md w-fit text-[13px]">
-                    {item.category}
-                  </Text>
-                  <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                    <User size={14} />
-                    <span className="text-[13px] font-bold uppercase tracking-wider">{item.person || 'Shared'}</span>
-                  </div>
-                </div>
-                <span className={statusStyle}>
-                  {status}
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex flex-col">
-                  <span className="text-[13px] font-bold text-zinc-400 uppercase">Purpose</span>
-                  <span className="text-[14px] text-zinc-700 dark:text-zinc-300 line-clamp-2">{item.purpose}</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[13px] font-bold text-zinc-400 uppercase">Dosage</span>
-                  <span className="text-[14px] text-zinc-700 dark:text-zinc-300">{item.dose} {item.frequency}</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
-                <div className="flex flex-col">
-                  <Text variant="label" as="span" className="text-zinc-400 text-[13px]">Qty</Text>
-                  <Text variant="body" as="span" className="text-base font-bold text-zinc-700 dark:text-zinc-300">{item.quantity} / {item.targetQuantity}</Text>
-                </div>
-                <div className="flex flex-col items-end">
-                  <Text variant="label" as="span" className="text-zinc-400 text-[13px]">Expiry</Text>
-                  <Text variant="body" as="span" className={`text-base font-bold ${status === 'EXPIRED' ? 'text-rose-500' : 'text-zinc-700 dark:text-zinc-300'}`}>
-                    {new Date(item.expiryDate).toLocaleDateString(undefined, { month: 'short', year: '2-digit' })}
-                  </Text>
-                </div>
-              </div>
-            </div>
-          );
-        }) : (
-          <div className="col-span-full p-12 text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
-            <span className="text-sm text-zinc-500 dark:text-zinc-400 uppercase">No supplements found</span>
+  return (
+    <section className="w-full">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 px-2 font-bold uppercase">
+        <SectionTitle>Supplement Section</SectionTitle>
+        <div className="flex items-center gap-3">
+          <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl h-[54px]">
+            <button onClick={() => toggleViewMode('grid')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-emerald-600' : 'text-zinc-500'}`}><LayoutGrid size={18} /></button>
+            <button onClick={() => toggleViewMode('table')} className={`p-2 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white shadow-sm text-emerald-600' : 'text-zinc-500'}`}><List size={18} /></button>
           </div>
-        )}
+          <select value={selectedPerson} onChange={e => setSelectedPerson(e.target.value)} className="bg-zinc-100 rounded-2xl h-[54px] px-4 text-xs border-none cursor-pointer">
+            <option value="All">Anyone</option>
+            <option value="Shared">Shared</option>
+            {familyMembers.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+          <button onClick={() => setIsFamilyModalOpen(true)} className="bg-zinc-100 p-4 rounded-2xl h-[54px] text-zinc-500"><Settings size={20} /></button>
+          <button onClick={openAddModal} className="bg-zinc-900 text-white text-xs px-8 py-4 rounded-2xl h-[54px] transition-all hover:scale-105">+ ADD</button>
+        </div>
       </div>
-    </div>
- )}
 
- {/* Modal Integration */}
- <Modal
- isOpen={isModalOpen}
- onClose={() => setIsModalOpen(false)}
- title={editingItem ? 'Edit supplement' : 'Add supplement'}
- onSubmit={handleSubmit}
- submitText={editingItem ? 'Update Supplement' : 'Add Supplement'}
- accentColor="emerald"
- >
- <DynamicForm
- sections={[
- {
- id: 'sup_info',
- title: '',
-    fields: [
-    { name: 'itemName', label: 'Supplement Name', type: 'text', required: true, fullWidth: true },
-    {
-    name: 'category', label: 'Category', type: 'select',
-    options: SUPPLEMENT_CATEGORIES.map(c => ({ label: c, value: c }))
-    },
-    {
-    name: 'person', label: 'Who is taking this?', type: 'select',
-    options: ['Shared', ...familyMembers].map(p => ({ label: p, value: p }))
-    },
-    { name: 'purpose', label: 'Purpose / Use', type: 'text', required: true },
-    { name: 'doseAmount', label: 'Dosage Amount', type: 'text', required: true },
-    {
-    name: 'doseUnit', label: 'Unit', type: 'select',
-    options: [...DOSE_UNITS, 'Other'].map(u => ({ label: u, value: u }))
-    },
-    ...(formData.doseUnit === 'Other' ? [
-    { name: 'doseOther', label: 'Custom Unit', type: 'text' as any, required: true }
-    ] : []),
-    { name: 'frequency', label: 'Frequency (e.g. 1/day)', type: 'text', required: true },
-    { name: 'quantity', label: 'Current Quantity', type: 'number', min: 0, required: true },
-    { name: 'targetQuantity', label: 'Target Quantity', type: 'number', min: 1, required: true },
-    { name: 'expiryDate', label: 'Expiry Date', type: 'date', required: true },
-    { name: 'instructions', label: 'Instructions', type: 'text', fullWidth: true },
-    { name: 'notes', label: 'Notes', type: 'text', fullWidth: true }
-    ]
- }
- ]}
- formData={formData}
- accentColor="emerald"
- onChange={(name, value) => setFormData(prev => ({ ...prev, [name]: value }))}
- />
+      <div className={`p-5 rounded-2xl border-2 border-l-[6px] bg-white mb-8 shadow-sm ${stats.expired ? 'border-rose-200 border-l-rose-500' : stats.missing ? 'border-amber-200 border-l-amber-500' : 'border-emerald-200 border-l-emerald-500'}`}>
+        <div className="flex justify-between items-center font-bold">
+           <span>{stats.expired ? 'Replace expired items' : stats.missing ? 'Restock missing items' : 'Systems nominal'}</span>
+           <div className="flex gap-4 text-xs">
+             {stats.low > 0 && <button onClick={() => setStatusFilter('LOW')} className="text-amber-600 underline">{stats.low} low</button>}
+             {stats.missing > 0 && <button onClick={() => setStatusFilter('MISSING')} className="text-rose-600 underline">{stats.missing} missing</button>}
+             {stats.expired > 0 && <button onClick={() => setStatusFilter('EXPIRED')} className="text-zinc-500 underline">{stats.expired} expired</button>}
+             {statusFilter !== 'ALL' && <button onClick={() => setStatusFilter('ALL')} className="text-zinc-400">Clear</button>}
+           </div>
+        </div>
+      </div>
 
- {editingItem && (
- <div className="pt-4 mt-2">
- <button 
- type="button" 
- onClick={() => deleteItem(editingItem.id)} 
- className="text-sm font-bold text-rose-500 hover:text-rose-700 transition-colors"
- >
- DELETE SUPPLEMENT
- </button>
- </div>
- )}
- </Modal>
+      {viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filtered.map(i => (
+            <div key={i.id} onClick={() => openEditModal(i)} className="p-6 bg-white border border-zinc-200 rounded-2xl shadow-sm cursor-pointer hover:bg-zinc-50 transition-all font-bold">
+               <div className="flex justify-between">
+                 <div><h3 className="text-lg">{i.itemName}</h3><span className="text-[10px] bg-zinc-100 px-2 py-0.5 rounded uppercase">{i.category}</span></div>
+                 <span className={getStatusStyles(getStatus(i))}>{getStatus(i)}</span>
+               </div>
+               <div className="mt-4 grid grid-cols-2 text-xs">
+                 <div><span className="text-zinc-400 font-bold uppercase">Qty</span><div>{i.quantity} / {i.targetQuantity}</div></div>
+                 <div className="text-right"><span className="text-zinc-400 font-bold uppercase">Expiry</span><div>{new Date(i.expiryDate).toLocaleDateString()}</div></div>
+               </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white border rounded-2xl overflow-hidden shadow-sm">
+          <table className="w-full text-left font-bold">
+            <thead className="bg-zinc-50 text-[10px] text-zinc-500 uppercase">
+              <tr><th className="p-4">Status</th><th className="p-4">Name</th><th className="p-4">Person</th><th className="p-4">Qty</th><th className="p-4">Expiry</th></tr>
+            </thead>
+            <tbody className="text-sm">
+              {filtered.map(i => (
+                <tr key={i.id} onClick={() => openEditModal(i)} className="border-b hover:bg-zinc-50 cursor-pointer">
+                  <td className="p-4"><span className={getStatusStyles(getStatus(i))}>{getStatus(i)}</span></td>
+                  <td className="p-4">{i.itemName}</td>
+                  <td className="p-4">{i.person || 'Shared'}</td>
+                  <td className="p-4">{i.quantity}</td>
+                  <td className="p-4">{new Date(i.expiryDate).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
- {/* Family Management Modal */}
- <Modal
-   isOpen={isFamilyModalOpen}
-   onClose={() => setIsFamilyModalOpen(false)}
-   title="Manage Family Members"
- >
-   <div className="space-y-6">
-     <div className="flex gap-2">
-       <input 
-         type="text"
-         value={newPersonName}
-         onChange={(e) => setNewPersonName(e.target.value)}
-         placeholder="New person name..."
-         className="flex-1 bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500"
-         onKeyDown={(e) => e.key === 'Enter' && addFamilyMember()}
-       />
-       <button
-         onClick={addFamilyMember}
-         className="bg-emerald-600 text-white p-3 rounded-xl hover:bg-emerald-700 transition-colors"
-       >
-         <Plus size={20} />
-       </button>
-     </div>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Supplement" onSubmit={handleSubmit}>
+        <DynamicForm 
+          sections={[{ id: 's', fields: [
+            { name: 'itemName', label: 'Name', type: 'text', required: true, fullWidth: true },
+            { name: 'category', label: 'Category', type: 'select', options: SUPPLEMENT_CATEGORIES.map(c=>({label:c,value:c})) },
+            { name: 'person', label: 'Person', type: 'select', options: ['Shared', ...familyMembers].map(p=>({label:p,value:p})) },
+            { name: 'doseAmount', label: 'Dose', type: 'text', required: true },
+            { name: 'doseUnit', label: 'Unit', type: 'select', options: [...DOSE_UNITS, 'Other'].map(u=>({label:u,value:u})) },
+            { name: 'quantity', label: 'Quantity', type: 'number', required: true },
+            { name: 'targetQuantity', label: 'Target', type: 'number', required: true },
+            { name: 'expiryDate', label: 'Expiry', type: 'date', required: true }
+          ]}]}
+          formData={formData}
+          onChange={(n, v) => setFormData(p => ({ ...p, [n]: v }))}
+        />
+        {editingItem && <button onClick={() => deleteItem(editingItem.id)} className="text-red-500 mt-4 font-bold uppercase">Delete</button>}
+      </Modal>
 
-     <div className="space-y-2">
-       {familyMembers.map(name => (
-         <div key={name} className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-           <span className="font-semibold text-zinc-900 dark:text-zinc-100">{name}</span>
-           <button
-             onClick={() => removeFamilyMember(name)}
-             className="text-rose-500 hover:text-rose-700 p-1 transition-colors"
-             title="Remove person"
-           >
-             <Trash2 size={18} />
-           </button>
-         </div>
-       ))}
-       {familyMembers.length === 0 && (
-         <p className="text-center py-4 text-zinc-400 text-sm">No personal members added yet.</p>
-       )}
-     </div>
-     
-     <p className="text-[12px] text-zinc-400 italic">
-       * "Shared" is a permanent category and cannot be removed.
-     </p>
-   </div>
- </Modal>
- </section>
- );
+      <Modal isOpen={isFamilyModalOpen} onClose={() => setIsFamilyModalOpen(false)} title="Family">
+        <div className="space-y-4">
+          <div className="flex gap-2"><input value={newPersonName} onChange={e=>setNewPersonName(e.target.value)} placeholder="Name" className="flex-1 bg-zinc-100 p-3 rounded-xl border-none outline-none font-bold"/><button onClick={addFamilyMember} className="bg-emerald-600 text-white p-3 rounded-xl"><Plus size={20}/></button></div>
+          {familyMembers.map(m => <div key={m} className="flex justify-between p-3 bg-zinc-50 rounded-xl font-bold"><span>{m}</span><button onClick={()=>removeFamilyMember(m)} className="text-rose-500"><Trash2 size={18}/></button></div>)}
+        </div>
+      </Modal>
+    </section>
+  );
 }

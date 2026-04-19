@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getPrefixedKey } from "@/lib/keys";
+import { useStorageSubscription } from "@/hooks/useStorageSubscription";
+import { SYNC_KEYS } from "@/lib/sync-keys";
 
 export type TimeFilter = '1 Day' | '7 Days' | '1 Month' | '6 Months' | '1 Year' | 'Custom Month';
 
@@ -12,6 +13,8 @@ interface GoalsSummaryProps {
 }
 
 export function GoalsSummary({ filter, selectedMonth, selectedYear }: GoalsSummaryProps) {
+  const projects = useStorageSubscription<any[]>(SYNC_KEYS.GOALS_PROJECTS, []);
+  
   const [projectsCount, setProjectsCount] = useState(0);
   const [tasksCount, setTasksCount] = useState(0);
   const [activeProjectsCount, setActiveProjectsCount] = useState(0);
@@ -21,106 +24,84 @@ export function GoalsSummary({ filter, selectedMonth, selectedYear }: GoalsSumma
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const loadData = () => {
-      const saved = localStorage.getItem(getPrefixedKey('goals_projects'));
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          let pCount = 0;
-          let tCount = 0;
-          let activeP = 0;
-          let totalT = 0;
-          let overdueT = 0;
-          let nearDeadlineP = 0;
+    const calculateStats = () => {
+      let pCount = 0;
+      let tCount = 0;
+      let activeP = 0;
+      let totalT = 0;
+      let overdueT = 0;
+      let nearDeadlineP = 0;
 
-          const now = new Date();
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          const sevenDaysFromNow = new Date(today);
-          sevenDaysFromNow.setDate(today.getDate() + 7);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const sevenDaysFromNow = new Date(today);
+      sevenDaysFromNow.setDate(today.getDate() + 7);
 
-          const isMatch = (item: any) => {
-            if (!item.isCompleted && item.status !== 'completed') return false;
-            
-            if (filter === 'Custom Month') {
-              const date = item.completedAt ? new Date(item.completedAt) : (item.dueDate ? new Date(item.dueDate + 'T12:00:00') : null);
-              if (!date) return false;
-              return date.getMonth() === selectedMonth && date.getFullYear() === selectedYear;
-            } else {
-              let daysToLookBack = 30;
-              if (filter === '1 Day') daysToLookBack = 1;
-              if (filter === '7 Days') daysToLookBack = 7;
-              if (filter === '1 Month') daysToLookBack = 30;
-              if (filter === '6 Months') daysToLookBack = 180;
-              if (filter === '1 Year') daysToLookBack = 365;
+      const isMatch = (item: any) => {
+        if (!item.isCompleted && item.status !== 'completed') return false;
+        
+        if (filter === 'Custom Month') {
+          const date = item.completedAt ? new Date(item.completedAt) : (item.dueDate ? new Date(item.dueDate + 'T12:00:00') : null);
+          if (!date) return false;
+          return date.getMonth() === selectedMonth && date.getFullYear() === selectedYear;
+        } else {
+          let daysToLookBack = 30;
+          if (filter === '1 Day') daysToLookBack = 1;
+          if (filter === '7 Days') daysToLookBack = 7;
+          if (filter === '1 Month') daysToLookBack = 30;
+          if (filter === '6 Months') daysToLookBack = 180;
+          if (filter === '1 Year') daysToLookBack = 365;
 
-              const date = item.completedAt ? new Date(item.completedAt) : (item.dueDate ? new Date(item.dueDate + 'T12:00:00') : null);
-              if (!date) return true; 
-              
-              const diffTime = today.getTime() - date.getTime();
-              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-              return diffDays >= 0 && diffDays < daysToLookBack;
-            }
-          };
+          const date = item.completedAt ? new Date(item.completedAt) : (item.dueDate ? new Date(item.dueDate + 'T12:00:00') : null);
+          if (!date) return true; 
+          
+          const diffTime = today.getTime() - date.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          return diffDays >= 0 && diffDays < daysToLookBack;
+        }
+      };
 
-          if (Array.isArray(parsed)) {
-            parsed.forEach((p: any) => {
-              if (isMatch(p)) pCount++;
+      if (Array.isArray(projects)) {
+        projects.forEach((p: any) => {
+          if (isMatch(p)) pCount++;
 
-              if (!p.isCompleted && p.status !== 'completed') {
-                activeP++;
-                if (p.dueDate) {
-                  const pDate = new Date(p.dueDate + 'T00:00:00');
-                  pDate.setHours(0, 0, 0, 0);
-                  if (pDate < today) {
-                    if (p.tasks && Array.isArray(p.tasks)) {
-                      p.tasks.forEach((t: any) => {
-                        if (!t.isCompleted) overdueT++;
-                      });
-                    }
-                  }
-                  if (pDate >= today && pDate <= sevenDaysFromNow) {
-                    nearDeadlineP++;
-                  }
+          if (!p.isCompleted && p.status !== 'completed') {
+            activeP++;
+            if (p.dueDate) {
+              const pDate = new Date(p.dueDate + 'T00:00:00');
+              pDate.setHours(0, 0, 0, 0);
+              if (pDate < today) {
+                if (p.tasks && Array.isArray(p.tasks)) {
+                  p.tasks.forEach((t: any) => {
+                    if (!t.isCompleted) overdueT++;
+                  });
                 }
               }
-
-              if (p.tasks && Array.isArray(p.tasks)) {
-                p.tasks.forEach((t: any) => {
-                  totalT++;
-                  if (isMatch(t)) tCount++;
-                });
+              if (pDate >= today && pDate <= sevenDaysFromNow) {
+                nearDeadlineP++;
               }
+            }
+          }
+
+          if (p.tasks && Array.isArray(p.tasks)) {
+            p.tasks.forEach((t: any) => {
+              totalT++;
+              if (isMatch(t)) tCount++;
             });
           }
-          setProjectsCount(pCount);
-          setTasksCount(tCount);
-          setActiveProjectsCount(activeP);
-          setTotalTasksCount(totalT);
-          setOverdueTasksCount(overdueT);
-          setNearDeadlineProjectsCount(nearDeadlineP);
-        } catch (e) { }
+        });
       }
+      setProjectsCount(pCount);
+      setTasksCount(tCount);
+      setActiveProjectsCount(activeP);
+      setTotalTasksCount(totalT);
+      setOverdueTasksCount(overdueT);
+      setNearDeadlineProjectsCount(nearDeadlineP);
     };
 
-    loadData();
+    calculateStats();
     setIsLoaded(true);
-
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === getPrefixedKey('goals_projects')) loadData();
-    };
-    
-    const handleLocal = (e: any) => {
-      if (e.detail && e.detail.key === 'goals_projects') loadData();
-    };
-
-    window.addEventListener('storage', handleStorage);
-    window.addEventListener('local-storage-change', handleLocal);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('local-storage-change', handleLocal);
-    };
-  }, [filter, selectedMonth, selectedYear]);
+  }, [filter, selectedMonth, selectedYear, projects]);
 
   if (!isLoaded) return <div className="animate-pulse h-40 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800/50"></div>;
 

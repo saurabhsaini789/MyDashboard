@@ -1,154 +1,106 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ReadingQueue } from '@/components/books/ReadingQueue';
 import { YearlyReadingLog } from '@/components/books/YearlyReadingLog';
 import { CompletedBooks } from '@/components/books/CompletedBooks';
 import { CompletedBookModal } from '@/components/books/CompletedBookModal';
-import { BookMarked, Sparkles } from 'lucide-react';
 import { Book, CompletedBook } from '@/types/books';
+import { SYNC_KEYS } from '@/lib/sync-keys';
 import { setSyncedItem } from '@/lib/storage';
-import { getPrefixedKey } from '@/lib/keys';
-import { PageTitle, SectionTitle, Text, Description } from '@/components/ui/Text';
+import { validateLocalData } from '@/lib/security';
+import { PageTitle, SectionTitle, Description, Text } from '@/components/ui/Text';
+import { useStorageSubscription } from '@/hooks/useStorageSubscription';
 
 export default function BooksPage() {
- const [mounted, setMounted] = useState(false);
- const [promotedBook, setPromotedBook] = useState<Book | null>(null);
+  const booksQueue = useStorageSubscription<Book[]>(SYNC_KEYS.BOOKS_QUEUE, []);
+  const completedBooksList = useStorageSubscription<CompletedBook[]>(SYNC_KEYS.BOOKS_COMPLETED, []);
+  const [promotedBook, setPromotedBook] = useState<Book | null>(null);
 
- useEffect(() => {
- setMounted(true);
- }, []);
+  const handlePromote = (book: Book) => {
+    setPromotedBook(book);
+  };
 
- const handlePromote = (book: Book) => {
- setPromotedBook(book);
- };
+  const handleLogPromote = (logBook: { id: string; title: string; author: string; category?: string; originalQueueId?: string }, language: 'English' | 'Hindi') => {
+    const completedBookEntry = {
+      id: logBook.id,
+      order: 0,
+      name: logBook.title,
+      author: logBook.author,
+      language,
+      category: logBook.category || 'Other',
+      status: 'Completed',
+      originalQueueId: logBook.originalQueueId,
+      createdAt: new Date().toISOString()
+    } as Book & { originalQueueId?: string };
+    setPromotedBook(completedBookEntry);
+  };
 
- const handleLogPromote = (logBook: any, language: 'English' | 'Hindi') => {
- const dummyBook: any = {
- id: logBook.id,
- order: 0,
- name: logBook.title,
- author: logBook.author,
- language,
- category: logBook.category || 'Other',
- status: 'Completed',
- originalQueueId: logBook.originalQueueId,
- createdAt: new Date().toISOString()
- };
- setPromotedBook(dummyBook);
- };
+  const finalizePromotion = (completedDetails: CompletedBook) => {
+    // 1. Add to Completed Books list
+    const updatedCompleted = [completedDetails, ...completedBooksList];
+    setSyncedItem(SYNC_KEYS.BOOKS_COMPLETED, JSON.stringify(updatedCompleted));
 
- const finalizePromotion = (completedDetails: CompletedBook) => {
- // 1. Add to Completed Books list
- const storedCompleted = localStorage.getItem(getPrefixedKey('os_books_completed'));
- let completedBooks: CompletedBook[] = [];
- if (storedCompleted) {
- try {
- completedBooks = JSON.parse(storedCompleted);
- } catch (e) {}
- }
- completedBooks = [completedDetails, ...completedBooks];
- setSyncedItem('os_books_completed', JSON.stringify(completedBooks));
+    // 2. Remove from Queue
+    const queueToRemoveFromId = (promotedBook as Book & { originalQueueId?: string })?.originalQueueId || promotedBook?.id;
+    
+    if (queueToRemoveFromId && !queueToRemoveFromId.toString().startsWith('log-')) {
+      const updatedQueue = booksQueue.filter(b => b.id !== queueToRemoveFromId);
+      const reindexed = updatedQueue.map((b, i) => ({ ...b, order: i + 1 }));
+      setSyncedItem(SYNC_KEYS.BOOKS_QUEUE, JSON.stringify(reindexed));
+    }
 
- // 2. Remove from Queue (only if it came from the queue)
- // 2. Remove from Queue (if it has an originalQueueId or its own ID is in queue)
- const queueToRemoveFromId = (promotedBook as any)?.originalQueueId || promotedBook?.id;
- 
- if (queueToRemoveFromId && !queueToRemoveFromId.toString().startsWith('log-')) {
- const storedQueue = localStorage.getItem(getPrefixedKey('os_books_queue'));
- if (storedQueue) {
- try {
- const queue: Book[] = JSON.parse(storedQueue);
- const updatedQueue = queue.filter(b => b.id !== queueToRemoveFromId);
- // Re-index
- const reindexed = updatedQueue.map((b, i) => ({ ...b, order: i + 1 }));
- setSyncedItem('os_books_queue', JSON.stringify(reindexed));
- } catch (e) {}
- }
- window.dispatchEvent(new CustomEvent('local-storage-change', { detail: { key: 'os_books_queue' } }));
- }
+    setPromotedBook(null);
+  };
 
- setPromotedBook(null);
- window.dispatchEvent(new CustomEvent('local-storage-change', { detail: { key: 'os_books_completed' } }));
- };
+  return (
+    <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 selection:bg-teal-500/30 font-sans p-4 md:p-8 xl:p-12 transition-colors duration-200">
+      <div className="mx-auto w-full max-w-7xl">
+        <header className="mb-10 flex flex-col items-start">
+          <PageTitle>Books</PageTitle>
+          <Description>Track your reading journey, yearly progress, and distilled wisdom.</Description>
+        </header>
 
- if (!mounted) return null;
+        <section className="w-full relative fade-in">
+          <div className="mb-6"><SectionTitle>Reading Plan</SectionTitle></div>
+          <ReadingQueue onPromote={handlePromote} />
+        </section>
 
- return (
- <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 selection:bg-teal-500/30 font-sans p-4 md:p-8 xl:p-12 transition-colors duration-200">
- <div className="mx-auto w-full max-w-7xl">
- {/* Header Section */}
- <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
- <div className="flex flex-col items-start">
- <PageTitle>
- Books
- </PageTitle>
- <Description>Track your reading journey, yearly progress, and distilled wisdom.</Description>
- </div>
- </header>
+        <section className="w-full relative mt-20 fade-in">
+          <div className="mb-6"><SectionTitle>Yearly Reading Log</SectionTitle></div>
+          <YearlyReadingLog onPromote={handleLogPromote} />
+        </section>
 
- {/* Section 1: Reading Plan */}
- <section className="w-full relative fade-in">
- <div className="mb-10">
- <SectionTitle>
- Reading Plan
- </SectionTitle>
- </div>
- 
- <ReadingQueue onPromote={handlePromote} />
- </section>
+        <section className="w-full relative mt-20 fade-in">
+          <div className="mb-6"><SectionTitle>Completed Books</SectionTitle></div>
+          <CompletedBooks />
+        </section>
 
- {/* Section 2: Yearly Reading Log */}
- <section className="w-full relative mt-20 fade-in">
- <div className="mb-10">
- <SectionTitle>
- Yearly Reading Log
- </SectionTitle>
- </div>
- 
- <YearlyReadingLog onPromote={handleLogPromote} />
- </section>
+        <div className="mt-24 pt-12 border-t border-dashed border-zinc-200 dark:border-zinc-800 opacity-40">
+          <Text variant="label" as="p" className="text-center">End of Library Dashboard</Text>
+        </div>
+      </div>
 
- {/* Section 3: Completed Books */}
- <section className="w-full relative mt-20 fade-in">
- <div className="mb-10">
- <SectionTitle>
- Completed Books
- </SectionTitle>
- </div>
- 
- <CompletedBooks />
- </section>
-
- {/* Footer */}
- <div className="mt-24 pt-12 border-t border-dashed border-zinc-200 dark:border-zinc-800 opacity-40">
- <Text variant="label" as="p" className="text-center">
- End of Library Dashboard
- </Text>
- </div>
- </div>
-
- {/* Promotion Modal */}
- {promotedBook && (
- <CompletedBookModal
- mode="create"
- book={{
- id: crypto.randomUUID(),
- name: promotedBook.name,
- author: promotedBook.author,
- language: promotedBook.language,
- category: promotedBook.category,
- completionDate: new Date().toISOString().split('T')[0],
- rating: 5,
- notes: '',
- wouldRecommend: true,
- createdAt: new Date().toISOString()
- }}
- onClose={() => setPromotedBook(null)}
- onUpdateBook={finalizePromotion}
- onDeleteBook={() => setPromotedBook(null)}
- />
- )}
- </main>
- );
+      {promotedBook && (
+        <CompletedBookModal
+          mode="create"
+          book={{
+            id: crypto.randomUUID(),
+            name: promotedBook.name,
+            author: promotedBook.author,
+            language: promotedBook.language,
+            category: promotedBook.category,
+            completionDate: new Date().toISOString().split('T')[0],
+            rating: 5,
+            notes: '',
+            wouldRecommend: true,
+            createdAt: new Date().toISOString()
+          }}
+          onClose={() => setPromotedBook(null)}
+          onUpdateBook={finalizePromotion}
+          onDeleteBook={() => setPromotedBook(null)}
+        />
+      )}
+    </main>
+  );
 }

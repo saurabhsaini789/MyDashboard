@@ -101,7 +101,7 @@ export const getProjectPriorityInfo = (p: Project) => {
 export const sortProjects = (projects: Project[]) => {
  return [...projects].sort((a, b) => {
  const pA = getProjectPriorityInfo(a);
- const pB = b.dueDate ? getProjectPriorityInfo(b) : { label: 'On Track' }; // dummy
+ const pB = getProjectPriorityInfo(b);
 
  const score = (label: string) => {
  switch (label) {

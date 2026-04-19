@@ -1,236 +1,114 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ExpenseRecord } from '@/types/finance';
 import { PantryEntryModal } from './PantryEntryModal';
 import { Modal } from '../ui/Modal';
 
-
 interface PantryCalendarProps {
- records: ExpenseRecord[];
- onUpdateRecords: (records: ExpenseRecord[]) => void;
- viewingDate: Date;
- setViewingDate: (date: Date) => void;
+  records: ExpenseRecord[];
+  onUpdateRecords: (records: ExpenseRecord[]) => void;
+  viewingDate: Date;
+  setViewingDate: (date: Date) => void;
 }
 
 export function PantryCalendar({ records, onUpdateRecords, viewingDate, setViewingDate }: PantryCalendarProps) {
- const [selectedDate, setSelectedDate] = useState<string | null>(null);
- const [isModalOpen, setIsModalOpen] = useState(false);
- const [editingRecord, setEditingRecord] = useState<ExpenseRecord | null>(null);
- const [preferredTab, setPreferredTab] = useState<'list' | 'form' | undefined>(undefined);
- const [isMobilePopupOpen, setIsMobilePopupOpen] = useState(false);
- const [popupDateStr, setPopupDateStr] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<ExpenseRecord | null>(null);
+  const [preferredTab, setPreferredTab] = useState<'list' | 'form' | undefined>(undefined);
+  const [isMobilePopupOpen, setIsMobilePopupOpen] = useState(false);
+  const [popupDateStr, setPopupDateStr] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
- const month = viewingDate.getMonth();
- const year = viewingDate.getFullYear();
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
- const daysInMonth = new Date(year, month + 1, 0).getDate();
- const firstDayOfMonth = new Date(year, month, 1).getDay();
+  const month = viewingDate.getMonth();
+  const year = viewingDate.getFullYear();
 
- // Group records by date
- const recordsByDate = useMemo(() => {
- const grouped: Record<string, ExpenseRecord[]> = {};
- records.forEach(record => {
- const date = record.date;
- if (!grouped[date]) grouped[date] = [];
- grouped[date].push(record);
- });
- return grouped;
- }, [records]);
+  // Stable calculations that don't depend on "today" to avoid hydration mismatch
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayOfMonth = new Date(year, month, 1).getDay();
 
- // Daily totals
- const dailyTotals = useMemo(() => {
- const totals: Record<string, number> = {};
- Object.entries(recordsByDate).forEach(([date, dateRecords]) => {
- totals[date] = dateRecords.reduce((sum, r) => sum + r.amount, 0);
- });
- return totals;
- }, [recordsByDate]);
+  const recordsByDate = useMemo(() => {
+    const grouped: Record<string, ExpenseRecord[]> = {};
+    records.forEach(r => {
+      if (!grouped[r.date]) grouped[r.date] = [];
+      grouped[r.date].push(r);
+    });
+    return grouped;
+  }, [records]);
 
- // Monthly total
- const monthlyTotal = useMemo(() => {
- return records
- .filter(r => {
- if (!r.date) return false;
- const [rYear, rMonth] = r.date.split('-');
- return parseInt(rMonth) - 1 === month && parseInt(rYear) === year;
- })
- .reduce((sum, r) => sum + r.amount, 0);
- }, [records, month, year]);
+  const dailyTotals = useMemo(() => {
+    const totals: Record<string, number> = {};
+    Object.entries(recordsByDate).forEach(([date, dateRecords]) => {
+      totals[date] = dateRecords.reduce((sum, r) => sum + r.amount, 0);
+    });
+    return totals;
+  }, [recordsByDate]);
 
- const prevMonth = () => setViewingDate(new Date(year, month - 1, 1));
- const nextMonth = () => setViewingDate(new Date(year, month + 1, 1));
+  const handleDateClick = (dateStr: string) => {
+    setSelectedDate(dateStr);
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setPopupDateStr(dateStr);
+      setIsMobilePopupOpen(true);
+    } else {
+      setEditingRecord(null);
+      setPreferredTab(undefined);
+      setIsModalOpen(true);
+    }
+  };
 
- const handleDateClick = (dateStr: string) => {
- setSelectedDate(dateStr);
- 
- // On mobile, show the lightweight details popup first
- if (window.innerWidth < 768) {
- setPopupDateStr(dateStr);
- setIsMobilePopupOpen(true);
- } else {
- // On desktop, directly open the entry modal
- setEditingRecord(null);
- setPreferredTab(undefined);
- setIsModalOpen(true);
- }
- };
+  const getDayColor = (total: number) => {
+    if (total === 0) return '';
+    if (total < 500) return 'bg-emerald-50 border-emerald-100 text-emerald-700';
+    if (total < 2000) return 'bg-amber-50 border-amber-100 text-amber-700';
+    return 'bg-rose-50 border-rose-100 text-rose-700';
+  };
 
- const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  if (!isMounted) return <div className="min-h-[400px] animate-pulse bg-zinc-100 dark:bg-zinc-900 rounded-3xl" />;
 
- // Color indicators logic
- const getDayColor = (total: number) => {
- if (total === 0) return '';
- if (total < 500) return 'bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20';
- if (total < 2000) return 'bg-amber-50 border-amber-100 text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/20';
- return 'bg-rose-50 border-rose-100 text-rose-700 dark:bg-rose-500/10 dark:border-rose-500/20';
- };
+  const todayStr = new Date().toISOString().split('T')[0];
 
- return (
- <div className="flex flex-col gap-8 w-full">
+  return (
+    <div className="flex flex-col gap-8 w-full font-bold uppercase transition-all duration-500">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 md:p-10 shadow-sm">
+        <div className="grid grid-cols-7 gap-1 md:gap-4 border-b pb-4 mb-4">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="text-center text-[10px] text-zinc-400 font-bold">{d}</div>)}
+        </div>
+        <div className="grid grid-cols-7 gap-1 md:gap-4">
+          {Array.from({ length: firstDayOfMonth }).map((_, i) => <div key={`e-${i}`} className="h-10 md:h-32" />)}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const day = i + 1;
+            const ds = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+            const total = dailyTotals[ds] || 0;
+            const itemsOnDay = recordsByDate[ds] || [];
+            const isToday = todayStr === ds;
 
- {/* Calendar Grid */}
- <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 md:p-10 shadow-sm overflow-hidden">
- <div className="grid grid-cols-7 gap-0.5 sm:gap-2 md:gap-4">
- {dayNames.map(day => (
- <div key={day} className="text-center text-xs sm:text-xs uppercase text-zinc-600 dark:text-zinc-300 py-2 sm:py-3 md:py-4">
- {day}
- </div>
- ))}
+            return (
+              <div key={day} onClick={() => handleDateClick(ds)} className={`relative h-11 md:h-32 rounded-xl border flex flex-col p-1 md:p-4 cursor-pointer transition-all hover:scale-[1.02] ${total > 0 ? getDayColor(total) : 'bg-zinc-50 border-transparent hover:bg-zinc-100'} ${isToday ? 'ring-2 ring-zinc-900 shadow-xl' : ''}`}>
+                <div className="flex justify-between items-start"><span className="text-[10px] md:text-sm">{day}</span>{total > 0 && <span className="hidden md:inline text-xs">${total.toLocaleString()}</span>}</div>
+                <div className="mt-2 hidden md:flex flex-col gap-1 overflow-hidden">{itemsOnDay.slice(0, 2).map((r, idx) => <span key={idx} className="text-[10px] truncate opacity-60">{r.vendor || r.category}</span>)}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
- {Array.from({ length: firstDayOfMonth }).map((_, i) => (
- <div key={`empty-${i}`} className="h-10 md:h-32 rounded-xl md:rounded-3xl" />
- ))}
-
- {Array.from({ length: daysInMonth }).map((_, i) => {
- const day = i + 1;
- const pad = (n: number) => n.toString().padStart(2, '0');
- const dateStr = `${year}-${pad(month + 1)}-${pad(day)}`;
- const recordsOnDay = recordsByDate[dateStr] || [];
- const totalOnDay = dailyTotals[dateStr] || 0;
- const isToday = new Date().toISOString().split('T')[0] === dateStr;
-
- return (
- <div 
- key={day}
- onClick={() => handleDateClick(dateStr)}
- className={`group relative h-11 sm:h-14 md:h-32 rounded-lg sm:rounded-xl md:rounded-2xl border transition-all cursor-pointer shadow-sm hover:-translate-y-1 flex flex-col p-1 md:p-4 overflow-hidden ${totalOnDay > 0 ? getDayColor(totalOnDay) : 'border-zinc-50 dark:border-zinc-800/50 hover:border-zinc-200 dark:hover:border-zinc-700'} ${isToday ? 'ring-2 ring-zinc-900 dark:ring-zinc-100' : ''}`}
- >
- <div className="flex justify-center md:justify-between items-center md:items-start">
- <span className={`text-xs md:text-sm ${totalOnDay > 0 ? 'font-semibold text-zinc-900 dark:text-zinc-100' : 'font-medium text-zinc-500 dark:text-zinc-600'}`}>
- {day}
- </span>
- {totalOnDay > 0 && (
- <div className="hidden md:flex flex-col items-end">
- <span className="text-xs font-bold">
- ${totalOnDay.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
- </span>
- </div>
- )}
- </div>
-
- <div className="mt-2 hidden md:flex flex-col gap-1 overflow-hidden">
- {recordsOnDay.slice(0, 2).map((r, idx) => (
- <div key={idx} className="text-xs truncate uppercase text-zinc-600 dark:text-zinc-300">
- {r.vendor ? `${r.vendor}${r.entryType === 'Bill' ? ' Bill' : ''}` : (r.subcategory || r.category)}
- </div>
- ))}
- {recordsOnDay.length > 2 && (
- <div className="text-xs text-zinc-400">+{recordsOnDay.length - 2} more</div>
- )}
- </div>
- 
- {/* Plus Icon on Hover as explicit trigger - Desktop only */}
- <div 
- onClick={(e) => {
- e.stopPropagation();
- handleDateClick(dateStr);
- }}
- className="absolute bottom-2 right-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all hover:scale-110 active:scale-90 hidden md:block"
- >
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
- </div>
- </div>
- );
- })}
- </div>
- </div>
-
- {isModalOpen && (
- <PantryEntryModal 
- isOpen={isModalOpen}
- date={selectedDate}
- recordsOnDate={selectedDate ? recordsByDate[selectedDate] || [] : []}
- onClose={() => {
- setIsModalOpen(false);
- setEditingRecord(null);
- setPreferredTab(undefined);
- }}
- onUpdateRecords={onUpdateRecords}
- allRecords={records}
- initialRecord={editingRecord}
- initialTab={preferredTab}
- />
- )}
-
- {/* Mobile Details Popover */}
- <Modal
- isOpen={isMobilePopupOpen && !!popupDateStr}
- onClose={() => setIsMobilePopupOpen(false)}
- title={popupDateStr ? `Details for ${new Date(popupDateStr).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : 'Details'}
- cancelText="Close"
- isReadonly={true}
- >
- <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto pr-1">
- {popupDateStr && recordsByDate[popupDateStr]?.length > 0 ? (
- recordsByDate[popupDateStr].map(record => (
- <div 
- key={record.id} 
- onClick={() => {
- setEditingRecord(record);
- setPreferredTab('form');
- setIsMobilePopupOpen(false);
- setIsModalOpen(true);
- }}
- className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 active:scale-[0.98] transition-all cursor-pointer"
- >
- <div className="flex items-center gap-4">
- <div className="w-10 h-10 rounded-xl bg-zinc-900 dark:bg-white flex items-center justify-center text-white dark:text-zinc-900 text-xs font-semibold">
- {record.category.charAt(0)}
- </div>
- <div className="flex flex-col">
- <span className="text-sm font-semibold text-zinc-900 dark:text-white">{record.vendor || record.subcategory}</span>
- <span className="text-xs uppercase font-semibold text-zinc-500 dark:text-zinc-300">{record.category}</span>
- </div>
- </div>
- <div className="flex flex-col items-end">
- <span className="text-lg font-bold text-zinc-900 dark:text-white">${record.amount.toLocaleString('en-CA', { maximumFractionDigits: 0 })}</span>
- <span className={`text-xs uppercase font-semibold ${record.type === 'need' ? 'text-emerald-500' : 'text-amber-500'}`}>{record.type}</span>
- </div>
- </div>
- ))
- ) : (
- <div className="py-12 flex flex-col items-center opacity-30 gap-3">
- <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-3-3v6m9-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
- <span className="text-xs uppercase font-semibold">No records found</span>
- </div>
- )}
- </div>
-
- <div className="mt-8 flex gap-3">
- <button 
- onClick={() => {
- setEditingRecord(null);
- setPreferredTab('form');
- setIsMobilePopupOpen(false);
- setIsModalOpen(true);
- }}
- className="flex-1 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl font-semibold uppercase text-xs shadow-sm active:scale-95 transition-all"
- >
- Add New Entry
- </button>
- </div>
- </Modal>
- </div>
- );
+      {isModalOpen && <PantryEntryModal isOpen={isModalOpen} date={selectedDate} recordsOnDate={selectedDate ? recordsByDate[selectedDate] || [] : []} onClose={() => { setIsModalOpen(false); setEditingRecord(null); setPreferredTab(undefined); }} onUpdateRecords={onUpdateRecords} allRecords={records} initialRecord={editingRecord} initialTab={preferredTab} />}
+      <Modal isOpen={isMobilePopupOpen && !!popupDateStr} onClose={() => setIsMobilePopupOpen(false)} title="Pantry Details" isReadonly={true}>
+        <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
+          {popupDateStr && recordsByDate[popupDateStr]?.map(r => (
+            <div key={r.id} onClick={() => { setEditingRecord(r); setPreferredTab('form'); setIsMobilePopupOpen(false); setIsModalOpen(true); }} className="flex justify-between p-4 bg-zinc-50 rounded-2xl font-bold uppercase cursor-pointer">
+              <div className="flex flex-col"><span className="text-sm">{r.vendor || r.subcategory}</span><span className="text-[10px] text-zinc-400">{r.category}</span></div>
+              <span className="text-lg">${r.amount.toLocaleString()}</span>
+            </div>
+          ))}
+          <button onClick={() => { setEditingRecord(null); setPreferredTab('form'); setIsMobilePopupOpen(false); setIsModalOpen(true); }} className="p-4 bg-zinc-900 text-white rounded-2xl font-bold uppercase text-xs mt-4">Add Entry</button>
+        </div>
+      </Modal>
+    </div>
+  );
 }

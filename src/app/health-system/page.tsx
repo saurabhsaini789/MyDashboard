@@ -22,15 +22,11 @@ export default function HealthSystemPage() {
     return 'ALL';
   };
 
-  const [mounted, setMounted] = useState(false);
   const [globalStatusFilter, setGlobalStatusFilter] = useState<
     'ALL' | 'LOW' | 'MISSING' | 'EXPIRED'
   >(getInitialFilter());
   const medicineRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (globalStatusFilter !== 'ALL' && medicineRef.current) {
@@ -38,7 +34,6 @@ export default function HealthSystemPage() {
     }
   }, [globalStatusFilter]);
 
-  if (!mounted) return null;
 
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 selection:bg-zinc-500/10 relative overflow-hidden">
