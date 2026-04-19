@@ -27,7 +27,7 @@ export const setSyncedItem = (key: string, value: string, userId?: string) => {
     try {
       const parsed = JSON.parse(value);
       const tagged: TaggedData<any> = {
-        u: userId,
+        u: targetUserId,
         t: Date.now(),
         d: parsed
       };

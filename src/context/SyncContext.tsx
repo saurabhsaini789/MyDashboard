@@ -20,7 +20,8 @@ const SyncStatusContext = createContext<SyncStatus | undefined>(undefined);
  * from the relatively stable isReady state.
  */
 export function SyncProvider({ children }: { children: ReactNode }) {
-  const { isReady, syncStatus, isDevelopment } = useSync();
+  const { isReady, syncStatus } = useSync();
+  const isDevelopment = process.env.NODE_ENV === 'development';
 
   // Stable state components (changes once from initializing to ready)
   const stateValues = useMemo(() => ({ 

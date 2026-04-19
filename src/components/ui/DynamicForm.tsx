@@ -8,7 +8,7 @@ export interface FormSchemaField extends Omit<FormFieldProps, 'value' | 'onChang
 
 export interface FormSchemaSection {
  id: string;
- title: string;
+ title?: string;
  fields: FormSchemaField[];
  isAdvanced?: boolean;
  initiallyExpanded?: boolean;

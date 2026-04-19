@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 export type AccentColor = 'blue' | 'emerald' | 'rose' | 'amber' | 'teal' | 'indigo' | 'purple' | 'zinc';
 
 interface FormSectionProps {
- title: string;
+ title?: string;
  children: React.ReactNode;
  isAdvanced?: boolean;
  accentColor?: AccentColor;
@@ -29,23 +29,25 @@ export const FormSection: React.FC<FormSectionProps> = ({ title, children, isAdv
 
  return (
  <div>
- <div 
- className={`flex items-center justify-between mb-3 ${isAdvanced ? 'cursor-pointer select-none group' : ''}`}
- onClick={() => isAdvanced && setIsExpanded(!isExpanded)}
- >
- <Text 
- variant="heading" 
- className={cn("transition-colors", colors.text, isAdvanced && colors.hover)}
- >
- {title}
- </Text>
+ {title && (
+  <div 
+  className={`flex items-center justify-between mb-3 ${isAdvanced ? 'cursor-pointer select-none group' : ''}`}
+  onClick={() => isAdvanced && setIsExpanded(!isExpanded)}
+  >
+  <Text 
+  variant="heading" 
+  className={cn("transition-colors", colors.text, isAdvanced && colors.hover)}
+  >
+  {title}
+  </Text>
 
- {isAdvanced && (
- <Text variant="label" as="span" className="text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors font-semibold">
- {isExpanded ? 'Hide' : 'Show'}
- </Text>
+  {isAdvanced && (
+  <Text variant="label" as="span" className="text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors font-semibold">
+  {isExpanded ? 'Hide' : 'Show'}
+  </Text>
+  )}
+  </div>
  )}
- </div>
  
  {isExpanded && (
  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">

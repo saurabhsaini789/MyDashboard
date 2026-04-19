@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from 'react';
-import { ExpenseRecord, PriceInstance, ItemStats } from '@/types/finance';
+import { ExpenseRecord } from '@/types/finance';
 import { Modal } from '../ui/Modal';
 import { SectionTitle } from '../ui/Text';
 import { Sparkles, AlertTriangle, Lightbulb, LayoutGrid, List } from 'lucide-react';
@@ -11,6 +11,24 @@ import { setSyncedItem } from '@/lib/storage';
 
 interface PriceIntelligenceProps {
   records: ExpenseRecord[];
+}
+
+interface PriceInstance {
+  price: number;
+  date: string;
+  vendor: string;
+  brand?: string;
+  size?: string;
+}
+
+interface ItemStats {
+  name: string;
+  history: PriceInstance[];
+  averagePrice: number;
+  lowestPrice: PriceInstance;
+  lastPurchase: PriceInstance;
+  priceTrend: number;
+  smartInsights: any[];
 }
 
 export function PriceIntelligence({ records }: PriceIntelligenceProps) {

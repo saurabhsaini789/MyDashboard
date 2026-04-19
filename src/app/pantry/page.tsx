@@ -12,7 +12,7 @@ import { PantryEntryModal } from '@/components/pantry/PantryEntryModal';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 import { setSyncedItem } from '@/lib/storage';
 import { ExpenseRecord } from '@/types/finance';
-import { PageTitle, PageSubtitle, Text, Description } from '@/components/ui/Text';
+import { PageTitle, Text, Description } from '@/components/ui/Text';
 import { useStorageSubscription } from '@/hooks/useStorageSubscription';
 
 export default function PantryPage() {

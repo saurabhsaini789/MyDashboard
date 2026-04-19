@@ -1,0 +1,12 @@
+src/components/pantry/GroceryPlan.tsx(86,95): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/components/pantry/InventoryTracker.tsx(64,61): error TS2339: Property 'getTime' does not exist on type 'never'.
+src/components/pantry/InventoryTracker.tsx(106,109): error TS2339: Property 'toLocaleDateString' does not exist on type 'never'.
+src/components/pantry/PriceIntelligence.tsx(4,25): error TS2305: Module '"@/types/finance"' has no exported member 'PriceInstance'.
+src/components/pantry/PriceIntelligence.tsx(4,40): error TS2305: Module '"@/types/finance"' has no exported member 'ItemStats'.
+src/components/widgets/Habits.tsx(141,53): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/components/widgets/Habits.tsx(262,47): error TS7006: Parameter 'd' implicitly has an 'any' type.
+src/components/widgets/Habits.tsx(263,44): error TS7006: Parameter 'd' implicitly has an 'any' type.
+src/context/SyncContext.tsx(23,32): error TS2339: Property 'isDevelopment' does not exist on type '{ isReady: boolean; syncStatus: "idle" | "syncing" | "error" | "unauthenticated" | "connected" | "initializing" | "local"; }'.
+src/lib/storage.ts(30,9): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.

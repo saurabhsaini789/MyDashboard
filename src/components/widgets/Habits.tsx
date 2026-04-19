@@ -138,7 +138,7 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
         if (h.id === habitToDelete.id) {
           return {
             ...h,
-            monthScope: (h.monthScope || []).filter(m => !monthsToRemove.includes(m))
+            monthScope: (h.monthScope || []).filter((m: string) => !monthsToRemove.includes(m))
           };
         }
         return h;
@@ -259,8 +259,8 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
             <tbody>
               {visibleHabits.map(h => {
                 const days = h.records?.[monthKey] || [];
-                const completed = days.filter(d => d === 'done').length;
-                const missed = days.filter(d => d === 'missed').length;
+                const completed = days.filter((d: string) => d === 'done').length;
+                const missed = days.filter((d: string) => d === 'missed').length;
                 const score = completed - missed;
                 const streak = calcCurrentStreak(h);
                 return (

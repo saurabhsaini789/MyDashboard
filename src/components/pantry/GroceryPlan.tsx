@@ -83,7 +83,7 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
               </div>
               <div className="flex justify-between items-center pt-4 border-t border-zinc-100">
                 <span className="text-[10px] font-bold text-zinc-400 uppercase">{item.plannedQuantity} {item.unitSize} • {item.frequency}</span>
-                <button onClick={() => { setEditingItem(item); setFormData({ name: item.name, category: item.category, plannedQuantity: String(item.plannedQuantity), unitSize: item.unitSize||'', frequency: item.frequency, idealTiming: item.idealTiming||'', expectedPrice: String(item.expectedPrice), consumptionDays: String(item.consumptionDays||'') }); setIsFormOpen(true); }} className="text-[10px] font-bold uppercase text-zinc-400 opacity-0 group-hover:opacity-100">Edit</button>
+                <button onClick={() => { setEditingItem(item); setFormData({ name: item.name, category: item.category || DEFAULT_CATEGORIES[0], plannedQuantity: String(item.plannedQuantity), unitSize: item.unitSize||'', frequency: item.frequency || 'Weekly', idealTiming: item.idealTiming||'', expectedPrice: String(item.expectedPrice), consumptionDays: String(item.consumptionDays||'') }); setIsFormOpen(true); }} className="text-[10px] font-bold uppercase text-zinc-400 opacity-0 group-hover:opacity-100">Edit</button>
               </div>
             </div>
           ))}

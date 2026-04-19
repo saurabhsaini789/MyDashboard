@@ -45,12 +45,12 @@ export function InventoryTracker({ records }: InventoryTrackerProps) {
       (item.checkedUnits || []).forEach((u: any) => {
         if (typeof u !== 'string' && u.status === 'bought' && u.date) {
           const d = new Date(u.date);
-          if (!latestManualDate || d > latestManualDate) latestManualDate = d;
+          if (!latestManualDate || d > (latestManualDate as Date)) latestManualDate = d;
         }
       });
 
-      let effectivePurchaseDate = latestPurchaseDate;
-      if (latestManualDate && (!effectivePurchaseDate || latestManualDate > effectivePurchaseDate)) {
+      let effectivePurchaseDate = latestPurchaseDate as Date | null;
+      if (latestManualDate && (!effectivePurchaseDate || (latestManualDate as Date) > (effectivePurchaseDate as Date))) {
         effectivePurchaseDate = latestManualDate;
         if (totalBoughtLast === 0) totalBoughtLast = 1; 
       }

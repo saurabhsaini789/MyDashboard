@@ -281,7 +281,7 @@ function AddLogBookModal({ month, type, onClose, onSave }: { month: string; type
   return (
     <Modal isOpen={true} onClose={onClose} title={`Add to ${month} log`} onSubmit={handleSubmit}>
       <DynamicForm
-        sections={[{ id:'log', fields:[
+        sections={[{ id:'log', title: 'Book Details', fields:[
           { name: 'title', label: 'Book Name', type: 'text', required: true },
           { name: 'author', label: 'Author', type: 'text' },
           { name: 'status', label: 'Status', type: 'select', options: STATUS_OPTIONS.map(opt=>({value:opt, label:opt})) }
