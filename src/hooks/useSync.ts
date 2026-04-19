@@ -16,6 +16,7 @@ export function useSync() {
   
   const isSyncingFromRemote = useRef(false);
   const hasSyncedFromServer = useRef(false);
+  const isPushLocked = useRef(false);
   
   // Kill switch for rest sync rollout
   const IS_PUSH_DISABLED = process.env.NEXT_PUBLIC_DISABLE_REST_SYNC === 'true';
@@ -178,9 +179,20 @@ export function useSync() {
       }
 
       console.log(`[Sync] Synchronized ${projectRemoteData.length} authoritative records from cloud.`);
+      
+      // Safety Lock: Prevent any pushes for 5 seconds to let components hydrate
+      isPushLocked.current = true;
       isSyncingFromRemote.current = false;
+      hasSyncedFromServer.current = true; // UNLOCK PULLING
+      
       setIsReady(true);
       setSyncStatus('connected');
+      
+      setTimeout(() => {
+        isPushLocked.current = false;
+        console.log('[Sync] Migration safety lock released.');
+      }, 5000);
+      
       setTimeout(() => setSyncStatus('idle'), 1000);
     };
 
@@ -202,7 +214,7 @@ export function useSync() {
 
     const handleLocalUpdate = (e: CustomEvent | Event) => {
       const event = e as CustomEvent<{ key: string, value: string }>;
-      if (event.detail && ALL_SYNC_KEYS.includes(event.detail.key) && !isSyncingFromRemote.current) {
+      if (event.detail && ALL_SYNC_KEYS.includes(event.detail.key) && !isSyncingFromRemote.current && !isPushLocked.current) {
         pushToSupabase(event.detail.key, event.detail.value);
       }
     };
