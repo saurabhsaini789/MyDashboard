@@ -12,6 +12,7 @@ export function useSync() {
   const [isReady, setIsReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error' | 'unauthenticated' | 'connected' | 'initializing' | 'local'>('initializing');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   const isSyncingFromRemote = useRef(false);
   const hasSyncedFromServer = useRef(false);
@@ -95,15 +96,18 @@ export function useSync() {
             setSyncStatus('unauthenticated');
           } else {
             console.error(`[Sync] Error pushing ${prefixedKey}:`, error.message);
+            setErrorMessage(error.message);
             setSyncStatus('error');
           }
           return false;
         }
 
         setSyncStatus('connected');
+        setErrorMessage(null);
         setTimeout(() => setSyncStatus('idle'), 2000);
         return true;
-      } catch (e) {
+      } catch (e: any) {
+        setErrorMessage(e.message || 'Unknown error during push');
         setSyncStatus('error');
         return false;
       }
@@ -128,6 +132,7 @@ export function useSync() {
 
       if (error) {
         console.error('[Sync] Failed to pull initial cloud data:', error.message);
+        setErrorMessage(error.message);
         setSyncStatus('error');
         setIsReady(true);
         return;
@@ -247,5 +252,5 @@ export function useSync() {
     };
   }, [session]);
 
-  return { isReady, syncStatus };
+  return { isReady, syncStatus, errorMessage };
 }

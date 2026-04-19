@@ -10,6 +10,7 @@ interface SyncState {
 
 interface SyncStatus {
   syncStatus: 'idle' | 'syncing' | 'error' | 'unauthenticated' | 'connected' | 'initializing' | 'local';
+  errorMessage?: string | null;
 }
 
 const SyncStateContext = createContext<SyncState | undefined>(undefined);
@@ -20,7 +21,7 @@ const SyncStatusContext = createContext<SyncStatus | undefined>(undefined);
  * from the relatively stable isReady state.
  */
 export function SyncProvider({ children }: { children: ReactNode }) {
-  const { isReady, syncStatus } = useSync();
+  const { isReady, syncStatus, errorMessage } = useSync();
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   // Stable state components (changes once from initializing to ready)
@@ -31,8 +32,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   
   // High-frequency status updates (changes on every cloud push)
   const statusValues = useMemo(() => ({ 
-    syncStatus 
-  }), [syncStatus]);
+    syncStatus,
+    errorMessage
+  }), [syncStatus, errorMessage]);
 
   return (
     <SyncStateContext.Provider value={stateValues}>

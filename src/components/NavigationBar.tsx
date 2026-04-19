@@ -10,7 +10,7 @@ import { Menu, X } from 'lucide-react';
 export function NavigationBar() {
  const pathname = usePathname();
  const { isDevelopment } = useSyncReady();
- const { syncStatus } = useSyncIndicator();
+ const { syncStatus, errorMessage } = useSyncIndicator();
  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
  const navLinks = [
@@ -33,7 +33,7 @@ export function NavigationBar() {
  <Link href="/" className="text-xl font-semibold hover:opacity-80 transition-opacity whitespace-nowrap">
  Personal OS
  </Link>
- <SyncStatus status={syncStatus} isDevelopment={isDevelopment} />
+ <SyncStatus status={syncStatus} errorMessage={errorMessage} isDevelopment={isDevelopment} />
  </div>
  
  {/* Mobile Menu Toggle */}
