@@ -4,13 +4,14 @@ import { useSyncExternalStore, useCallback, useState, useEffect, useRef } from '
 import { getPrefixedKey } from '@/lib/keys';
 import { validateLocalData } from '@/lib/security';
 import { createClient } from '@/lib/supabase/client';
+import { getCurrentUserId } from '@/lib/storage';
 
 /**
  * A store-agnostic hook to subscribe to a specific storage key.
  * This abstracts away the internal storage mechanism (events vs direct store).
  */
 export function useStorageSubscription<T>(key: string, defaultValue: T): T {
-  const [userId, setUserId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(getCurrentUserId());
   const [isMounted, setIsMounted] = useState(false);
   
   const cache = useRef<{ raw: string | null; parsed: T; initialized: boolean }>({
@@ -61,10 +62,6 @@ export function useStorageSubscription<T>(key: string, defaultValue: T): T {
     const prefixedKey = getPrefixedKey(key);
     const rawVal = localStorage.getItem(prefixedKey);
     
-    if (cache.current.initialized && rawVal && !cache.current.raw) {
-      console.log(`[Storage:${key}] Found new data in storage for ${prefixedKey}`);
-    }
-
     // 1. If raw string hasn't changed, return cached reference
     if (cache.current.initialized && rawVal === cache.current.raw) {
       return cache.current.parsed;
@@ -77,12 +74,8 @@ export function useStorageSubscription<T>(key: string, defaultValue: T): T {
       nextVal = defaultValue;
     } else if (userId) {
       const validated = validateLocalData<T>(rawVal, userId);
-      if (validated === null) {
-        console.warn(`[Storage:${key}] Validation failed for ${prefixedKey}. Data might be for a different user.`);
-      }
       nextVal = validated !== null ? validated : defaultValue;
     } else if (rawVal && rawVal.includes('"u":"')) {
-      console.log(`[Storage:${key}] Tagged data found but userId not available yet. Returning default.`);
       nextVal = defaultValue;
     } else {
       try {

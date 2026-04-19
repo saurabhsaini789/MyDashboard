@@ -10,6 +10,8 @@ export const setCurrentUserId = (id: string | null) => {
   currentUserId = id;
 };
 
+export const getCurrentUserId = () => currentUserId;
+
 /**
  * Helper to update localStorage and dispatch a custom event 
  * so the useSync hook can catch changes in the same tab.

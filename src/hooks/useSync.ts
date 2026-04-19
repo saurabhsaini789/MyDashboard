@@ -149,17 +149,13 @@ export function useSync() {
       ) || [];
 
       // Load remote data into local storage (TAGGED with userId)
-      console.log(`[Sync] Project ID: ${projectID || 'none'}`);
       isSyncingFromRemote.current = true;
       projectRemoteData.forEach((row) => {
         const parts = row.key.split(':');
         const baseKey = parts[parts.length - 1];
         if (baseKey && ALL_SYNC_KEYS.includes(baseKey)) {
-          console.log(`[Sync] Writing to LocalStorage: ${row.key} -> ${baseKey}`);
           // Wrap in tagged format before storing locally
           setSyncedItem(baseKey, JSON.stringify(row.value), session.user.id);
-        } else {
-          console.warn(`[Sync] Ignored key from cloud (not in SYNC_KEYS): ${row.key}`);
         }
       });
       
@@ -181,8 +177,6 @@ export function useSync() {
         }
       }
 
-      console.log(`[Sync] Synchronized ${projectRemoteData.length} authoritative records from cloud.`);
-      
       // Safety Lock: Prevent any pushes for 5 seconds to let components hydrate
       isPushLocked.current = true;
       isSyncingFromRemote.current = false;
