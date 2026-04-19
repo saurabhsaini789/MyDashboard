@@ -5,6 +5,7 @@ import { MsalProvider } from "@azure/msal-react";
 import { getMsalInstance, loginRequest } from "@/lib/msalConfig";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { SyncProvider } from "@/context/SyncContext";
+import { AuthGuard } from "./AuthGuard";
 import { EventType, EventMessage, AuthenticationResult } from "@azure/msal-browser";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -74,7 +75,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
  >
  <MsalProvider instance={msalInstance}>
  <SyncProvider>
+ <AuthGuard>
  {children}
+ </AuthGuard>
  </SyncProvider>
  </MsalProvider>
  </ThemeProvider>
