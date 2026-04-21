@@ -18,7 +18,11 @@ interface MedicineInventorySectionProps {
 }
 
 export function MedicineInventorySection({ externalFilter }: MedicineInventorySectionProps) {
-  const items = useStorageSubscription<MedicineItem[]>(STORAGE_KEY, []);
+  const rawItems = useStorageSubscription<MedicineItem[]>(STORAGE_KEY, []);
+  const items = React.useMemo(() => rawItems.map(item => ({
+    ...item,
+    saltDetails: item.saltDetails || item.whenToUse || ''
+  })), [rawItems]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MedicineItem | null>(null);
@@ -30,7 +34,7 @@ export function MedicineInventorySection({ externalFilter }: MedicineInventorySe
     itemName: '',
     category: MEDICINE_CATEGORIES[0],
     purpose: '',
-    whenToUse: '',
+    saltDetails: '',
     quantity: 0,
     targetQuantity: 1,
     expiryDate: new Date().toISOString().split('T')[0],
@@ -75,7 +79,7 @@ export function MedicineInventorySection({ externalFilter }: MedicineInventorySe
       itemName: '',
       category: MEDICINE_CATEGORIES[0],
       purpose: '',
-      whenToUse: '',
+      saltDetails: '',
       quantity: 0,
       targetQuantity: 1,
       expiryDate: new Date().toISOString().split('T')[0],
@@ -91,7 +95,7 @@ export function MedicineInventorySection({ externalFilter }: MedicineInventorySe
       itemName: item.itemName,
       category: item.category,
       purpose: item.purpose,
-      whenToUse: item.whenToUse,
+      saltDetails: item.saltDetails,
       quantity: item.quantity,
       targetQuantity: item.targetQuantity,
       expiryDate: item.expiryDate,
@@ -112,7 +116,7 @@ export function MedicineInventorySection({ externalFilter }: MedicineInventorySe
       itemName: formData.itemName,
       category: formData.category,
       purpose: formData.purpose,
-      whenToUse: formData.whenToUse,
+      saltDetails: formData.saltDetails,
       quantity: Number(formData.quantity),
       targetQuantity: Number(formData.targetQuantity),
       expiryDate: formData.expiryDate,
@@ -181,6 +185,7 @@ export function MedicineInventorySection({ externalFilter }: MedicineInventorySe
                   <th className="px-6 py-4">Name</th>
                   <th className="px-6 py-4">Category</th>
                   <th className="px-6 py-4">Purpose</th>
+                  <th className="px-6 py-4">Salt Details</th>
                   <th className="px-6 py-4 text-center">Qty</th>
                   <th className="px-6 py-4">Expiry</th>
                 </tr>
@@ -192,6 +197,7 @@ export function MedicineInventorySection({ externalFilter }: MedicineInventorySe
                     <td className="px-6 py-4 font-bold text-sm">{item.itemName}</td>
                     <td className="px-6 py-4 text-xs font-semibold text-zinc-500">{item.category}</td>
                     <td className="px-6 py-4 text-sm text-zinc-500">{item.purpose}</td>
+                    <td className="px-6 py-4 text-sm text-zinc-400 font-medium italic">{item.saltDetails}</td>
                     <td className="px-6 py-4 text-center font-bold">{item.quantity}</td>
                     <td className="px-6 py-4 text-sm font-semibold">{new Date(item.expiryDate).toLocaleDateString()}</td>
                   </tr>
@@ -226,7 +232,7 @@ export function MedicineInventorySection({ externalFilter }: MedicineInventorySe
             { name: 'itemName', label: 'Item Name', type: 'text', required: true, fullWidth: true },
             { name: 'category', label: 'Category', type: 'select', options: MEDICINE_CATEGORIES.map(c=>({label:c, value:c})) },
             { name: 'purpose', label: 'Purpose', type: 'text', required: true },
-            { name: 'whenToUse', label: 'When to Use', type: 'text' },
+            { name: 'saltDetails', label: 'Salt Details', type: 'text' },
             { name: 'quantity', label: 'Quantity', type: 'number', required: true },
             { name: 'targetQuantity', label: 'Target', type: 'number', required: true },
             { name: 'expiryDate', label: 'Expiry', type: 'date', required: true },

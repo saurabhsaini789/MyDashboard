@@ -11,7 +11,10 @@ export interface MedicineItem {
  category: string;
 
  purpose: string;
- whenToUse: string;
+ saltDetails: string;
+
+ // @deprecated - migrated to saltDetails
+ whenToUse?: string;
 
  quantity: number;
  targetQuantity: number;
