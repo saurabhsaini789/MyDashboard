@@ -5,8 +5,8 @@ export const msalConfig: Configuration = {
  clientId: process.env.NEXT_PUBLIC_MS_CLIENT_ID as string,
  authority: "https://login.microsoftonline.com/consumers",
  // Using a fixed redirect URI that is registered in Azure (usually the app root)
- redirectUri: typeof window !== "undefined" ? window.location.origin + "/my-dashboard/" : "http://localhost:3000/my-dashboard/",
- postLogoutRedirectUri: typeof window !== "undefined" ? window.location.origin + "/my-dashboard/" : "http://localhost:3000/my-dashboard/",
+ redirectUri: typeof window !== "undefined" ? window.location.origin + "/MyDashboard/" : "http://localhost:3000/MyDashboard/",
+ postLogoutRedirectUri: typeof window !== "undefined" ? window.location.origin + "/MyDashboard/" : "http://localhost:3000/MyDashboard/",
  },
  cache: {
  cacheLocation: "sessionStorage", // More reliable for redirect flows
