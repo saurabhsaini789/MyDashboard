@@ -19,6 +19,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "My Dashboard",
   description: "Personal OS and Productivity Dashboard",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
+  themeColor: "#6366f1",
 };
 
 export default function RootLayout({
