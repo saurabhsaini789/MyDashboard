@@ -19,10 +19,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "My Dashboard",
   description: "Personal OS and Productivity Dashboard",
-  manifest: "/manifest.json",
+  manifest: "/MyDashboard/manifest.json",
   icons: {
-    icon: "/icon.png",
-    apple: "/icon.png",
+    icon: "/MyDashboard/icon.png",
+    apple: "/MyDashboard/icon.png",
   },
 };
 
