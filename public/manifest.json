@@ -2,13 +2,13 @@
   "name": "My Dashboard",
   "short_name": "Dashboard",
   "description": "Personal productivity and management dashboard",
-  "start_url": "/",
+  "start_url": "/MyDashboard/",
   "display": "standalone",
   "background_color": "#18181b",
   "theme_color": "#6366f1",
   "icons": [
     {
-      "src": "/icon.png",
+      "src": "/MyDashboard/icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
