@@ -315,7 +315,7 @@ export function HabitDetailPanel({ habit, onClose }: HabitDetailPanelProps) {
             <div className="flex items-center gap-2 mt-1">
               <button 
                 onClick={handlePrevMonth}
-                className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-md transition-colors"
+                className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-md transition-colors text-zinc-900 dark:text-zinc-100"
                 title="Previous month"
               >
                 <ChevronLeft size={16} />
@@ -326,7 +326,7 @@ export function HabitDetailPanel({ habit, onClose }: HabitDetailPanelProps) {
               <button 
                 onClick={handleNextMonth}
                 disabled={new Date(viewYear, viewMonth + 1, 1) > now}
-                className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-md transition-colors disabled:opacity-30"
+                className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-md transition-colors text-zinc-900 dark:text-zinc-100 disabled:opacity-30"
                 title="Next month"
               >
                 <ChevronRight size={16} />
@@ -367,10 +367,10 @@ export function HabitDetailPanel({ habit, onClose }: HabitDetailPanelProps) {
                             item.status === "missed" ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]" :
                             item.status === "future" ? "bg-zinc-100 dark:bg-zinc-800 opacity-30" :
                             item.status === "inactive" ? "bg-zinc-100 dark:bg-zinc-800 opacity-10" :
-                            "bg-zinc-200 dark:bg-zinc-700 group-hover:bg-zinc-300"
+                            "bg-zinc-200 dark:bg-zinc-700 group-hover:bg-zinc-300 dark:group-hover:bg-zinc-600"
                           }`} 
                         />
-                        <Text className={`text-[10px] font-bold ${item.status === "future" ? "text-zinc-300" : "text-zinc-500Group group-hover:text-zinc-800 dark:group-hover:text-zinc-200"}`}>
+                        <Text className={`text-[10px] font-bold ${item.status === "future" ? "text-zinc-300 dark:text-zinc-600" : "text-zinc-500 group-hover:text-zinc-800 dark:group-hover:text-zinc-200"}`}>
                           {item.day}
                         </Text>
                       </>
@@ -462,13 +462,13 @@ export function HabitDetailPanel({ habit, onClose }: HabitDetailPanelProps) {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { l: "Current Run", v: streaks.currentStreak, c: "text-orange-500", bg: "bg-orange-50/50 dark:bg-orange-500/10 border-orange-100" },
-                    { l: "Best Streak", v: streaks.bestStreak, c: "text-teal-500", bg: "bg-teal-50/50 dark:bg-teal-500/10 border-teal-100" },
-                    { l: "Longest Miss", v: streaks.longestMissRun, c: "text-rose-500", bg: "bg-rose-50/50 dark:bg-rose-500/10 border-rose-100" },
+                    { l: "Current Run", v: streaks.currentStreak, c: "text-orange-500", bg: "bg-orange-50/50 dark:bg-orange-500/10 border-orange-100 dark:border-orange-900/30" },
+                    { l: "Best Streak", v: streaks.bestStreak, c: "text-teal-500", bg: "bg-teal-50/50 dark:bg-teal-500/10 border-teal-100 dark:border-teal-900/30" },
+                    { l: "Longest Miss", v: streaks.longestMissRun, c: "text-rose-500", bg: "bg-rose-50/50 dark:bg-rose-500/10 border-rose-100 dark:border-rose-900/30" },
                   ].map(s => (
                     <div key={s.l} className={`p-4 rounded-2xl border ${s.bg} text-center flex flex-col gap-1`}>
                       <div className={`text-3xl font-black ${s.c}`}>{s.v}</div>
-                      <div className="text-[9px] uppercase font-black tracking-tight text-zinc-400">{s.l}</div>
+                      <div className="text-[9px] uppercase font-black tracking-tight text-zinc-400 dark:text-zinc-500">{s.l}</div>
                     </div>
                   ))}
                 </div>

@@ -7,6 +7,8 @@ import { PageTitle } from './ui/Text';
 export function LoginPage() {
  const [email, setEmail] = useState('');
  const [password, setPassword] = useState('');
+ const [otpCode, setOtpCode] = useState('');
+ const [showOtp, setShowOtp] = useState(false);
  const [loading, setLoading] = useState(false);
  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
  const [isMounted, setIsMounted] = useState(false);
@@ -60,8 +62,16 @@ export function LoginPage() {
      password,
     });
     if (error) throw error;
+   } else if (showOtp) {
+    // Step 2: Verify OTP
+    const { error } = await supabase.auth.verifyOtp({
+     email,
+     token: otpCode,
+     type: 'magiclink',
+    });
+    if (error) throw error;
    } else {
-    // Standard OTP Magic Link
+    // Step 1: Send OTP
     const { error } = await supabase.auth.signInWithOtp({
      email,
      options: {
@@ -69,7 +79,8 @@ export function LoginPage() {
      },
     });
     if (error) throw error;
-    setMessage({ type: 'success', text: 'Check your email for the magic link!' });
+    setShowOtp(true);
+    setMessage({ type: 'success', text: 'Check your email for the 6-digit code!' });
    }
   } catch (error: any) {
    setMessage({ type: 'error', text: error.message || 'An error occurred during sign in.' });
@@ -96,17 +107,19 @@ export function LoginPage() {
  </svg>
  </div>
   <PageTitle className="text-white">
-   {isRecovery ? 'Set New Password' : 'Access Locked'}
+   {isRecovery ? 'Set New Password' : (showOtp ? 'Enter Code' : 'Access Locked')}
   </PageTitle>
   <p className="text-gray-400 mt-2 text-center text-sm">
    {isRecovery 
      ? 'Create a secure password for your account.' 
-     : 'Enter your authorized email to receive a magic link.'}
+     : showOtp 
+       ? 'Enter the 6-digit code sent to your email.' 
+       : 'Enter your authorized email to receive a login code.'}
   </p>
  </div>
 
   <form onSubmit={handleLogin} className="space-y-4">
-  {!isRecovery && (
+  {!isRecovery && !showOtp && (
   <div>
   <label htmlFor="email" className="block text-xs font-medium text-gray-400 uppercase mb-1.5 ml-1">
   Email Address
@@ -120,6 +133,34 @@ export function LoginPage() {
   required
   className="w-full px-4 py-3 bg-[#1a1a1a] border border-white/5 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all duration-200"
   />
+  </div>
+  )}
+
+  {showOtp && !isRecovery && (
+  <div className="animate-in fade-in slide-in-from-top-2 duration-500">
+  <label htmlFor="otp" className="block text-xs font-medium text-blue-400 uppercase mb-1.5 ml-1">
+  Verification Code
+  </label>
+  <input
+  id="otp"
+  type="text"
+  inputMode="numeric"
+  pattern="[0-9]*"
+  placeholder="00000000"
+  maxLength={8}
+  value={otpCode}
+  onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
+  required
+  autoFocus
+  className="w-full px-4 py-3 bg-[#1a1a1a] border border-blue-500/30 rounded-xl text-white text-center text-2xl tracking-[0.3em] placeholder-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all duration-200"
+  />
+  <button 
+    type="button" 
+    onClick={() => setShowOtp(false)}
+    className="mt-2 text-xs text-gray-500 hover:text-white transition-colors ml-1"
+  >
+    ← Use a different email
+  </button>
   </div>
   )}
 
@@ -149,14 +190,20 @@ export function LoginPage() {
   className={`group relative w-full flex items-center justify-center px-4 py-3.5 font-semibold rounded-xl transition-all duration-200 overflow-hidden ${
   (isDev && password) || isRecovery 
   ? 'bg-amber-500 text-black hover:bg-amber-400' 
-  : 'bg-white text-black hover:bg-gray-100'
+  : showOtp
+    ? 'bg-blue-600 text-white hover:bg-blue-500'
+    : 'bg-white text-black hover:bg-gray-100'
   } disabled:opacity-50 disabled:cursor-not-allowed`}
   >
   {loading ? (
   <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
   ) : (
   <span className="flex items-center">
-  {isRecovery ? 'Update Password' : (isDev && password ? 'Developer Login' : 'Send Magic Link')}
+  {isRecovery 
+    ? 'Update Password' 
+    : (isDev && password 
+      ? 'Developer Login' 
+      : (showOtp ? 'Verify Code' : 'Send Code'))}
   <svg xmlns="http://www.w3.org/2000/svg" className="ml-2 w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
   </svg>

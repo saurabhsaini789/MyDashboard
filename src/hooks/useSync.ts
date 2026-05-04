@@ -204,7 +204,7 @@ export function useSync() {
         }
       }
 
-      // Safety Lock: Prevent any pushes for 10 seconds to let components hydrate
+      // Safety Lock: Prevent any pushes for 1 second to let components hydrate
       isPushLocked.current = true;
       isSyncingFromRemote.current = false;
       syncStartTime.current = Date.now();
@@ -215,7 +215,7 @@ export function useSync() {
       setTimeout(() => {
         isPushLocked.current = false;
         console.log('[Sync] Initial hydration lock released.');
-      }, 10000);
+      }, 1000);
       
       setTimeout(() => setSyncStatus('idle'), 1000);
     };

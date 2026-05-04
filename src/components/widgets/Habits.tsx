@@ -47,11 +47,81 @@ const defaultInitialHabits: Habit[] = [
   { id: '24', name: 'Adventure', records: {} },
 ];
 
+const HabitRow = React.memo(({ 
+  habit, 
+  monthKey, 
+  daysInMonth, 
+  isCurrentViewRealTodayMonth, 
+  todayDateIndex, 
+  onDayClick, 
+  onHabitSelect, 
+  onDelete,
+  calcStreak 
+}: { 
+  habit: Habit, 
+  monthKey: string, 
+  daysInMonth: number, 
+  isCurrentViewRealTodayMonth: boolean, 
+  todayDateIndex: number, 
+  onDayClick: (habitId: string, dayIndex: number, e: React.MouseEvent) => void,
+  onHabitSelect?: (habit: Habit) => void,
+  onDelete: (habit: Habit) => void,
+  calcStreak: (habit: Habit) => number
+}) => {
+  const days = habit.records?.[monthKey] || [];
+  const completed = days.filter((d: string) => d === 'done').length;
+  const missed = days.filter((d: string) => d === 'missed').length;
+  const score = completed - missed;
+  const streak = useMemo(() => calcStreak(habit), [habit, calcStreak]);
+
+  return (
+    <tr className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border-b border-zinc-100 dark:border-zinc-800/50 transition-colors">
+      <td className="p-4 sticky left-0 z-20 bg-white dark:bg-zinc-900 group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800/50 border-r border-zinc-100 dark:border-zinc-800/50 transition-colors">
+        <div className="flex items-center justify-between gap-2">
+          <div 
+            className="flex items-center gap-2 cursor-pointer hover:text-teal-600 transition-colors"
+            onClick={() => onHabitSelect?.(habit)}
+          >
+            {streak >= 2 && <span className="text-[10px] bg-orange-50 dark:bg-orange-900/30 text-orange-500 dark:text-orange-400 px-1.5 py-0.5 rounded-full"><Flame className="w-2.5 h-2.5 inline" />{streak}</span>}
+            <span className="text-sm text-zinc-900 dark:text-zinc-100">{habit.name}</span>
+          </div>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(habit);
+            }} 
+            className="text-zinc-300 hover:text-red-500 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </td>
+      {Array.from({ length: daysInMonth }).map((_, i) => {
+        const status = days[i] || 'none';
+        return (
+          <td key={i} className={`p-1 text-center ${isCurrentViewRealTodayMonth && i === todayDateIndex ? 'bg-teal-50/30 dark:bg-teal-900/10' : ''}`}>
+            <button onClick={e => onDayClick(habit.id, i, e)} className="w-7 h-7 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all flex items-center justify-center group">
+              <div className={`rounded-full transition-all ${status === 'done' ? 'w-2.5 h-2.5 bg-emerald-500 shadow-[0_0_8px_emerald] dark:shadow-[0_0_8px_rgba(16,185,129,0.4)]' : status === 'missed' ? 'w-2.5 h-2.5 bg-rose-500 shadow-[0_0_8px_rose] dark:shadow-[0_0_8px_rgba(244,63,94,0.4)]' : 'w-1.5 h-1.5 bg-zinc-200 dark:bg-zinc-700 group-hover:scale-125'}`} />
+            </button>
+          </td>
+        );
+      })}
+      <td className="p-4 sticky right-0 z-10 bg-white dark:bg-zinc-900 border-l border-zinc-100 dark:border-zinc-800/50 text-right hidden md:table-cell">
+        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${score > 0 ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-teal-400' : score < 0 ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400'}`}>
+          {score > 0 ? `+${score}` : score}
+        </span>
+      </td>
+    </tr>
+  );
+});
+
+HabitRow.displayName = 'HabitRow';
+
 export function Habits({ onHabitSelect }: HabitsProps = {}) {
   const rawHabits = useStorageSubscription<any[]>('os_habits', []);
   
   // Migration & Default logic
-  const habits = useMemo(() => {
+  const syncedHabits = useMemo(() => {
     if (!rawHabits || rawHabits.length === 0) return defaultInitialHabits;
     
     return rawHabits.map((h: any) => {
@@ -69,6 +139,37 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
       return { ...h, records };
     });
   }, [rawHabits]);
+
+  // Local state for optimistic updates
+  const [localHabits, setLocalHabits] = useState<Habit[]>(syncedHabits);
+  const [isFirstRender, setIsFirstRender] = useState(true);
+
+  // Sync local habits with storage when storage changes (external update)
+  useEffect(() => {
+    if (isFirstRender) {
+      setLocalHabits(syncedHabits);
+      setIsFirstRender(false);
+      return;
+    }
+    // Only update local state if it differs from synced state (avoid overwriting during local edits)
+    const syncedJson = JSON.stringify(syncedHabits);
+    const localJson = JSON.stringify(localHabits);
+    if (syncedJson !== localJson) {
+      setLocalHabits(syncedHabits);
+    }
+  }, [syncedHabits]);
+
+  // Debounced storage sync
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const syncedJson = JSON.stringify(syncedHabits);
+      const localJson = JSON.stringify(localHabits);
+      if (localJson !== syncedJson) {
+        setSyncedItem('os_habits', localJson);
+      }
+    }, 800); // 800ms debounce
+    return () => clearTimeout(timer);
+  }, [localHabits, syncedHabits]);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isAddingHabit, setIsAddingHabit] = useState(false);
@@ -90,7 +191,7 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
   const todayDateIndex = realToday.getDate() - 1;
 
   const updateHabits = (newHabits: Habit[]) => {
-    setSyncedItem('os_habits', JSON.stringify(newHabits));
+    setLocalHabits(newHabits);
   };
 
   const getScopeMonths = (scope: typeof selectedScope, baseDate: Date) => {
@@ -123,7 +224,7 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
       records: {},
       monthScope: scope
     };
-    updateHabits([...habits, newHabit]);
+    updateHabits([...localHabits, newHabit]);
     setNewHabitName('');
     setIsAddingHabit(false);
   };
@@ -131,10 +232,10 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
   const handleDeleteHabit = () => {
     if (!habitToDelete) return;
     if (selectedScope === 'all') {
-      updateHabits(habits.filter(h => h.id !== habitToDelete.id));
+      updateHabits(localHabits.filter(h => h.id !== habitToDelete.id));
     } else {
       const monthsToRemove = getScopeMonths(selectedScope, currentDate) || [];
-      updateHabits(habits.map(h => {
+      updateHabits(localHabits.map(h => {
         if (h.id === habitToDelete.id) {
           return {
             ...h,
@@ -147,14 +248,18 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
     setHabitToDelete(null);
   };
 
-  const visibleHabits = habits.filter(h => {
+  const visibleHabits = localHabits.filter(h => {
     if (!h.monthScope || h.monthScope.length === 0) return true;
     return h.monthScope.includes(monthKey);
   });
 
-  const handleDayClick = (habitId: string, dayIndex: number, e: React.MouseEvent) => {
+  const handleDayClick = useCallback((habitId: string, dayIndex: number, e: React.MouseEvent) => {
     e.preventDefault();
-    updateHabits(habits.map(h => {
+    if (typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator) {
+      navigator.vibrate(10);
+    }
+
+    setLocalHabits(prev => prev.map(h => {
       if (h.id === habitId) {
         const newRecords = { ...h.records };
         const monthDays = newRecords[monthKey] ? [...newRecords[monthKey]] : Array(daysInMonth).fill('none');
@@ -169,15 +274,18 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
       }
       return h;
     }));
-  };
+  }, [monthKey, daysInMonth]);
 
   const handleFillToday = useCallback(() => {
+    if (typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator) {
+      navigator.vibrate([10, 30, 10]);
+    }
     const today = new Date();
     const tKey = `${today.getFullYear()}-${today.getMonth()}`;
     const tIdx = today.getDate() - 1;
     const tDays = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
 
-    updateHabits(habits.map(h => {
+    setLocalHabits(prev => prev.map(h => {
       const isActive = !h.monthScope || h.monthScope.length === 0 || h.monthScope.includes(tKey);
       if (!isActive) return h;
       const newRecords = { ...h.records };
@@ -187,7 +295,7 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
       return { ...h, records: newRecords };
     }));
     setIsFillTodayConfirm(false);
-  }, [habits]);
+  }, []);
 
   const datesOfMonth = Array.from({ length: daysInMonth }, (_, i) => ({
     date: i + 1,
@@ -234,15 +342,39 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
     return streak;
   }, []);
 
+  // App Badging API - Show number of habits left for today
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('navigator' in window) || !('setAppBadge' in navigator)) return;
+
+    const today = new Date();
+    const tKey = `${today.getFullYear()}-${today.getMonth()}`;
+    const tIdx = today.getDate() - 1;
+
+    const habitsLeft = localHabits.filter(h => {
+      const isActive = !h.monthScope || h.monthScope.length === 0 || h.monthScope.includes(tKey);
+      if (!isActive) return false;
+      const records = h.records || {};
+      const monthRecords = records[tKey] || [];
+      const status = monthRecords[tIdx] || 'none';
+      return status === 'none';
+    }).length;
+
+    if (habitsLeft > 0) {
+      (navigator as any).setAppBadge(habitsLeft).catch((err: any) => console.error('Error setting badge:', err));
+    } else {
+      (navigator as any).clearAppBadge().catch((err: any) => console.error('Error clearing badge:', err));
+    }
+  }, [localHabits]);
+
   return (
     <div className="w-full pb-12 flex flex-col gap-4 font-bold uppercase">
       {/* Date Selectors & Actions */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-4 mb-4">
         <div className="flex gap-3">
-          <select value={currentMonth} onChange={e => setCurrentDate(new Date(currentYear, parseInt(e.target.value), 1))} className="bg-zinc-100 p-2 rounded-xl border-none cursor-pointer">
+          <select value={currentMonth} onChange={e => setCurrentDate(new Date(currentYear, parseInt(e.target.value), 1))} className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 p-2 rounded-xl border-none cursor-pointer">
             {months.map((m, i) => <option key={i} value={i}>{m}</option>)}
           </select>
-          <select value={currentYear} onChange={e => setCurrentDate(new Date(parseInt(e.target.value), currentMonth, 1))} className="bg-zinc-100 p-2 rounded-xl border-none cursor-pointer">
+          <select value={currentYear} onChange={e => setCurrentDate(new Date(parseInt(e.target.value), currentMonth, 1))} className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 p-2 rounded-xl border-none cursor-pointer">
             {years.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
@@ -252,63 +384,31 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
         </div>
       </div>
 
-      <div className="bg-white border rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
         <div ref={scrollContainerRef} className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse min-w-max">
             <thead>
-              <tr className="bg-zinc-50 border-b">
-                <th className="p-4 sticky left-0 z-30 bg-zinc-50 border-r min-w-[150px]">Habit</th>
-                {datesOfMonth.map((d, i) => <th key={i} data-date-index={i} className={`p-2 text-center text-[10px] min-w-[40px] ${isCurrentViewRealTodayMonth && i === todayDateIndex ? 'bg-teal-50 text-teal-600' : ''}`}>{d.dayName}<br/>{d.date}</th>)}
-                <th className="p-4 sticky right-0 z-20 bg-zinc-50 border-l text-right hidden md:table-cell">Score</th>
+              <tr className="bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800">
+                <th className="p-4 sticky left-0 z-30 bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 min-w-[150px] text-zinc-900 dark:text-zinc-100">Habit</th>
+                {datesOfMonth.map((d, i) => <th key={i} data-date-index={i} className={`p-2 text-center text-[10px] min-w-[40px] ${isCurrentViewRealTodayMonth && i === todayDateIndex ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400' : 'text-zinc-500 dark:text-zinc-400'}`}>{d.dayName}<br/>{d.date}</th>)}
+                <th className="p-4 sticky right-0 z-20 bg-zinc-50 dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 text-right hidden md:table-cell text-zinc-900 dark:text-zinc-100">Score</th>
               </tr>
             </thead>
             <tbody>
-              {visibleHabits.map(h => {
-                const days = h.records?.[monthKey] || [];
-                const completed = days.filter((d: string) => d === 'done').length;
-                const missed = days.filter((d: string) => d === 'missed').length;
-                const score = completed - missed;
-                const streak = calcCurrentStreak(h);
-                return (
-                  <tr key={h.id} className="hover:bg-zinc-50 border-b">
-                    <td className="p-4 sticky left-0 z-20 bg-white group-hover:bg-zinc-50 border-r">
-                      <div className="flex items-center justify-between gap-2">
-                        <div 
-                          className="flex items-center gap-2 cursor-pointer hover:text-teal-600 transition-colors"
-                          onClick={() => onHabitSelect?.(h)}
-                        >
-                          {streak >= 2 && <span className="text-[10px] bg-orange-50 text-orange-500 px-1.5 py-0.5 rounded-full"><Flame className="w-2.5 h-2.5 inline" />{streak}</span>}
-                          <span className="text-sm">{h.name}</span>
-                        </div>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setHabitToDelete(h);
-                          }} 
-                          className="text-zinc-300 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                    {datesOfMonth.map((_, i) => {
-                      const status = days[i] || 'none';
-                      return (
-                        <td key={i} className={`p-1 text-center ${isCurrentViewRealTodayMonth && i === todayDateIndex ? 'bg-teal-50/30' : ''}`}>
-                          <button onClick={e => handleDayClick(h.id, i, e)} className="w-7 h-7 rounded-full transition-all flex items-center justify-center">
-                            <div className={`rounded-full transition-all ${status === 'done' ? 'w-2.5 h-2.5 bg-emerald-500 shadow-[0_0_8px_emerald]' : status === 'missed' ? 'w-2.5 h-2.5 bg-rose-500 shadow-[0_0_8px_rose]' : 'w-1.5 h-1.5 bg-zinc-200'}`} />
-                          </button>
-                        </td>
-                      );
-                    })}
-                    <td className="p-4 sticky right-0 z-10 bg-white border-l text-right hidden md:table-cell">
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${score > 0 ? 'bg-emerald-50 text-emerald-600' : score < 0 ? 'bg-rose-50 text-rose-600' : 'bg-zinc-100'}`}>
-                        {score > 0 ? `+${score}` : score}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
+              {visibleHabits.map(h => (
+                <HabitRow 
+                  key={h.id}
+                  habit={h}
+                  monthKey={monthKey}
+                  daysInMonth={daysInMonth}
+                  isCurrentViewRealTodayMonth={isCurrentViewRealTodayMonth}
+                  todayDateIndex={todayDateIndex}
+                  onDayClick={handleDayClick}
+                  onHabitSelect={onHabitSelect}
+                  onDelete={setHabitToDelete}
+                  calcStreak={calcCurrentStreak}
+                />
+              ))}
             </tbody>
           </table>
         </div>

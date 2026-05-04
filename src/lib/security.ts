@@ -41,17 +41,10 @@ export function validateLocalData<T>(rawData: string | null, currentUserId: stri
 export function shouldPushData(data: any): boolean {
   if (data === null || data === undefined) return false;
   
-  // Prevent pushing empty arrays if they represent "no data"
-  if (Array.isArray(data) && data.length === 0) {
-    // Note: This might block legitimate "clear all" actions.
-    // However, the user requested to prevent pushing empty datasets.
-    return false;
-  }
-
-  // Prevent pushing objects that are obviously "placeholders" or defaults
-  if (typeof data === 'object' && Object.keys(data).length === 0) {
-    return false;
-  }
+  // We now allow empty arrays and empty objects to be pushed.
+  // This is critical because if a user intentionally deletes their last item
+  // (e.g. deleting the last habit or task), that 'clear all' action must sync to the cloud.
+  // The previous implementation blocked this, causing deleted items to reappear on refresh.
 
   return true;
 }

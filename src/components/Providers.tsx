@@ -57,15 +57,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
  initializeMsal();
  }, [msalInstance]);
 
- if (!initialized) {
- return (
- <div className="fixed inset-0 flex items-center justify-center bg-[#0a0a0a] z-[9999]">
- <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
- <span className="ml-4 text-white/50 text-xs font-mono uppercase">Initializing Secure OS...</span>
- </div>
- );
- }
-
  return (
  <ThemeProvider
  attribute="data-theme"

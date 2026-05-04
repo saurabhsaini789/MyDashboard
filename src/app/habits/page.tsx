@@ -153,15 +153,15 @@ export default function HabitsPage() {
             <div className="flex flex-wrap gap-2 items-center w-full md:w-auto">
               {filter === 'Custom Month' && (
                 <div className="flex gap-2 flex-1 sm:flex-none">
-                  <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="appearance-none bg-zinc-50 dark:bg-zinc-950 text-xs font-semibold rounded-xl px-3 py-2 border border-zinc-200">
+                  <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="appearance-none bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 text-xs font-semibold rounded-xl px-3 py-2 border border-zinc-200 dark:border-zinc-800">
                     {MONTHS.map((m, i) => <option key={i} value={i}>{m.slice(0,3)}</option>)}
                   </select>
-                  <select value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))} className="appearance-none bg-zinc-50 dark:bg-zinc-950 text-xs font-semibold rounded-xl px-3 py-2 border border-zinc-200">
+                  <select value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))} className="appearance-none bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 text-xs font-semibold rounded-xl px-3 py-2 border border-zinc-200 dark:border-zinc-800">
                     {[2026, 2027, 2028].map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
                 </div>
               )}
-              <select value={filter} onChange={(e) => setFilter(e.target.value as TimeFilter)} className="appearance-none bg-zinc-50 dark:bg-zinc-950 text-xs font-semibold rounded-xl px-3 py-2 border border-zinc-200">
+              <select value={filter} onChange={(e) => setFilter(e.target.value as TimeFilter)} className="appearance-none bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 text-xs font-semibold rounded-xl px-3 py-2 border border-zinc-200 dark:border-zinc-800">
                 <option value="1 Day">1 Day</option>
                 <option value="7 Days">7 Days</option>
                 <option value="1 Month">1 Month</option>
