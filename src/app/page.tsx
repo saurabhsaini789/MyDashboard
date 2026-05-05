@@ -17,7 +17,10 @@ export default function Home() {
     aidMobile: [],
     supplements: [],
     projects: [],
-    habits: []
+    habits: [],
+    channels: [],
+    income: [],
+    expenses: [],
   };
 
   return (

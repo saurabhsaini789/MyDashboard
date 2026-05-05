@@ -64,7 +64,7 @@ export default function RootLayout({
       >
         <Providers>
           <NavigationBar />
-          <div className="pb-24 md:pb-32 bg-zinc-50 dark:bg-zinc-950">
+          <div className="pb-24 md:pb-32 bg-zinc-50 dark:bg-zinc-950 pwa-content">
             {children}
           </div>
           <FloatingNavbar />

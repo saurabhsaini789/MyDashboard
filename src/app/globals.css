@@ -162,3 +162,27 @@ input[type="number"] {
   pointer-events: none;
   height: 0;
 }
+
+/* ─────────────────────────────────────────────
+   PWA-ONLY STYLES (display-mode: standalone)
+   Desktop browser / tablet: unaffected
+   ───────────────────────────────────────────── */
+
+/* Hidden by default; shown only in standalone PWA */
+.pwa-only  { display: none !important; }
+/* Shown by default; hidden only in standalone PWA */
+.pwa-hide  { display: block; }
+
+@media (display-mode: standalone) {
+  /* Flip visibility */
+  .pwa-only  { display: flex !important; }
+  .pwa-hide  { display: none !important; }
+
+  /* Content area gets padding so it clears the fixed top + bottom bars.
+     56px = top bar content height. 58px = bottom tab bar height.
+     env() values handle iPhone notch (top) and home indicator (bottom). */
+  .pwa-content {
+    padding-top: calc(56px + env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}

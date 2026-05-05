@@ -18,6 +18,9 @@ export interface PulseDataDependencies {
   supplements: any[];
   projects: any[];
   habits: any[];
+  channels: any[];  // BusinessChannel[]
+  income: any[];    // IncomeRecord[]
+  expenses: any[];  // ExpenseRecord[]
 }
 
 export interface SystemPulseData {
@@ -41,10 +44,12 @@ export interface SystemPulseData {
  * Can be run on server or client.
  */
 export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseData {
-  const { medicine, travelKit, aidHome, aidMobile, supplements, projects, habits } = data;
+  const { medicine, travelKit, aidHome, aidMobile, supplements, projects, habits, channels, income, expenses } = data;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayStr = today.toISOString().split('T')[0];
+  const dayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
   // 1. Health Calculations
   let totalHealthItems = 0;
@@ -69,24 +74,28 @@ export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseDa
 
   // 2. Goals Calculations
   const activeProjects = (projects || []).filter((p: any) => !p.isCompleted && p.status !== 'completed');
-  let overdueCount = 0;
-  let dueTodayCount = 0;
+  const overdueProjects: any[] = [];
+  const dueTodayProjects: any[] = [];
   let nextMilestone: any = null;
 
   activeProjects.forEach(p => {
     if (p.dueDate) {
-      if (p.dueDate < todayStr) overdueCount++;
-      else if (p.dueDate === todayStr) dueTodayCount++;
+      if (p.dueDate < todayStr) overdueProjects.push(p);
+      else if (p.dueDate === todayStr) dueTodayProjects.push(p);
       if (p.dueDate >= todayStr && (!nextMilestone || p.dueDate < nextMilestone.dueDate)) nextMilestone = p;
     }
   });
 
+  const overdueCount = overdueProjects.length;
   const goalHealth = activeProjects.length > 0 ? ((activeProjects.length - overdueCount) / activeProjects.length) * 100 : 100;
 
   // 3. Habits Calculations
   const mKey = `${today.getFullYear()}-${today.getMonth()}`;
   const dayIdx = today.getDate() - 1;
-  let pendingHabitsCount = (habits || []).filter(h => (!h.monthScope || h.monthScope.includes(mKey)) && (h.records?.[mKey]?.[dayIdx] === 'none' || h.records?.[mKey]?.[dayIdx] === undefined)).length;
+  const pendingHabitsCount = (habits || []).filter(h =>
+    (!h.monthScope || h.monthScope.includes(mKey)) &&
+    (h.records?.[mKey]?.[dayIdx] === 'none' || h.records?.[mKey]?.[dayIdx] === undefined)
+  ).length;
 
   let done = 0, totalCount = 0;
   for (let i = 0; i < 7; i++) {
@@ -103,22 +112,121 @@ export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseDa
   }
   const habitSuccessRate = totalCount > 0 ? (done / totalCount) * 100 : 100;
 
+  // 4. Content System — overdue schedules (strictly past due, not today)
+  const overdueContentItems: { channelName: string; scheduleType: string }[] = [];
+  (channels || [])
+    .filter((c: any) => c.status === 'Active')
+    .forEach((c: any) => {
+      (c.schedules || []).forEach((s: any) => {
+        if (s.nextPostDueDate && s.nextPostDueDate < todayStr) {
+          overdueContentItems.push({ channelName: c.name, scheduleType: s.type });
+        }
+      });
+    });
+
+  // 5. Finance staleness — Option A: use last entry date across income + expenses
+  let lastFinanceEntryStr: string | null = null;
+  [...(income || []), ...(expenses || [])].forEach((entry: any) => {
+    if (entry.date && (!lastFinanceEntryStr || entry.date > lastFinanceEntryStr)) {
+      lastFinanceEntryStr = entry.date;
+    }
+  });
+
+  let financeIsStale = false;
+  if (lastFinanceEntryStr) {
+    const lastEntry = new Date(lastFinanceEntryStr + 'T00:00:00');
+    const daysSinceLast = Math.floor((today.getTime() - lastEntry.getTime()) / 86400000);
+    financeIsStale = daysSinceLast >= 5;
+  } else {
+    financeIsStale = true; // No entries ever → always prompt
+  }
+
+  // --- Pulse Score ---
   const pulseScore = Math.round((healthReadiness * 0.4) + (goalHealth * 0.35) + (habitSuccessRate * 0.25));
+
+  // --- Build Actions List ---
   const actions: PulseAction[] = [];
+
+  // Health — grouped, CRITICAL (show first expired item + count of rest)
   const criticalHealth = healthIssues.filter(i => i.type === 'EXPIRED');
-  if (criticalHealth.length > 0) actions.push({ id: 'health-expired', tier: 'CRITICAL', type: 'HEALTH', label: `Replace ${criticalHealth[0].name}`, href: '/health-system?filter=EXPIRED' });
-  if (overdueCount > 0) actions.push({ id: 'goals-overdue', tier: 'CRITICAL', type: 'GOALS', label: `${overdueCount} task(s) overdue`, href: '/goals' });
-  if (dueTodayCount > 0) actions.push({ id: 'goals-today', tier: 'DAILY', type: 'GOALS', label: `${dueTodayCount} task(s) due today`, href: '/goals' });
-  if (pendingHabitsCount > 0) actions.push({ id: 'habits-today', tier: 'DAILY', type: 'HABITS', label: `${pendingHabitsCount} habit(s) pending`, href: '/habits' });
+  if (criticalHealth.length > 0) {
+    const extra = criticalHealth.length > 1 ? ` +${criticalHealth.length - 1} more` : '';
+    actions.push({
+      id: 'health-expired',
+      tier: 'CRITICAL',
+      type: 'HEALTH',
+      label: `Replace ${criticalHealth[0].name}${extra}`,
+      href: '/health-system?filter=EXPIRED'
+    });
+  }
+
+  // Content — individual per overdue schedule, CRITICAL (max 5)
+  overdueContentItems.slice(0, 5).forEach((item, idx) => {
+    actions.push({
+      id: `content-overdue-${idx}`,
+      tier: 'CRITICAL',
+      type: 'CONTENT',
+      label: `${item.channelName} — ${item.scheduleType} overdue`,
+      href: '/content-system'
+    });
+  });
+
+  // Goals overdue — individual per project, CRITICAL (max 5)
+  overdueProjects.slice(0, 5).forEach(p => {
+    actions.push({
+      id: `goal-overdue-${p.id}`,
+      tier: 'CRITICAL',
+      type: 'GOALS',
+      label: `"${p.title}" — overdue`,
+      href: '/goals'
+    });
+  });
+
+  // Goals due today — individual per project, DAILY (max 5)
+  dueTodayProjects.slice(0, 5).forEach(p => {
+    actions.push({
+      id: `goal-today-${p.id}`,
+      tier: 'DAILY',
+      type: 'GOALS',
+      label: `"${p.title}" — due today`,
+      href: '/goals'
+    });
+  });
+
+  // Habits — grouped, DAILY
+  if (pendingHabitsCount > 0) {
+    actions.push({
+      id: 'habits-today',
+      tier: 'DAILY',
+      type: 'HABITS',
+      label: `${pendingHabitsCount} habit(s) pending today`,
+      href: '/habits'
+    });
+  }
+
+  // Finance staleness — DAILY normally, CRITICAL on weekends
+  if (financeIsStale) {
+    const financeTier: PriorityTier = isWeekend ? 'CRITICAL' : 'DAILY';
+    const financeLabel = isWeekend
+      ? 'Weekend check — review your finances & expenses'
+      : 'Review finances — no entries in 5+ days';
+    actions.push({
+      id: 'finance-stale',
+      tier: financeTier,
+      type: 'FINANCE',
+      label: financeLabel,
+      href: '/finances'
+    });
+  }
 
   let milestoneData = null;
   if (nextMilestone) {
     const msDate = new Date(nextMilestone.dueDate);
     const diff = Math.ceil((msDate.getTime() - today.getTime()) / 86400000);
-    milestoneData = { 
-      title: nextMilestone.title, 
-      daysDesc: diff === 0 ? 'Due Today' : `In ${diff} day(s)`, 
-      bucket: nextMilestone.bucketId || 'Goal' 
+    milestoneData = {
+      title: nextMilestone.title,
+      daysDesc: diff === 0 ? 'Due Today' : `In ${diff} day(s)`,
+      bucket: nextMilestone.bucketId || 'Goal'
     };
   }
 

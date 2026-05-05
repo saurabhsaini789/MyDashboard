@@ -342,29 +342,7 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
     return streak;
   }, []);
 
-  // App Badging API - Show number of habits left for today
-  useEffect(() => {
-    if (typeof window === 'undefined' || !('navigator' in window) || !('setAppBadge' in navigator)) return;
-
-    const today = new Date();
-    const tKey = `${today.getFullYear()}-${today.getMonth()}`;
-    const tIdx = today.getDate() - 1;
-
-    const habitsLeft = localHabits.filter(h => {
-      const isActive = !h.monthScope || h.monthScope.length === 0 || h.monthScope.includes(tKey);
-      if (!isActive) return false;
-      const records = h.records || {};
-      const monthRecords = records[tKey] || [];
-      const status = monthRecords[tIdx] || 'none';
-      return status === 'none';
-    }).length;
-
-    if (habitsLeft > 0) {
-      (navigator as any).setAppBadge(habitsLeft).catch((err: any) => console.error('Error setting badge:', err));
-    } else {
-      (navigator as any).clearAppBadge().catch((err: any) => console.error('Error clearing badge:', err));
-    }
-  }, [localHabits]);
+  // Badge is now managed centrally by PulseDashboard (Priority Queue count)
 
   return (
     <div className="w-full pb-12 flex flex-col gap-4 font-bold uppercase">

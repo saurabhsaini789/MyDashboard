@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Activity, 
@@ -21,6 +21,51 @@ interface PulseDashboardProps {
 
 export function PulseDashboard({ initialData }: PulseDashboardProps) {
     const pulse = useSystemPulse(initialData);
+
+    // ── App Badge (Priority Queue count) ─────────────────────────────────
+    // Works on: Android Chrome PWA ✅ | iOS Safari PWA (16.4+) ✅
+    // iOS Chrome PWA: requests notification permission first (required by Apple)
+    useEffect(() => {
+        if (typeof window === 'undefined' || !('navigator' in window)) return;
+
+        const count = pulse.actions.length;
+
+        const applyBadge = async () => {
+            try {
+                // iOS requires Notification permission before setAppBadge will show
+                if ('Notification' in window && Notification.permission === 'default') {
+                    try {
+                        await Notification.requestPermission();
+                    } catch (_) {
+                        // User dismissed — badge may still work on some browsers
+                    }
+                }
+
+                // 1. Direct Badging API call (works on Android Chrome & iOS Safari PWA)
+                if ('setAppBadge' in navigator) {
+                    if (count > 0) {
+                        await (navigator as any).setAppBadge(count);
+                    } else {
+                        await (navigator as any).clearAppBadge();
+                    }
+                }
+
+                // 2. Also tell the Service Worker to set the badge
+                //    (belt-and-suspenders for Chrome iOS PWA context)
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'SET_BADGE',
+                        count,
+                    });
+                }
+            } catch (err) {
+                console.error('Badge update error:', err);
+            }
+        };
+
+        applyBadge();
+    }, [pulse.actions.length]);
+    // ─────────────────────────────────────────────────────────────────────
 
     const tierColors: Record<PriorityTier, string> = {
         CRITICAL: 'text-rose-600 bg-rose-50/80 dark:bg-rose-500/10 dark:text-rose-400 border-rose-100/50 dark:border-rose-500/20',
@@ -81,7 +126,7 @@ export function PulseDashboard({ initialData }: PulseDashboardProps) {
                     </Text>
                 </div>
 
-                <div className="flex-1 space-y-3 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
+                <div className="space-y-3 overflow-y-auto max-h-[192px] pr-2 custom-scrollbar">
                     {pulse.actions.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center py-8 opacity-40">
                             <ShieldAlert size={40} className="mb-2 text-zinc-300" />
@@ -92,7 +137,7 @@ export function PulseDashboard({ initialData }: PulseDashboardProps) {
                             <Link
                                 key={action.id}
                                 href={action.href}
-                                className="group flex items-center justify-between p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/30 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 transition-all hover:bg-white dark:hover:bg-zinc-800 shadow-sm"
+                                className="group flex items-center justify-between p-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-800/30 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 transition-all hover:bg-white dark:hover:bg-zinc-800 shadow-sm"
                             >
                                 <div className="flex items-center gap-4">
                                     <div className={`p-2 rounded-xl border ${tierColors[action.tier]}`}>

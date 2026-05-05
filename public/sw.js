@@ -71,14 +71,37 @@ async function syncHabits() {
   return Promise.resolve();
 }
 
-// Push Notifications (Optional, but good to have prepared)
+// Push Notifications
 self.addEventListener('push', (event) => {
   const data = event.data ? event.data.json() : { title: 'Dashboard Update', body: 'Something changed!' };
+
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: '/icon.png',
-      badge: '/icon.png'
-    })
+    Promise.all([
+      self.registration.showNotification(data.title, {
+        body: data.body,
+        icon: '/icon.png',
+        badge: '/icon.png'
+      }),
+      // Set badge from push event if count is provided
+      data.badgeCount != null && 'setAppBadge' in self.registration
+        ? self.registration.setAppBadge(data.badgeCount)
+        : Promise.resolve()
+    ])
   );
+});
+
+// Badge control via postMessage from the page
+// This is the most reliable path for Chrome iOS PWA badge support
+self.addEventListener('message', (event) => {
+  if (!event.data || event.data.type !== 'SET_BADGE') return;
+
+  const count = event.data.count;
+
+  if (!('setAppBadge' in self.registration)) return;
+
+  if (count > 0) {
+    self.registration.setAppBadge(count).catch((err) => console.error('SW badge error:', err));
+  } else {
+    self.registration.clearAppBadge().catch((err) => console.error('SW badge clear error:', err));
+  }
 });
