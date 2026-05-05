@@ -56,7 +56,7 @@ function PWATabBar() {
                  bg-white/90 dark:bg-zinc-950/95
                  backdrop-blur-xl
                  border-t border-zinc-200/80 dark:border-zinc-800/80"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}
       aria-label="Main navigation"
     >
       <div className="flex items-stretch justify-around px-1 pt-2 pb-1 h-[58px]">
