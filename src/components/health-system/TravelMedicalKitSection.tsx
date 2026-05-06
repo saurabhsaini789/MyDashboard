@@ -70,7 +70,7 @@ export function TravelMedicalKitSection({ externalFilter }: TravelMedicalKitSect
       case 'LOW': return `${base} text-amber-600 bg-amber-50 dark:bg-amber-500/10`;
       case 'MISSING': return `${base} text-rose-600 bg-rose-50 dark:bg-rose-500/10`;
       case 'EXPIRED': return `${base} text-zinc-500 bg-zinc-100 dark:bg-zinc-800`;
-      default: return `${base} text-zinc-500 bg-zinc-100`;
+      default: return `${base} text-zinc-500 bg-zinc-100 dark:bg-zinc-800`;
     }
   };
 
@@ -167,7 +167,7 @@ export function TravelMedicalKitSection({ externalFilter }: TravelMedicalKitSect
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 px-2">
         <SectionTitle>Travel Medical Kit</SectionTitle>
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl h-[54px] items-center border border-zinc-200">
+          <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl h-[54px] items-center border border-zinc-200 dark:border-zinc-700">
             <button onClick={() => toggleViewMode('grid')} className={`h-full px-3 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 text-rose-600 shadow-sm' : 'text-zinc-500'}`}><LayoutGrid size={18}/></button>
             <button onClick={() => toggleViewMode('table')} className={`h-full px-3 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white dark:bg-zinc-700 text-rose-600 shadow-sm' : 'text-zinc-500'}`}><List size={18}/></button>
           </div>
@@ -185,11 +185,11 @@ export function TravelMedicalKitSection({ externalFilter }: TravelMedicalKitSect
               className="bg-zinc-100 dark:bg-zinc-800 text-xs font-bold rounded-2xl h-[54px] pl-12 pr-4 border-none w-full outline-none focus:ring-2 focus:ring-rose-600/20 transition-all font-bold"
             />
           </div>
-          <button onClick={openAddModal} className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold px-6 h-[54px] rounded-2xl hover:scale-105 transition-all w-full md:w-auto">ADD TRAVEL ITEM</button>
+          <button onClick={openAddModal} className="bg-zinc-900 dark:bg-zinc-800 text-white dark:text-zinc-100 text-xs font-bold px-6 h-[54px] rounded-2xl hover:scale-105 transition-all w-full md:w-auto border border-transparent dark:border-zinc-700">ADD TRAVEL ITEM</button>
         </div>
       </div>
 
-      <div className={`flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl border-2 border-l-[6px] bg-white dark:bg-zinc-900/40 mb-8 shadow-sm gap-4 ${expiredCount > 0 ? 'border-rose-200 border-l-rose-500' : missingCount > 0 ? 'border-amber-200 border-l-amber-500' : 'border-emerald-200 border-l-emerald-500'}`}>
+      <div className={`flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl border-2 border-l-[6px] bg-white dark:bg-zinc-900/40 mb-8 shadow-sm gap-4 ${expiredCount > 0 ? 'border-rose-200 dark:border-rose-900 border-l-rose-500' : missingCount > 0 ? 'border-amber-200 dark:border-amber-900 border-l-amber-500' : 'border-emerald-200 dark:border-emerald-900 border-l-emerald-500'}`}>
         <div className="flex gap-4 items-center">
           <div className={`w-2 h-2 rounded-full ${expiredCount > 0 ? 'bg-rose-500' : missingCount > 0 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
           <Text variant="body" className="font-bold">{expiredCount > 0 ? 'Replace Expired Travel Meds' : missingCount > 0 ? 'Restock Travel Essentials' : 'Kit Ready for Travel'}</Text>
@@ -203,7 +203,7 @@ export function TravelMedicalKitSection({ externalFilter }: TravelMedicalKitSect
       </div>
 
       {viewMode === 'table' ? (
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto max-h-[500px] overflow-y-auto custom-scrollbar">
             <table className="w-full text-left">
               <thead className="bg-zinc-50 dark:bg-zinc-800 text-[11px] font-bold uppercase text-zinc-500">

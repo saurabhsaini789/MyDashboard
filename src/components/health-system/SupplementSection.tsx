@@ -85,8 +85,8 @@ export function SupplementSection({ externalFilter }: SupplementSectionProps) {
       case 'OK': return `${base} text-emerald-600 bg-emerald-50`;
       case 'LOW': return `${base} text-amber-600 bg-amber-50`;
       case 'MISSING': return `${base} text-rose-600 bg-rose-50`;
-      case 'EXPIRED': return `${base} text-zinc-500 bg-zinc-100`;
-      default: return `${base} text-zinc-500 bg-zinc-100`;
+      case 'EXPIRED': return `${base} text-zinc-500 bg-zinc-100 dark:bg-zinc-800`;
+      default: return `${base} text-zinc-500 bg-zinc-100 dark:bg-zinc-800`;
     }
   };
 
@@ -178,10 +178,10 @@ export function SupplementSection({ externalFilter }: SupplementSectionProps) {
         <SectionTitle>Supplement Section</SectionTitle>
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl h-[54px]">
-            <button onClick={() => toggleViewMode('grid')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-emerald-600' : 'text-zinc-500'}`}><LayoutGrid size={18} /></button>
-            <button onClick={() => toggleViewMode('table')} className={`p-2 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white shadow-sm text-emerald-600' : 'text-zinc-500'}`}><List size={18} /></button>
+            <button onClick={() => toggleViewMode('grid')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-zinc-500 dark:text-zinc-400'}`}><LayoutGrid size={18} /></button>
+            <button onClick={() => toggleViewMode('table')} className={`p-2 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white dark:bg-zinc-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-zinc-500 dark:text-zinc-400'}`}><List size={18} /></button>
           </div>
-          <select value={selectedPerson} onChange={e => setSelectedPerson(e.target.value)} className="bg-zinc-100 rounded-2xl h-[54px] px-4 text-xs border-none cursor-pointer outline-none">
+          <select value={selectedPerson} onChange={e => setSelectedPerson(e.target.value)} className="bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-100 rounded-2xl h-[54px] px-4 text-xs border-none cursor-pointer outline-none">
             <option value="All">Anyone</option>
             <option value="Shared">Shared</option>
             {familyMembers.map(m => <option key={m} value={m}>{m}</option>)}
@@ -193,15 +193,15 @@ export function SupplementSection({ externalFilter }: SupplementSectionProps) {
               placeholder="Search supplements..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-zinc-100 text-xs font-bold rounded-2xl h-[54px] pl-12 pr-4 border-none w-full outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all font-bold"
+              className="bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-100 text-xs font-bold rounded-2xl h-[54px] pl-12 pr-4 border-none w-full outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all font-bold"
             />
           </div>
-          <button onClick={() => setIsFamilyModalOpen(true)} className="bg-zinc-100 p-4 rounded-2xl h-[54px] text-zinc-500"><Settings size={20} /></button>
-          <button onClick={openAddModal} className="bg-zinc-900 text-white text-xs px-8 py-4 rounded-2xl h-[54px] transition-all hover:scale-105 w-full md:w-auto">+ ADD</button>
+          <button onClick={() => setIsFamilyModalOpen(true)} className="bg-zinc-100 dark:bg-zinc-800 p-4 rounded-2xl h-[54px] text-zinc-500 dark:text-zinc-400"><Settings size={20} /></button>
+          <button onClick={openAddModal} className="bg-zinc-900 dark:bg-zinc-800 text-white dark:text-zinc-100 text-xs px-8 py-4 rounded-2xl h-[54px] transition-all hover:scale-105 w-full md:w-auto border border-transparent dark:border-zinc-700">+ ADD</button>
         </div>
       </div>
 
-      <div className={`p-5 rounded-2xl border-2 border-l-[6px] bg-white mb-8 shadow-sm ${stats.expired ? 'border-rose-200 border-l-rose-500' : stats.missing ? 'border-amber-200 border-l-amber-500' : 'border-emerald-200 border-l-emerald-500'}`}>
+      <div className={`p-5 rounded-2xl border-2 border-l-[6px] bg-white dark:bg-zinc-900 mb-8 shadow-sm ${stats.expired ? 'border-rose-200 dark:border-rose-900 border-l-rose-500' : stats.missing ? 'border-amber-200 dark:border-amber-900 border-l-amber-500' : 'border-emerald-200 dark:border-emerald-900 border-l-emerald-500'}`}>
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 font-bold">
            <span>{stats.expired ? 'Replace expired items' : stats.missing ? 'Restock missing items' : 'Systems nominal'}</span>
            <div className="flex gap-4 text-xs">
@@ -216,28 +216,28 @@ export function SupplementSection({ externalFilter }: SupplementSectionProps) {
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(i => (
-            <div key={i.id} onClick={() => openEditModal(i)} className="p-6 bg-white border border-zinc-200 rounded-2xl shadow-sm cursor-pointer hover:bg-zinc-50 transition-all font-bold">
+            <div key={i.id} onClick={() => openEditModal(i)} className="p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm cursor-pointer hover:bg-zinc-50 dark:hover:bg-white/5 transition-all font-bold">
                <div className="flex justify-between">
-                 <div><h3 className="text-lg">{i.itemName}</h3><div className="flex gap-2 items-center"><span className="text-[10px] bg-zinc-100 px-2 py-0.5 rounded uppercase">{i.category}</span>{i.purpose && <span className="text-[10px] text-zinc-400 font-medium">{i.purpose}</span>}</div></div>
+                 <div><h3 className="text-lg">{i.itemName}</h3><div className="flex gap-2 items-center"><span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded uppercase">{i.category}</span>{i.purpose && <span className="text-[10px] text-zinc-400 font-medium">{i.purpose}</span>}</div></div>
                  <span className={getStatusStyles(getStatus(i))}>{getStatus(i)}</span>
                </div>
                <div className="mt-4 grid grid-cols-2 text-xs">
                  <div><span className="text-zinc-400 font-bold uppercase">Qty</span><div>{i.quantity} / {i.targetQuantity}</div></div>
                  <div className="text-right"><span className="text-zinc-400 font-bold uppercase">Expiry</span><div>{new Date(i.expiryDate).toLocaleDateString()}</div></div>
                </div>
-               {i.notes && <div className="mt-4 pt-4 border-t border-zinc-100 text-[11px] text-zinc-400 italic line-clamp-2">"{i.notes}"</div>}
+               {i.notes && <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 text-[11px] text-zinc-400 italic line-clamp-2">"{i.notes}"</div>}
             </div>
           ))}
         </div>
       ) : (
-        <div className="bg-white border rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
           <table className="w-full text-left font-bold">
-            <thead className="bg-zinc-50 text-[10px] text-zinc-500 uppercase">
+            <thead className="bg-zinc-50 dark:bg-zinc-800 text-[10px] text-zinc-500 uppercase">
               <tr><th className="p-4">Status</th><th className="p-4">Name</th><th className="p-4">Purpose</th><th className="p-4">Person</th><th className="p-4">Qty</th><th className="p-4">Expiry</th><th className="p-4">Notes</th></tr>
             </thead>
             <tbody className="text-sm">
               {filtered.map(i => (
-                <tr key={i.id} onClick={() => openEditModal(i)} className="border-b hover:bg-zinc-50 cursor-pointer">
+                <tr key={i.id} onClick={() => openEditModal(i)} className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors cursor-pointer">
                   <td className="p-4"><span className={getStatusStyles(getStatus(i))}>{getStatus(i)}</span></td>
                   <td className="p-4">{i.itemName}</td>
                   <td className="p-4 text-zinc-500 font-medium">{i.purpose || '-'}</td>
@@ -275,8 +275,8 @@ export function SupplementSection({ externalFilter }: SupplementSectionProps) {
 
       <Modal isOpen={isFamilyModalOpen} onClose={() => setIsFamilyModalOpen(false)} title="Family">
         <div className="space-y-4">
-          <div className="flex gap-2"><input value={newPersonName} onChange={e=>setNewPersonName(e.target.value)} placeholder="Name" className="flex-1 bg-zinc-100 p-3 rounded-xl border-none outline-none font-bold"/><button onClick={addFamilyMember} className="bg-emerald-600 text-white p-3 rounded-xl"><Plus size={20}/></button></div>
-          {familyMembers.map(m => <div key={m} className="flex justify-between p-3 bg-zinc-50 rounded-xl font-bold"><span>{m}</span><button onClick={()=>removeFamilyMember(m)} className="text-rose-500"><Trash2 size={18}/></button></div>)}
+          <div className="flex gap-2"><input value={newPersonName} onChange={e=>setNewPersonName(e.target.value)} placeholder="Name" className="flex-1 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-100 p-3 rounded-xl border-none outline-none font-bold"/><button onClick={addFamilyMember} className="bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-xl transition-colors"><Plus size={20}/></button></div>
+          {familyMembers.map(m => <div key={m} className="flex justify-between p-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl font-bold border border-zinc-100 dark:border-zinc-800"><span>{m}</span><button onClick={()=>removeFamilyMember(m)} className="text-rose-500 hover:text-rose-600 transition-colors"><Trash2 size={18}/></button></div>)}
         </div>
       </Modal>
     </section>

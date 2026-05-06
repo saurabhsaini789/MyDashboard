@@ -98,7 +98,7 @@ export function CompletedBooks() {
           
           <button
             onClick={() => setIsAdding(true)}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-6 py-3 rounded-2xl text-sm font-semibold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-zinc-900 dark:bg-teal-600 text-white px-6 py-3 rounded-2xl text-sm font-semibold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm"
           >
             <Plus size={20} />
             Add Completed

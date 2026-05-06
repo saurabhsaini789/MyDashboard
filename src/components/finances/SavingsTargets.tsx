@@ -256,9 +256,9 @@ export function SavingsTargets() {
           })}
         </div>
       ) : (
-        <div className="bg-white dark:bg-zinc-950/30 border border-zinc-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-white dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
           <table className="w-full text-left border-collapse">
-            <thead className="bg-zinc-50">
+            <thead className="bg-zinc-50 dark:bg-zinc-800/50">
               <tr>
                 <th className="p-4 px-6 text-xs uppercase text-zinc-500">Goal</th>
                 <th className="p-4 px-6 text-xs uppercase text-zinc-500">Target</th>
@@ -270,7 +270,7 @@ export function SavingsTargets() {
               {goals.map(goal => {
                 const { progress, currentTotal, status } = calculateTrajectoryMetrics(goal);
                 return (
-                  <tr key={goal.id} className="border-b">
+                  <tr key={goal.id} className="border-b dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                     <td className="p-4 px-6 font-semibold">{goal.name}</td>
                     <td className="p-4 px-6">${goal.targetAmount.toLocaleString()}</td>
                     <td className="p-4 px-6">{progress.toFixed(0)}%</td>

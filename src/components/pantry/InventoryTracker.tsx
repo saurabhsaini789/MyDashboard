@@ -76,7 +76,7 @@ export function InventoryTracker({ records }: InventoryTrackerProps) {
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-700 font-bold uppercase">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6 p-8 bg-white dark:bg-zinc-900 border border-zinc-100 rounded-2xl shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6 p-8 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl shadow-sm">
         <div><SectionTitle>Inventory Tracker</SectionTitle><p className="text-[10px] text-zinc-400">Automated advising based on consumption cycles.</p></div>
         <div className="flex gap-8">
           <div className="flex flex-col items-end"><span className="text-[10px] text-zinc-400">Monitored</span><span className="text-3xl">{plannedItems.length}</span></div>
@@ -84,22 +84,22 @@ export function InventoryTracker({ records }: InventoryTrackerProps) {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-100 rounded-2xl p-8 shadow-sm">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl p-8 shadow-sm">
         <div className="flex justify-between items-center mb-8">
           <span className="text-[10px] font-bold text-zinc-400 uppercase">Live Stock Status</span>
           <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
-            <button onClick={() => toggleViewMode('grid')} className={`p-1.5 rounded-lg ${viewMode==='grid'?'bg-white shadow-sm':'text-zinc-400'}`}><LayoutGrid size={16}/></button>
-            <button onClick={() => toggleViewMode('table')} className={`p-1.5 rounded-lg ${viewMode==='table'?'bg-white shadow-sm':'text-zinc-400'}`}><List size={16}/></button>
+            <button onClick={() => toggleViewMode('grid')} className={`p-1.5 rounded-lg ${viewMode==='grid'?'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white':'text-zinc-400'}`}><LayoutGrid size={16}/></button>
+            <button onClick={() => toggleViewMode('table')} className={`p-1.5 rounded-lg ${viewMode==='table'?'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white':'text-zinc-400'}`}><List size={16}/></button>
           </div>
         </div>
 
         {viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {inventoryStatus.map(i => (
-              <div key={i.id} className="p-6 bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-100 rounded-2xl">
+              <div key={i.id} className="p-6 bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-100 dark:border-zinc-800 rounded-2xl">
                 <div className="flex justify-between mb-4">
                   <span className="font-bold">{i.name}</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded ${i.status==='Fresh'?'bg-teal-50 text-teal-600':i.status==='Low'?'bg-amber-50 text-amber-600':'bg-rose-50 text-rose-600'}`}>{i.status}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded ${i.status==='Fresh'?'bg-teal-50 dark:bg-teal-500/10 text-teal-600':i.status==='Low'?'bg-amber-50 dark:bg-amber-500/10 text-amber-600':'bg-rose-50 dark:bg-rose-500/10 text-rose-600'}`}>{i.status}</span>
                 </div>
                 <div className="w-full h-1 bg-zinc-100 dark:bg-zinc-700 rounded-full overflow-hidden mb-2">
                   <div className={`h-full ${i.status==='Fresh'?'bg-teal-500':i.status==='Low'?'bg-amber-500':'bg-rose-500'}`} style={{width:`${i.progress}%`}}/>
@@ -109,7 +109,7 @@ export function InventoryTracker({ records }: InventoryTrackerProps) {
             ))}
           </div>
         ) : (
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-100 rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
             <table className="w-full text-left">
               <thead className="bg-zinc-50 dark:bg-zinc-800 text-[10px] text-zinc-500 font-bold uppercase">
                 <tr>
@@ -123,7 +123,7 @@ export function InventoryTracker({ records }: InventoryTrackerProps) {
                 {inventoryStatus.map(i => (
                   <tr key={i.id} className="hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4"><span className="font-bold text-sm">{i.name}</span></td>
-                    <td className="px-6 py-4"><span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${i.status==='Fresh'?'bg-teal-50 text-teal-600':i.status==='Low'?'bg-amber-50 text-amber-600':'bg-rose-50 text-rose-600'}`}>{i.status}</span></td>
+                    <td className="px-6 py-4"><span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${i.status==='Fresh'?'bg-teal-50 dark:bg-teal-500/10 text-teal-600':i.status==='Low'?'bg-amber-50 dark:bg-amber-500/10 text-amber-600':'bg-rose-50 dark:bg-rose-500/10 text-rose-600'}`}>{i.status}</span></td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
                         <div className="w-24 h-1.5 bg-zinc-100 dark:bg-zinc-700 rounded-full overflow-hidden shrink-0">

@@ -217,9 +217,9 @@ export function AssetsSection() {
           })}
         </div>
       ) : (
-        <div className="bg-white dark:bg-zinc-950/30 border border-zinc-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-white dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
           <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead className="bg-zinc-50">
+            <thead className="bg-zinc-50 dark:bg-zinc-800/50">
               <tr>
                 <th className="p-4 px-6 text-xs uppercase text-zinc-500">Asset</th>
                 <th className="p-4 px-6 text-xs uppercase text-zinc-500">Balance</th>
@@ -229,7 +229,7 @@ export function AssetsSection() {
             </thead>
             <tbody>
               {assets.map(asset => (
-                <tr key={asset.id} className="border-b transition-colors hover:bg-zinc-50">
+                <tr key={asset.id} className="border-b dark:border-zinc-800 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                   <td className="p-4 px-6 font-semibold">{asset.name}</td>
                   <td className="p-4 px-6 font-bold">${calculateAssetBalance(asset).toLocaleString()}</td>
                   <td className="p-4 px-6">{asset.growthRate}%</td>

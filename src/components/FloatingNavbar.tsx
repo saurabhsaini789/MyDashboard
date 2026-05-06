@@ -52,11 +52,11 @@ function PWATabBar() {
 
   return (
     <nav
-      className="pwa-only fixed bottom-0 left-0 right-0 z-[999] flex-col
+      className="pwa-only fixed bottom-[calc(env(safe-area-inset-bottom,0px)+16px)] left-4 right-4 z-[999] flex-col
                  bg-white/90 dark:bg-zinc-950/95
                  backdrop-blur-xl
-                 border-t border-zinc-200/80 dark:border-zinc-800/80"
-      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}
+                 border border-zinc-200/80 dark:border-zinc-800/80
+                 rounded-2xl shadow-lg shadow-black/5"
       aria-label="Main navigation"
     >
       <div className="flex items-stretch justify-around px-1 pt-2 pb-1 h-[58px]">

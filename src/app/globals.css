@@ -9,6 +9,7 @@
   --border: #e4e4e7; /* zinc-200 */
   --muted: #71717a; /* zinc-500 */
   --muted-foreground: #52525b; /* zinc-600 */
+  color-scheme: light;
 }
 
 @theme inline {
@@ -31,6 +32,7 @@
   --border: #27272a; /* zinc-800 */
   --muted: #a1a1aa; /* zinc-400 */
   --muted-foreground: #d4d4d8; /* zinc-300 */
+  color-scheme: dark;
 }
 
 
@@ -183,6 +185,6 @@ input[type="number"] {
      env() values handle iPhone notch (top) and home indicator (bottom). */
   .pwa-content {
     padding-top: calc(56px + env(safe-area-inset-top, 0px)) !important;
-    padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }

@@ -203,23 +203,23 @@ export function LiabilitiesSection() {
                  </div>
                  <div className="flex flex-col gap-2">
                    <div className="flex justify-between text-xs font-bold text-zinc-500"><span>Progress</span><span>{progress.toFixed(0)}%</span></div>
-                   <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden"><div className="h-full bg-rose-500" style={{width:`${progress}%`}} /></div>
+                   <div className="w-full h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden"><div className="h-full bg-rose-500" style={{width:`${progress}%`}} /></div>
                    <div className="mt-2"><span className="text-xs font-bold text-zinc-500 uppercase">Balance</span><div className="text-xl font-bold">${calculateLiabilityBalance(l).toLocaleString()}</div></div>
                  </div>
-                 <div className="grid grid-cols-2 gap-2"><button onClick={() => { setActiveLiabilityId(l.id); setRepayType('Regular EMI'); setRepayAmount(l.emi.toString()); setIsRepayModalOpen(true); }} className="p-2.5 border rounded-xl text-xs font-bold uppercase hover:bg-zinc-50 transition-colors">Pay EMI</button><button onClick={() => { setActiveLiabilityId(l.id); setIsSimModalOpen(true); }} className="p-2.5 border rounded-xl text-xs font-bold uppercase text-rose-500 hover:bg-rose-50 transition-colors">Preview</button></div>
+                 <div className="grid grid-cols-2 gap-2"><button onClick={() => { setActiveLiabilityId(l.id); setRepayType('Regular EMI'); setRepayAmount(l.emi.toString()); setIsRepayModalOpen(true); }} className="p-2.5 border dark:border-zinc-800 rounded-xl text-xs font-bold uppercase hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">Pay EMI</button><button onClick={() => { setActiveLiabilityId(l.id); setIsSimModalOpen(true); }} className="p-2.5 border dark:border-zinc-800 rounded-xl text-xs font-bold uppercase text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors">Preview</button></div>
                </div>
              );
           })}
         </div>
       ) : (
-        <div className="bg-white dark:bg-zinc-950/30 border border-zinc-200 rounded-2xl overflow-hidden mx-1 md:mx-2 shadow-sm">
+        <div className="bg-white dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden mx-1 md:mx-2 shadow-sm">
           <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead className="bg-zinc-50 text-xs text-zinc-500 uppercase font-bold">
+            <thead className="bg-zinc-50 dark:bg-zinc-800/50 text-xs text-zinc-500 uppercase font-bold">
               <tr><th className="p-4 px-6">Liability</th><th className="p-4 px-6">Balance</th><th className="p-4 px-6">Rate</th><th className="p-4 px-6">EMI</th><th className="p-4 px-6 text-right">Actions</th></tr>
             </thead>
             <tbody>
               {liabilities.map(l => (
-                <tr key={l.id} className="border-b hover:bg-zinc-50 transition-colors">
+                <tr key={l.id} className="border-b dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                   <td className="p-4 px-6 font-semibold">{l.name}</td>
                   <td className="p-4 px-6 font-bold">${calculateLiabilityBalance(l).toLocaleString()}</td>
                   <td className="p-4 px-6">{l.interestRate}%</td>
@@ -247,7 +247,7 @@ export function LiabilitiesSection() {
       </Modal>
 
       <Modal isOpen={isRepayModalOpen} onClose={() => setIsRepayModalOpen(false)} title="Repay" onSubmit={handleRepaySubmit}>
-        <div className="flex gap-2 p-1 bg-zinc-100 rounded-xl mb-4"><button type="button" onClick={()=>setRepayType('Regular EMI')} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all ${repayType==='Regular EMI'?'bg-white shadow-sm':'text-zinc-500'}`}>Regular EMI</button><button type="button" onClick={()=>setRepayType('Prepayment')} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all ${repayType==='Prepayment'?'bg-rose-500 text-white shadow-lg':'text-zinc-500'}`}>Prepayment</button></div>
+        <div className="flex gap-2 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-xl mb-4"><button type="button" onClick={()=>setRepayType('Regular EMI')} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all ${repayType==='Regular EMI'?'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white':'text-zinc-500 dark:text-zinc-400'}`}>Regular EMI</button><button type="button" onClick={()=>setRepayType('Prepayment')} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all ${repayType==='Prepayment'?'bg-rose-500 text-white shadow-lg':'text-zinc-500 dark:text-zinc-400'}`}>Prepayment</button></div>
         <DynamicForm sections={[{id:'r', fields:[{name:'amount', label:'Amount', type:'number', required:true}]}]} formData={{amount:repayAmount}} onChange={(_,v)=>setRepayAmount(v)} />
       </Modal>
 

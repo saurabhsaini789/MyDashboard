@@ -61,8 +61,8 @@ export function Quotes() {
         <SectionTitle>Daily Inspiration</SectionTitle>
         <div className="flex items-center gap-3">
           <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
-            <button onClick={() => toggleViewMode('grid')} className={`p-1.5 rounded-lg ${viewMode==='grid'?'bg-white shadow-sm':'text-zinc-400'}`}><LayoutGrid size={16}/></button>
-            <button onClick={() => toggleViewMode('table')} className={`p-1.5 rounded-lg ${viewMode==='table'?'bg-white shadow-sm':'text-zinc-400'}`}><List size={16}/></button>
+            <button onClick={() => toggleViewMode('grid')} className={`p-1.5 rounded-lg ${viewMode==='grid'?'bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-white':'text-zinc-400'}`}><LayoutGrid size={16}/></button>
+            <button onClick={() => toggleViewMode('table')} className={`p-1.5 rounded-lg ${viewMode==='table'?'bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-white':'text-zinc-400'}`}><List size={16}/></button>
           </div>
           <button onClick={() => setIsAdding(true)} className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-4 py-2 rounded-xl text-[10px]">+ ADD QUOTE</button>
         </div>
@@ -71,12 +71,12 @@ export function Quotes() {
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {isAdding && (
-            <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 animate-in zoom-in duration-200">
+            <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 animate-in zoom-in duration-200">
               <form onSubmit={handleAddQuote} className="flex flex-col gap-3">
-                <textarea autoFocus placeholder="Quote..." value={newQuoteText} onChange={e=>setNewQuoteText(e.target.value)} className="bg-white p-3 rounded-xl text-xs font-bold outline-none border border-zinc-100 min-h-[80px]"/>
+                <textarea autoFocus placeholder="Quote..." value={newQuoteText} onChange={e=>setNewQuoteText(e.target.value)} className="bg-white dark:bg-zinc-950 p-3 rounded-xl text-xs font-bold outline-none border border-zinc-100 dark:border-zinc-800 min-h-[80px]"/>
                 <div className="flex gap-2">
-                  <input placeholder="Author" value={newQuoteAuthor} onChange={e=>setNewQuoteAuthor(e.target.value)} className="bg-white px-3 py-2 rounded-xl text-xs font-bold flex-1 outline-none border border-zinc-100"/>
-                  <button type="submit" className="bg-teal-600 text-white px-3 py-2 rounded-xl text-xs font-bold">SAVE</button>
+                  <input placeholder="Author" value={newQuoteAuthor} onChange={e=>setNewQuoteAuthor(e.target.value)} className="bg-white dark:bg-zinc-950 px-3 py-2 rounded-xl text-xs font-bold flex-1 outline-none border border-zinc-100 dark:border-zinc-800"/>
+                  <button type="submit" className="bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded-xl text-xs font-bold transition-colors">SAVE</button>
                 </div>
               </form>
             </div>
@@ -108,12 +108,12 @@ export function Quotes() {
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
               {isAdding && (
-                <tr className="bg-teal-50/30">
+                <tr className="bg-teal-50/30 dark:bg-teal-500/10">
                   <td colSpan={3} className="px-6 py-4">
                     <form onSubmit={handleAddQuote} className="flex gap-4">
-                      <input autoFocus placeholder="Quote..." value={newQuoteText} onChange={e=>setNewQuoteText(e.target.value)} className="bg-white px-4 py-2 rounded-xl text-xs font-bold flex-1 border border-zinc-100 outline-none"/>
-                      <input placeholder="Author" value={newQuoteAuthor} onChange={e=>setNewQuoteAuthor(e.target.value)} className="bg-white px-4 py-2 rounded-xl text-xs font-bold w-40 border border-zinc-100 outline-none"/>
-                      <button type="submit" className="bg-teal-600 text-white px-6 py-2 rounded-xl text-xs font-bold">SAVE</button>
+                      <input autoFocus placeholder="Quote..." value={newQuoteText} onChange={e=>setNewQuoteText(e.target.value)} className="bg-white dark:bg-zinc-950 px-4 py-2 rounded-xl text-xs font-bold flex-1 border border-zinc-100 dark:border-zinc-800 outline-none"/>
+                      <input placeholder="Author" value={newQuoteAuthor} onChange={e=>setNewQuoteAuthor(e.target.value)} className="bg-white dark:bg-zinc-950 px-4 py-2 rounded-xl text-xs font-bold w-40 border border-zinc-100 dark:border-zinc-800 outline-none"/>
+                      <button type="submit" className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-xl text-xs font-bold transition-colors">SAVE</button>
                     </form>
                   </td>
                 </tr>
@@ -142,9 +142,9 @@ export function Quotes() {
       {editingQuoteId && (
         <Modal isOpen={!!editingQuoteId} onClose={()=>setEditingQuoteId(null)} title="Edit Quote">
           <form onSubmit={handleUpdateQuote} className="p-4 space-y-4">
-            <textarea value={editValue} onChange={e=>setEditValue(e.target.value)} className="w-full bg-zinc-50 p-4 rounded-2xl font-bold min-h-[120px] outline-none" required/>
-            <input value={editAuthor} onChange={e=>setEditAuthor(e.target.value)} className="w-full bg-zinc-50 p-4 rounded-2xl font-bold outline-none" required/>
-            <button type="submit" className="w-full bg-zinc-900 text-white p-4 rounded-2xl font-bold">SAVE CHANGES</button>
+            <textarea value={editValue} onChange={e=>setEditValue(e.target.value)} className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-2xl font-bold min-h-[120px] outline-none" required/>
+            <input value={editAuthor} onChange={e=>setEditAuthor(e.target.value)} className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-2xl font-bold outline-none" required/>
+            <button type="submit" className="w-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 p-4 rounded-2xl font-bold transition-colors hover:bg-zinc-800 dark:hover:bg-zinc-200">SAVE CHANGES</button>
           </form>
         </Modal>
       )}

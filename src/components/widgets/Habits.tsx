@@ -99,9 +99,18 @@ const HabitRow = React.memo(({
       {Array.from({ length: daysInMonth }).map((_, i) => {
         const status = days[i] || 'none';
         return (
-          <td key={i} className={`p-1 text-center ${isCurrentViewRealTodayMonth && i === todayDateIndex ? 'bg-teal-50/30 dark:bg-teal-900/10' : ''}`}>
-            <button onClick={e => onDayClick(habit.id, i, e)} className="w-7 h-7 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all flex items-center justify-center group">
-              <div className={`rounded-full transition-all ${status === 'done' ? 'w-2.5 h-2.5 bg-emerald-500 shadow-[0_0_8px_emerald] dark:shadow-[0_0_8px_rgba(16,185,129,0.4)]' : status === 'missed' ? 'w-2.5 h-2.5 bg-rose-500 shadow-[0_0_8px_rose] dark:shadow-[0_0_8px_rgba(244,63,94,0.4)]' : 'w-1.5 h-1.5 bg-zinc-200 dark:bg-zinc-700 group-hover:scale-125'}`} />
+          <td key={i} className={`p-0.5 text-center transition-colors duration-300 ${isCurrentViewRealTodayMonth && i === todayDateIndex ? 'bg-teal-500/10 dark:bg-teal-500/20 border-x border-teal-500/10 dark:border-teal-500/20' : ''}`}>
+            <button 
+              onClick={e => onDayClick(habit.id, i, e)} 
+              className="w-10 h-10 md:w-8 md:h-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all flex items-center justify-center group mx-auto"
+            >
+              <div className={`rounded-full transition-all ${
+                status === 'done' 
+                  ? 'w-4 h-4 md:w-3 md:h-3 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' 
+                  : status === 'missed' 
+                    ? 'w-4 h-4 md:w-3 md:h-3 bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]' 
+                    : 'w-2 h-2 md:w-1.5 md:h-1.5 bg-zinc-200 dark:bg-zinc-700 group-hover:scale-125'
+              }`} />
             </button>
           </td>
         );
@@ -307,20 +316,34 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
 
   useEffect(() => {
     if (isCurrentViewRealTodayMonth && scrollContainerRef.current) {
-        const container = scrollContainerRef.current;
-        const todayElement = container?.querySelector(`[data-date-index="${todayDateIndex}"]`) as HTMLElement;
-        if (todayElement) {
-          const isMobile = window.innerWidth < 768;
-          // On mobile, scroll so today is "in front" (after the 150px sticky column)
-          // On desktop, continue centering today
-          const scrollPosition = isMobile 
-            ? todayElement.offsetLeft - 150 
-            : todayElement.offsetLeft - container.offsetWidth / 2 + todayElement.offsetWidth / 2;
+        const timer = setTimeout(() => {
+          const container = scrollContainerRef.current;
+          if (!container) return;
           
-          container.scrollTo({ left: scrollPosition, behavior: 'smooth' });
-        }
+          const todayElement = container.querySelector(`[data-date-index="${todayDateIndex}"]`) as HTMLElement;
+          if (todayElement) {
+            const isMobile = window.innerWidth < 768;
+            
+            let scrollPosition = 0;
+            if (isMobile) {
+              // Centered in the second half of the screen (excluding the 150px habit column)
+              const habitColumnWidth = 150;
+              const containerWidth = container.offsetWidth;
+              const visibleWidth = containerWidth - habitColumnWidth;
+              const centerOfVisible = habitColumnWidth + (visibleWidth / 2);
+              const todayCenter = todayElement.offsetLeft + (todayElement.offsetWidth / 2);
+              scrollPosition = todayCenter - centerOfVisible;
+            } else {
+              // Standard center for desktop
+              scrollPosition = todayElement.offsetLeft - container.offsetWidth / 2 + todayElement.offsetWidth / 2;
+            }
+            
+            container.scrollTo({ left: scrollPosition, behavior: 'smooth' });
+          }
+        }, 100); // 100ms delay to ensure layout is ready
+        return () => clearTimeout(timer);
     }
-  }, [currentMonth, currentYear, isCurrentViewRealTodayMonth, todayDateIndex]);
+  }, [currentMonth, currentYear, isCurrentViewRealTodayMonth, todayDateIndex, visibleHabits.length]);
 
   const calcCurrentStreak = useCallback((habit: Habit): number => {
     const today = new Date();
@@ -362,14 +385,26 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
-        <div ref={scrollContainerRef} className="overflow-x-auto custom-scrollbar">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm">
+        <div ref={scrollContainerRef} className="overflow-x-auto overflow-y-auto max-h-[70vh] custom-scrollbar">
           <table className="w-full text-left border-collapse min-w-max">
-            <thead>
-              <tr className="bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800">
-                <th className="p-4 sticky left-0 z-30 bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 min-w-[150px] text-zinc-900 dark:text-zinc-100">Habit</th>
-                {datesOfMonth.map((d, i) => <th key={i} data-date-index={i} className={`p-2 text-center text-[10px] min-w-[40px] ${isCurrentViewRealTodayMonth && i === todayDateIndex ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400' : 'text-zinc-500 dark:text-zinc-400'}`}>{d.dayName}<br/>{d.date}</th>)}
-                <th className="p-4 sticky right-0 z-20 bg-zinc-50 dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 text-right hidden md:table-cell text-zinc-900 dark:text-zinc-100">Score</th>
+            <thead className="sticky top-0 z-40 bg-zinc-50 dark:bg-zinc-900">
+              <tr className="border-b border-zinc-200 dark:border-zinc-800">
+                <th className="p-4 sticky left-0 top-0 z-50 bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 min-w-[150px] text-zinc-900 dark:text-zinc-100">Habit</th>
+                {datesOfMonth.map((d, i) => (
+                  <th 
+                    key={i} 
+                    data-date-index={i} 
+                    className={`p-2 text-center text-[10px] min-w-[44px] md:min-w-[40px] transition-colors sticky top-0 bg-zinc-50 dark:bg-zinc-900 z-40 ${
+                      isCurrentViewRealTodayMonth && i === todayDateIndex 
+                        ? 'bg-teal-500/10 dark:bg-teal-500/20 text-teal-600 dark:text-teal-400 border-x border-teal-500/10' 
+                        : 'text-zinc-500 dark:text-zinc-400'
+                    }`}
+                  >
+                    {d.dayName}<br/>{d.date}
+                  </th>
+                ))}
+                <th className="p-4 sticky right-0 top-0 z-50 bg-zinc-50 dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 text-right hidden md:table-cell text-zinc-900 dark:text-zinc-100">Score</th>
               </tr>
             </thead>
             <tbody>

@@ -136,9 +136,9 @@ export function YearlyReadingLog({ onPromote }: { onPromote?: (book: LogBookEntr
     <div className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden fade-in">
       <div className="px-6 py-5 border-b border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4 bg-zinc-50/50 dark:bg-zinc-900/20">
         <div className="flex items-center gap-4">
-          <button onClick={() => setCurrentYear(y => y - 1)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 text-zinc-500 active:scale-95 transition-all"><ChevronLeft size={20} /></button>
+          <button onClick={() => setCurrentYear(y => y - 1)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 active:scale-95 transition-all"><ChevronLeft size={20} /></button>
           <Text variant="title" as="div" className="text-2xl min-w-[100px] text-center font-bold">{currentYear}</Text>
-          <button onClick={() => setCurrentYear(y => y + 1)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 text-zinc-500 active:scale-95 transition-all"><ChevronRight size={20} /></button>
+          <button onClick={() => setCurrentYear(y => y + 1)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 active:scale-95 transition-all"><ChevronRight size={20} /></button>
           <button onClick={() => setIsMobileExpanded(!isMobileExpanded)} className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-teal-500/10 text-teal-600 border border-teal-500/20 active:scale-95 transition-all">{isMobileExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}</button>
         </div>
 
@@ -157,9 +157,9 @@ export function YearlyReadingLog({ onPromote }: { onPromote?: (book: LogBookEntr
       </div>
 
       <div className="hidden lg:block">
-        <div className="grid grid-cols-12 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/30 font-bold uppercase">
-          <Text variant="label" as="div" className="col-span-2 px-6 py-4 border-r text-center">Month</Text>
-          <Text variant="label" as="div" className="col-span-5 px-6 py-4 border-r text-center">English</Text>
+        <div className="grid grid-cols-12 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-900/30 font-bold uppercase">
+          <Text variant="label" as="div" className="col-span-2 px-6 py-4 border-r dark:border-zinc-800 text-center">Month</Text>
+          <Text variant="label" as="div" className="col-span-5 px-6 py-4 border-r dark:border-zinc-800 text-center">English</Text>
           <Text variant="label" as="div" className="col-span-5 px-6 py-4 text-center">Hindi</Text>
         </div>
 
@@ -172,9 +172,9 @@ export function YearlyReadingLog({ onPromote }: { onPromote?: (book: LogBookEntr
             if (searchQuery && filteredEnglish.length === 0 && filteredHindi.length === 0) return null;
             
             return (
-              <div key={month} className="grid grid-cols-12 hover:bg-zinc-50/50 transition-colors group/row">
-                <Text variant="label" as="div" className="col-span-2 px-6 py-4 border-r flex items-center justify-center font-bold text-zinc-400 uppercase">{month.slice(0, 3)}</Text>
-                <div className="col-span-5 px-4 py-4 border-r grid grid-cols-2 gap-x-4 gap-y-3 items-start content-start">
+              <div key={month} className="grid grid-cols-12 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 transition-colors group/row">
+                <Text variant="label" as="div" className="col-span-2 px-6 py-4 border-r dark:border-zinc-800 flex items-center justify-center font-bold text-zinc-400 uppercase">{month.slice(0, 3)}</Text>
+                <div className="col-span-5 px-4 py-4 border-r dark:border-zinc-800 grid grid-cols-2 gap-x-4 gap-y-3 items-start content-start">
                   {!searchQuery && (
                     <button 
                       onClick={() => openAddModal(month, 'english')} 

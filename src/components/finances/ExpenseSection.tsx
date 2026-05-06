@@ -156,9 +156,19 @@ export function ExpenseSection() {
   const openAddModal = () => {
     setEditingRecord(null);
     setFormData({
-      category: 'food', subcategory: '', amount: '', date: new Date().toISOString().split('T', 1)[0],
-      type: 'need', assetId: '', paidToType: 'other', paidToId: '', paidToName: '',
-      liabilityPaymentType: 'Regular EMI', entryType: 'Quick', paymentMethod: 'UPI / Wallet', notes: ''
+      category: 'food', 
+      subcategory: '', 
+      amount: '', 
+      date: new Date().toISOString().split('T')[0],
+      type: 'need', 
+      assetId: '', 
+      paidToType: 'other', 
+      paidToId: '', 
+      paidToName: '',
+      liabilityPaymentType: 'Regular EMI', 
+      entryType: 'Quick', 
+      paymentMethod: 'UPI / Wallet', 
+      notes: ''
     });
     setIsModalOpen(true);
   };
@@ -241,8 +251,8 @@ export function ExpenseSection() {
           </div>
           <div className="overflow-x-auto px-4 text-xs font-semibold">
             <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b">
+              <thead className="dark:bg-zinc-800/50">
+                <tr className="border-b dark:border-zinc-800">
                   <th className="px-4 py-4 uppercase">Date</th>
                   <th className="px-4 py-4 uppercase">Category</th>
                   <th className="px-4 py-4 uppercase">Type</th>
@@ -252,12 +262,12 @@ export function ExpenseSection() {
               </thead>
               <tbody>
                 {filteredRecords.map(r => (
-                  <tr key={r.id} className="border-b hover:bg-zinc-50 transition-colors text-sm">
+                  <tr key={r.id} className="border-b dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-sm">
                     <td className="px-4 py-5 text-zinc-400">{new Date(r.date).toLocaleDateString()}</td>
-                    <td className="px-4 py-5 font-bold">{r.category} <span className="text-xs text-zinc-400 font-normal">({r.subcategory})</span></td>
-                    <td className="px-4 py-5"><span className="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded-lg">{r.type}</span></td>
-                    <td className="px-4 py-5 text-right font-bold">${r.amount.toLocaleString()}</td>
-                    <td className="px-4 py-5 text-right"><button onClick={() => openEditModal(r)} className="text-zinc-400 hover:text-zinc-900">Edit</button></td>
+                    <td className="px-4 py-5 font-bold text-zinc-900 dark:text-zinc-100">{r.category} <span className="text-xs text-zinc-400 font-normal">({r.subcategory})</span></td>
+                    <td className="px-4 py-5"><span className="px-2 py-1 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 rounded-lg">{r.type}</span></td>
+                    <td className="px-4 py-5 text-right font-bold text-zinc-900 dark:text-zinc-100">${r.amount.toLocaleString()}</td>
+                    <td className="px-4 py-5 text-right"><button onClick={() => openEditModal(r)} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">Edit</button></td>
                   </tr>
                 ))}
               </tbody>
@@ -266,15 +276,23 @@ export function ExpenseSection() {
         </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Expense Record" onSubmit={handleSubmit}>
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title={editingRecord ? 'Edit Expense' : 'Add Expense'} 
+        onSubmit={handleSubmit}
+        accentColor="rose"
+        submitText={editingRecord ? 'Update Record' : 'Save Expense'}
+      >
         <DynamicForm 
+          accentColor="rose"
           sections={[
-            { id: 'b', fields: [
+            { id: 'b', title: 'Transaction Details', fields: [
               { name: 'category', label: 'Category', type: 'select', options: CATEGORIES.map(c=>({label:c,value:c})) },
               { name: 'amount', label: 'Amount', type: 'number', required: true },
               { name: 'date', label: 'Date', type: 'date', required: true }
             ]},
-            { id: 'p', fields: [
+            { id: 'p', title: 'Funding & Destination', fields: [
               { name: 'assetId', label: 'Paid From', type: 'select', options: [
                 { label: 'None', value: '' },
                 ...assets.filter(a=>a.type==='Bank Balance'||a.type==='Cash').map(a=>({label:a.name,value:a.id}))
@@ -295,7 +313,17 @@ export function ExpenseSection() {
              return u;
           })}
         />
-        {editingRecord && <button onClick={() => deleteRecord(editingRecord.id)} className="text-red-500 mt-4">Delete</button>}
+        {editingRecord && (
+          <div className="mt-8 pt-4 border-t border-zinc-100 dark:border-zinc-800 flex justify-end">
+            <button 
+              type="button"
+              onClick={() => deleteRecord(editingRecord.id)} 
+              className="text-xs font-bold text-rose-500 uppercase hover:text-rose-700 transition-colors"
+            >
+              Delete Record
+            </button>
+          </div>
+        )}
       </Modal>
     </div>
   );

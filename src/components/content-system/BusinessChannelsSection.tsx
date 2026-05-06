@@ -180,15 +180,15 @@ export function BusinessChannelsSection() {
         <div><SectionTitle>Content System</SectionTitle><Text variant="label" className="mt-1">The central database and control layer of your content empire</Text></div>
         <div className="flex items-center gap-3">
           <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-2xl h-[54px]">
-            <button onClick={()=>toggleViewMode('table')} className={`px-4 rounded-xl text-xs font-bold ${viewMode==='table'?'bg-white shadow-sm':'text-zinc-400'}`}><List size={16}/></button>
-            <button onClick={()=>toggleViewMode('grid')} className={`px-4 rounded-xl text-xs font-bold ${viewMode==='grid'?'bg-white shadow-sm':'text-zinc-400'}`}><LayoutGrid size={16}/></button>
+            <button onClick={()=>toggleViewMode('table')} className={`px-4 rounded-xl text-xs font-bold ${viewMode==='table'?'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white':'text-zinc-400'}`}><List size={16}/></button>
+            <button onClick={()=>toggleViewMode('grid')} className={`px-4 rounded-xl text-xs font-bold ${viewMode==='grid'?'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white':'text-zinc-400'}`}><LayoutGrid size={16}/></button>
           </div>
           <button onClick={openAddModal} className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold px-6 h-[54px] rounded-2xl shadow-sm">+ NEW CHANNEL</button>
         </div>
       </div>
 
       {viewMode === 'table' ? (
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-100 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
           <table className="w-full text-left">
             <thead className="bg-zinc-50 dark:bg-zinc-800 text-[10px] font-bold uppercase text-zinc-400">
               <tr><th className="px-6 py-4">Status</th><th className="px-6 py-4">Channel</th><th className="px-6 py-4">Platform</th><th className="px-6 py-4">Schedules</th><th className="px-6 py-4"></th></tr>
@@ -197,20 +197,20 @@ export function BusinessChannelsSection() {
               {channels.map(c => {
                 const s = getStatus(c);
                 return (
-                  <tr key={c.id} className="border-b border-zinc-50 dark:border-zinc-800 hover:bg-zinc-50">
-                    <td className="px-6 py-4"><span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-full ${s.c} bg-zinc-50`}>{s.l}</span></td>
+                  <tr key={c.id} className="border-b border-zinc-50 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                    <td className="px-6 py-4"><span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-full ${s.c} bg-zinc-50 dark:bg-zinc-800/50`}>{s.l}</span></td>
                     <td className="px-6 py-4">{c.name}</td>
                     <td className="px-6 py-4 text-zinc-400">{c.platform}</td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-1">
                         {c.schedules?.map(sched => (
-                          <span key={sched.id} className="text-[10px] bg-zinc-100 px-2 py-0.5 rounded text-zinc-500">{sched.type} ({sched.frequency}d)</span>
+                          <span key={sched.id} className="text-[10px] bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded text-zinc-500 dark:text-zinc-400">{sched.type} ({sched.frequency}d)</span>
                         ))}
                         {(!c.schedules || c.schedules.length === 0) && <span className="text-zinc-300 italic">None</span>}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right flex gap-2 justify-end">
-                      <button onClick={()=>openEditModal(c)} className="p-2 bg-zinc-100 rounded-xl text-zinc-400"><Edit2 size={14}/></button>
+                      <button onClick={()=>openEditModal(c)} className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"><Edit2 size={14}/></button>
                     </td>
                   </tr>
                 );
@@ -223,12 +223,12 @@ export function BusinessChannelsSection() {
           {channels.map(c => {
             const s = getStatus(c);
             return (
-              <div key={c.id} className="p-6 bg-white dark:bg-zinc-900 border border-zinc-100 rounded-2xl shadow-sm hover:-translate-y-1 transition-all">
+              <div key={c.id} className="p-6 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl shadow-sm hover:-translate-y-1 transition-all">
                 <div className="flex justify-between items-start mb-4">
                   <div><Text variant="body" className="font-bold text-lg">{c.name}</Text><span className="text-[10px] font-bold uppercase text-zinc-400">{c.platform}</span></div>
-                  <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full ${s.c} bg-zinc-50`}>{s.l}</span>
+                  <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full ${s.c} bg-zinc-50 dark:bg-zinc-800/50`}>{s.l}</span>
                 </div>
-                <div className="flex flex-col gap-2 py-4 border-t border-zinc-50">
+                <div className="flex flex-col gap-2 py-4 border-t border-zinc-50 dark:border-zinc-800">
                   <span className="text-[10px] font-bold uppercase text-zinc-400">Schedules</span>
                   <div className="space-y-1.5">
                     {c.schedules?.map(sched => {
@@ -236,7 +236,7 @@ export function BusinessChannelsSection() {
                       const isOverdue = due < new Date();
                       return (
                         <div key={sched.id} className="flex justify-between items-center text-xs font-bold">
-                          <span className="text-zinc-600">{sched.type}</span>
+                          <span className="text-zinc-600 dark:text-zinc-300">{sched.type}</span>
                           <span className={isOverdue ? 'text-rose-500' : 'text-zinc-400'}>{sched.frequency}d • {due.toLocaleDateString(undefined, {month:'short', day:'numeric'})}</span>
                         </div>
                       );
@@ -244,7 +244,7 @@ export function BusinessChannelsSection() {
                   </div>
                 </div>
                 <div className="flex gap-2 mt-2">
-                  <button onClick={()=>openEditModal(c)} className="w-full py-3 bg-zinc-100 rounded-xl text-zinc-400 flex items-center justify-center gap-2 font-bold text-xs"><Edit2 size={14}/> EDIT CHANNEL</button>
+                  <button onClick={()=>openEditModal(c)} className="w-full py-3 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors flex items-center justify-center gap-2 font-bold text-xs"><Edit2 size={14}/> EDIT CHANNEL</button>
                 </div>
               </div>
             );
@@ -271,9 +271,9 @@ export function BusinessChannelsSection() {
 
           <div className="space-y-3 mb-6">
             {formData.schedules.map(sched => (
-              <div key={sched.id} className="flex items-center justify-between p-3 bg-zinc-50 rounded-2xl border border-zinc-100 group">
+              <div key={sched.id} className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 group">
                 <div className="flex flex-col">
-                  <span className="text-sm font-bold text-zinc-900">{sched.type}</span>
+                  <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{sched.type}</span>
                   <span className="text-[10px] font-bold text-zinc-400 uppercase">Every {sched.frequency} days</span>
                 </div>
                 <button type="button" onClick={() => removeSchedule(sched.id)} className="p-2 text-zinc-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all">
@@ -282,21 +282,21 @@ export function BusinessChannelsSection() {
               </div>
             ))}
             {formData.schedules.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-8 bg-zinc-50/50 rounded-3xl border border-dashed border-zinc-200">
-                <AlertCircle size={24} className="text-zinc-200 mb-2" />
+              <div className="flex flex-col items-center justify-center py-8 bg-zinc-50/50 dark:bg-zinc-900/30 rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800">
+                <AlertCircle size={24} className="text-zinc-200 dark:text-zinc-700 mb-2" />
                 <span className="text-[10px] font-bold text-zinc-400 uppercase">No schedules added yet</span>
               </div>
             )}
           </div>
 
-          <div className="flex flex-col gap-3 p-4 bg-zinc-100/50 rounded-3xl border border-zinc-100">
+          <div className="flex flex-col gap-3 p-4 bg-zinc-100/50 dark:bg-zinc-800/50 rounded-3xl border border-zinc-100 dark:border-zinc-800">
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <span className="text-[10px] font-bold text-zinc-400 uppercase px-1">Post Type</span>
                 <select 
                   value={newScheduleType} 
                   onChange={(e) => setNewScheduleType(e.target.value)}
-                  className="w-full bg-white border border-zinc-100 px-3 py-2.5 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+                  className="w-full bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2.5 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
                 >
                   {POST_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
@@ -307,7 +307,7 @@ export function BusinessChannelsSection() {
                   type="number" 
                   value={newFrequency} 
                   onChange={(e) => setNewFrequency(parseInt(e.target.value) || 1)}
-                  className="w-full bg-white border border-zinc-100 px-3 py-2.5 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+                  className="w-full bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2.5 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
                   min="1"
                 />
               </div>
@@ -321,7 +321,7 @@ export function BusinessChannelsSection() {
                   value={customScheduleType} 
                   onChange={(e) => setCustomScheduleType(e.target.value)}
                   placeholder="e.g. Webinar"
-                  className="w-full bg-white border border-zinc-100 px-3 py-2.5 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
+                  className="w-full bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2.5 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
                 />
               </div>
             )}
@@ -329,7 +329,7 @@ export function BusinessChannelsSection() {
             <button 
               type="button" 
               onClick={addSchedule}
-              className="mt-1 w-full bg-zinc-900 text-white py-3 rounded-2xl text-[10px] font-bold uppercase tracking-wider hover:shadow-lg transition-all active:scale-[0.98]"
+              className="mt-1 w-full bg-zinc-900 dark:bg-teal-600 text-white py-3 rounded-2xl text-[10px] font-bold uppercase tracking-wider hover:shadow-lg transition-all active:scale-[0.98]"
             >
               + Add Schedule
             </button>
@@ -342,7 +342,7 @@ export function BusinessChannelsSection() {
               key={s} 
               type="button" 
               onClick={()=>setFormData({...formData, status:s as any})} 
-              className={`flex-1 py-3 rounded-2xl text-[10px] font-bold uppercase tracking-wider border transition-all ${formData.status===s?'bg-zinc-900 text-white border-zinc-900 shadow-lg':'bg-zinc-50 text-zinc-400 border-zinc-100 hover:bg-zinc-100'}`}
+              className={`flex-1 py-3 rounded-2xl text-[10px] font-bold uppercase tracking-wider border transition-all ${formData.status===s?'bg-zinc-900 dark:bg-zinc-700 text-white border-zinc-900 dark:border-zinc-700 shadow-lg':'bg-zinc-50 dark:bg-zinc-800/50 text-zinc-400 border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}
             >
               {s}
             </button>
@@ -365,9 +365,9 @@ export function BusinessChannelsSection() {
       <Modal isOpen={isIdeaModalOpen} onClose={()=>setIsIdeaModalOpen(false)} title="Select Idea">
         <div className="space-y-3">
           {ideas.filter(i => i.channelId === selectedChannelForPost && i.status === 'Pending').map(i => (
-            <button key={i.id} onClick={()=>markAsPosted(selectedChannelForPost!, 'todo', i.id)} className="w-full p-4 rounded-xl border hover:border-emerald-500 transition-all text-sm font-bold text-left">{i.title}</button>
+            <button key={i.id} onClick={()=>markAsPosted(selectedChannelForPost!, 'todo', i.id)} className="w-full p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-emerald-500 dark:hover:border-emerald-500 transition-all text-sm font-bold text-left">{i.title}</button>
           ))}
-          <button onClick={()=>markAsPosted(selectedChannelForPost!, 'todo', 'none')} className="w-full p-4 rounded-xl border border-dashed text-zinc-400 text-xs font-bold">Post without idea</button>
+          <button onClick={()=>markAsPosted(selectedChannelForPost!, 'todo', 'none')} className="w-full p-4 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 text-zinc-400 text-xs font-bold">Post without idea</button>
         </div>
       </Modal>
     </section>

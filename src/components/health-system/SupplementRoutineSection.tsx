@@ -80,7 +80,7 @@ export function SupplementRoutineSection() {
           </select>
           <button
             onClick={() => setIsExpanded(p => !p)}
-            className="flex items-center gap-1.5 text-[11px] text-zinc-500 bg-zinc-100 px-3 py-2 rounded-xl transition-all"
+            className="flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-3 py-2 rounded-xl transition-all"
           >
             {isExpanded ? <><ChevronUp size={13} /> Collapse</> : <><ChevronDown size={13} /> Expand</>}
           </button>
@@ -90,33 +90,33 @@ export function SupplementRoutineSection() {
       {isExpanded && (
         <div className="animate-in fade-in duration-300 space-y-8 font-bold">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-white border rounded-2xl px-5 py-4 shadow-sm">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 shadow-sm">
               <span className="text-[11px] uppercase text-zinc-400 block mb-2 font-bold">Total</span>
-              <span className="text-[32px] text-zinc-900 tabular-nums">{filteredItems.length}</span>
+              <span className="text-[32px] text-zinc-900 dark:text-zinc-100 tabular-nums">{filteredItems.length}</span>
             </div>
-            <div className="bg-white border rounded-2xl px-5 py-4 shadow-sm">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 shadow-sm">
               <span className="text-[11px] uppercase text-zinc-400 block mb-2 font-bold">Categories</span>
-              <span className="text-[32px] text-zinc-900 tabular-nums">{categoryCoverage.filter(c => c.count > 0).length}</span>
+              <span className="text-[32px] text-zinc-900 dark:text-zinc-100 tabular-nums">{categoryCoverage.filter(c => c.count > 0).length}</span>
             </div>
-            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-5 py-4 shadow-sm">
-              <span className="text-[11px] uppercase text-emerald-500 block mb-2 font-bold">OK</span>
-              <span className="text-[32px] text-emerald-600 tabular-nums">{suppStats.ok}</span>
+            <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl px-5 py-4 shadow-sm">
+              <span className="text-[11px] uppercase text-emerald-500 dark:text-emerald-400 block mb-2 font-bold">OK</span>
+              <span className="text-[32px] text-emerald-600 dark:text-emerald-500 tabular-nums">{suppStats.ok}</span>
             </div>
-            <div className="bg-amber-50 border border-amber-100 rounded-2xl px-5 py-4 shadow-sm">
-              <span className="text-[11px] uppercase text-amber-500 block mb-2 font-bold">Action</span>
-              <span className="text-[32px] text-amber-600 tabular-nums">{suppStats.low + suppStats.missing + suppStats.expired}</span>
+            <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 rounded-2xl px-5 py-4 shadow-sm">
+              <span className="text-[11px] uppercase text-amber-500 dark:text-amber-400 block mb-2 font-bold">Action</span>
+              <span className="text-[32px] text-amber-600 dark:text-amber-500 tabular-nums">{suppStats.low + suppStats.missing + suppStats.expired}</span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div className="bg-white border rounded-2xl p-5 shadow-sm">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm">
               <h3 className="text-[11px] uppercase text-zinc-400 mb-5 font-bold">Frequency Breakdown</h3>
               <div className="space-y-4">
                 {FREQ_ORDER.filter(g => byFreq[g]?.length > 0).map(group => (
                   <div key={group}>
                     <div className="flex items-center gap-2 mb-2 text-zinc-500 text-xs uppercase font-bold"><span>{group} Routine</span><span>· {byFreq[group].length}</span></div>
                     {byFreq[group].map(i => (
-                      <div key={i.id} className="flex justify-between items-center p-3 bg-zinc-50 rounded-xl mb-1.5">
+                      <div key={i.id} className="flex justify-between items-center p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl mb-1.5 border border-transparent dark:border-zinc-800">
                         <div className="flex flex-col"><span className="text-sm font-bold">{i.itemName}</span><span className="text-[10px] text-zinc-400">{i.dose}</span></div>
                         <span className="text-[10px] text-zinc-400">{i.frequency}</span>
                       </div>
@@ -126,13 +126,13 @@ export function SupplementRoutineSection() {
               </div>
             </div>
 
-            <div className="bg-white border rounded-2xl p-5 shadow-sm">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm">
               <h3 className="text-[11px] uppercase text-zinc-400 mb-5 font-bold">Category Coverage</h3>
               <div className="space-y-2">
                 {categoryCoverage.map(c => (
-                  <div key={c.cat} className={`flex justify-between p-3 rounded-xl border text-xs font-bold transition-all ${c.count === 0 ? 'bg-zinc-50 border-zinc-100 opacity-60' : c.hasOk ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
+                  <div key={c.cat} className={`flex justify-between p-3 rounded-xl border text-xs font-bold transition-all ${c.count === 0 ? 'bg-zinc-50 dark:bg-zinc-800/50 border-zinc-100 dark:border-zinc-800 opacity-60' : c.hasOk ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20' : 'bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20'}`}>
                     <span>{c.cat}</span>
-                    <span className={c.count === 0 ? 'text-zinc-400' : c.hasOk ? 'text-emerald-600' : 'text-amber-600'}>{c.count === 0 ? 'None' : `${c.count} items`}</span>
+                    <span className={c.count === 0 ? 'text-zinc-400' : c.hasOk ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>{c.count === 0 ? 'None' : `${c.count} items`}</span>
                   </div>
                 ))}
               </div>

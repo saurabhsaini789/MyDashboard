@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { CheckCircle2, Rocket } from 'lucide-react';
+import { CheckCircle2, Rocket, LayoutGrid, List } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { setSyncedItem } from '@/lib/storage';
 import { SYNC_KEYS } from '@/lib/sync-keys';
@@ -11,6 +11,11 @@ import { useStorageSubscription } from '@/hooks/useStorageSubscription';
 
 export function TodayActions() {
   const channels = useStorageSubscription<BusinessChannel[]>(SYNC_KEYS.FINANCES_BUSINESS, []);
+  const viewMode = useStorageSubscription<'grid' | 'table'>('today_actions_view_mode', 'grid');
+
+  const setViewMode = (mode: 'grid' | 'table') => {
+    setSyncedItem('today_actions_view_mode', mode);
+  };
 
   const todayStr = new Date().toISOString().split('T')[0];
   
@@ -56,48 +61,106 @@ export function TodayActions() {
 
   return (
     <section className="w-full mb-12">
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center justify-between gap-3 mb-6">
         <SectionTitle>Today&apos;s actions</SectionTitle>
+        
+        {dueChannels.length > 0 && (
+          <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
+            <button 
+              onClick={() => setViewMode('grid')} 
+              className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white' : 'text-zinc-400'}`}
+            >
+              <LayoutGrid size={16} />
+            </button>
+            <button 
+              onClick={() => setViewMode('table')} 
+              className={`p-2 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white' : 'text-zinc-400'}`}
+            >
+              <List size={16} />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="bg-white dark:bg-zinc-900/50 border border-zinc-100 rounded-2xl p-8 shadow-sm">
         {dueChannels.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {dueChannels.map(channel => {
-              const schedulesDue = channel.schedules.filter(s => s.nextPostDueDate && s.nextPostDueDate <= todayStr);
-              
-              return (
-                <div key={channel.id} className="group relative border border-zinc-100 rounded-2xl p-6 hover:-translate-y-1 transition-all duration-300 bg-zinc-50 dark:bg-zinc-800/50">
-                  <div className="flex flex-col gap-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <Text variant="body" className="font-bold text-lg">{channel.name}</Text>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-600">{channel.platform}</span>
+          viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {dueChannels.map(channel => {
+                const schedulesDue = channel.schedules.filter(s => s.nextPostDueDate && s.nextPostDueDate <= todayStr);
+                
+                return (
+                  <div key={channel.id} className="group relative border border-zinc-100 rounded-2xl p-6 hover:-translate-y-1 transition-all duration-300 bg-zinc-50 dark:bg-zinc-800/50">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <Text variant="body" className="font-bold text-lg">{channel.name}</Text>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-600">{channel.platform}</span>
+                          </div>
                         </div>
+                        <div className="bg-teal-500/10 text-teal-600 p-2 rounded-xl"><Rocket size={20} /></div>
                       </div>
-                      <div className="bg-teal-500/10 text-teal-600 p-2 rounded-xl"><Rocket size={20} /></div>
-                    </div>
-                    
-                    <div className="space-y-3 mt-2 pt-4 border-t border-zinc-100">
-                      <span className="text-[10px] font-bold text-teal-600 uppercase animate-pulse mb-2 block">Pending Posts</span>
-                      {schedulesDue.map(sched => (
-                        <div key={sched.id} className="flex items-center justify-between gap-4 p-2 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-100">
-                          <span className="text-[11px] font-bold text-zinc-600">{sched.type}</span>
-                          <button 
-                            onClick={() => markAsPosted(channel.id, sched.id)} 
-                            className="flex items-center gap-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:scale-105 active:scale-95"
-                          >
-                            <CheckCircle2 size={12} /> Posted
-                          </button>
-                        </div>
-                      ))}
+                      
+                      <div className="space-y-3 mt-2 pt-4 border-t border-zinc-100">
+                        <span className="text-[10px] font-bold text-teal-600 uppercase animate-pulse mb-2 block">Pending Posts</span>
+                        {schedulesDue.map(sched => (
+                          <div key={sched.id} className="flex items-center justify-between gap-4 p-2 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-100">
+                            <span className="text-[11px] font-bold text-zinc-600">{sched.type}</span>
+                            <button 
+                              onClick={() => markAsPosted(channel.id, sched.id)} 
+                              className="flex items-center gap-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:scale-105 active:scale-95"
+                            >
+                              <CheckCircle2 size={12} /> Posted
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-zinc-100 dark:border-zinc-800">
+                    <th className="px-4 py-3 text-[10px] font-bold uppercase text-zinc-400">Channel</th>
+                    <th className="px-4 py-3 text-[10px] font-bold uppercase text-zinc-400">Platform</th>
+                    <th className="px-4 py-3 text-[10px] font-bold uppercase text-zinc-400">Post Type</th>
+                    <th className="px-4 py-3 text-[10px] font-bold uppercase text-zinc-400 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
+                  {dueChannels.flatMap(channel => {
+                    const schedulesDue = channel.schedules.filter(s => s.nextPostDueDate && s.nextPostDueDate <= todayStr);
+                    return schedulesDue.map(sched => (
+                      <tr key={`${channel.id}-${sched.id}`} className="group hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors">
+                        <td className="px-4 py-4">
+                          <Text variant="body" className="font-bold text-sm">{channel.name}</Text>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500">{channel.platform}</span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="text-xs font-bold text-teal-600 bg-teal-50 dark:bg-teal-900/20 px-2 py-0.5 rounded">{sched.type}</span>
+                        </td>
+                        <td className="px-4 py-4 text-right">
+                          <button 
+                            onClick={() => markAsPosted(channel.id, sched.id)} 
+                            className="inline-flex items-center gap-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-4 py-2 rounded-xl text-[10px] font-bold transition-all hover:scale-105 active:scale-95"
+                          >
+                            <CheckCircle2 size={12} /> Mark as Posted
+                          </button>
+                        </td>
+                      </tr>
+                    ));
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center animate-in fade-in zoom-in duration-500">
             <div className="w-16 h-16 bg-zinc-50 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4 border border-zinc-100"><CheckCircle2 size={32} className="text-emerald-500" /></div>

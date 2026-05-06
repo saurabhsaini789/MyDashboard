@@ -50,7 +50,7 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6 p-8 bg-white dark:bg-zinc-900 border border-zinc-100 rounded-2xl shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6 p-8 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl shadow-sm">
         <div><SectionTitle>Grocery Plan</SectionTitle><Text variant="label" className="mt-1">Budget and tracking for your monthly essentials</Text></div>
         <div className="flex gap-8">
           <div className="flex flex-col items-end"><span className="text-[10px] font-bold uppercase text-zinc-400">Planned</span><span className="text-3xl font-bold">${plannedTotalCAD.toLocaleString()}</span></div>
@@ -58,7 +58,7 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
         </div>
       </div>
 
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-100 rounded-2xl p-6 shadow-sm">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-2">
             <button onClick={() => onDateChange(new Date(year, viewingDate.getMonth() - 1, 1))}><ChevronLeft size={16}/></button>
@@ -67,22 +67,22 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
           </div>
           <div className="flex items-center gap-3">
             <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
-              <button onClick={() => toggleViewMode('table')} className={`p-2 rounded-lg ${viewMode==='table'?'bg-white shadow-sm':'text-zinc-400'}`}><List size={14}/></button>
-              <button onClick={() => toggleViewMode('card')} className={`p-2 rounded-lg ${viewMode==='card'?'bg-white shadow-sm':'text-zinc-400'}`}><LayoutGrid size={14}/></button>
+              <button onClick={() => toggleViewMode('table')} className={`p-2 rounded-lg ${viewMode==='table'?'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white':'text-zinc-400'}`}><List size={14}/></button>
+              <button onClick={() => toggleViewMode('card')} className={`p-2 rounded-lg ${viewMode==='card'?'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white':'text-zinc-400'}`}><LayoutGrid size={14}/></button>
             </div>
-            <button onClick={() => setIsFormOpen(true)} className="bg-zinc-900 text-white px-4 py-2 rounded-xl text-xs font-bold">+ ITEM</button>
+            <button onClick={() => setIsFormOpen(true)} className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-4 py-2 rounded-xl text-xs font-bold">+ ITEM</button>
           </div>
         </div>
 
         {viewMode === 'card' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {items.map(item => (
-              <div key={item.id} className="p-5 bg-zinc-50 dark:bg-zinc-800/30 rounded-2xl border border-zinc-50 relative group">
+              <div key={item.id} className="p-5 bg-zinc-50 dark:bg-zinc-800/30 rounded-2xl border border-zinc-50 dark:border-zinc-800 relative group">
                 <div className="flex justify-between mb-4">
                   <div className="flex flex-col"><span className="font-bold">{item.name}</span><span className="text-[10px] font-bold text-zinc-400 uppercase">{item.category}</span></div>
                   <div className="text-right"><span className="text-lg font-bold text-teal-600">${((item.expectedPrice||0)*(item.plannedQuantity||0)).toLocaleString()}</span></div>
                 </div>
-                <div className="flex justify-between items-center pt-4 border-t border-zinc-100">
+                <div className="flex justify-between items-center pt-4 border-t border-zinc-100 dark:border-zinc-800">
                   <span className="text-[10px] font-bold text-zinc-400 uppercase">{item.plannedQuantity} {item.unitSize} • {item.frequency}</span>
                   <button onClick={() => { setEditingItem(item); setFormData({ name: item.name, category: item.category || DEFAULT_CATEGORIES[0], plannedQuantity: String(item.plannedQuantity), unitSize: item.unitSize||'', frequency: item.frequency || 'Weekly', idealTiming: item.idealTiming||'', expectedPrice: String(item.expectedPrice), consumptionDays: String(item.consumptionDays||'') }); setIsFormOpen(true); }} className="text-[10px] font-bold uppercase text-zinc-400 opacity-0 group-hover:opacity-100">Edit</button>
                 </div>

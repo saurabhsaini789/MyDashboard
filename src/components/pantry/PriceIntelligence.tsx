@@ -82,8 +82,8 @@ export function PriceIntelligence({ records }: PriceIntelligenceProps) {
         <div><SectionTitle>Price Intelligence</SectionTitle><p className="text-[10px] text-zinc-400">Smart tracking of commodity price cycles.</p></div>
         <div className="flex items-center gap-3">
           <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
-            <button onClick={() => toggleViewMode('grid')} className={`p-1.5 rounded-lg ${viewMode==='grid'?'bg-white shadow-sm':'text-zinc-400'}`}><LayoutGrid size={16}/></button>
-            <button onClick={() => toggleViewMode('table')} className={`p-1.5 rounded-lg ${viewMode==='table'?'bg-white shadow-sm':'text-zinc-400'}`}><List size={16}/></button>
+            <button onClick={() => toggleViewMode('grid')} className={`p-1.5 rounded-lg ${viewMode==='grid'?'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white':'text-zinc-400'}`}><LayoutGrid size={16}/></button>
+            <button onClick={() => toggleViewMode('table')} className={`p-1.5 rounded-lg ${viewMode==='table'?'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white':'text-zinc-400'}`}><List size={16}/></button>
           </div>
           <input type="text" placeholder="Search..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} className="bg-zinc-50 dark:bg-zinc-800 px-4 py-2 rounded-xl text-xs font-bold outline-none border border-zinc-100 dark:border-zinc-700 w-48"/>
         </div>
@@ -106,9 +106,9 @@ export function PriceIntelligence({ records }: PriceIntelligenceProps) {
         <Modal isOpen={!!activeItemStats} onClose={()=>setActiveItemStats(null)} title={activeItemStats.name}>
           <div className="p-4 space-y-6">
             <div className="grid grid-cols-3 gap-4">
-              <div className="p-4 bg-zinc-50 rounded-xl text-center"><span className="text-[10px] text-zinc-400 block mb-1">LOWEST</span><span className="font-bold text-teal-600">${activeItemStats.lowestPrice.price.toLocaleString()}</span></div>
-              <div className="p-4 bg-zinc-50 rounded-xl text-center"><span className="text-[10px] text-zinc-400 block mb-1">AVERAGE</span><span className="font-bold">${activeItemStats.averagePrice.toLocaleString()}</span></div>
-              <div className="p-4 bg-zinc-50 rounded-xl text-center"><span className="text-[10px] text-zinc-400 block mb-1">LOGS</span><span className="font-bold">{activeItemStats.history.length}</span></div>
+              <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl text-center border border-zinc-100 dark:border-zinc-800"><span className="text-[10px] text-zinc-400 block mb-1">LOWEST</span><span className="font-bold text-teal-600">${activeItemStats.lowestPrice.price.toLocaleString()}</span></div>
+              <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl text-center border border-zinc-100 dark:border-zinc-800"><span className="text-[10px] text-zinc-400 block mb-1">AVERAGE</span><span className="font-bold">${activeItemStats.averagePrice.toLocaleString()}</span></div>
+              <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl text-center border border-zinc-100 dark:border-zinc-800"><span className="text-[10px] text-zinc-400 block mb-1">LOGS</span><span className="font-bold">{activeItemStats.history.length}</span></div>
             </div>
           </div>
         </Modal>

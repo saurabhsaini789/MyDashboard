@@ -13,36 +13,69 @@ import { haptic } from '@/lib/haptics';
 // Fixed at top, safe-area-inset aware, minimal — nav is handled by the bottom tab bar.
 // Shown ONLY in standalone (PWA) mode via .pwa-only CSS class.
 function PWATopBar() {
+  const pathname = usePathname();
   const { syncStatus, errorMessage } = useSyncIndicator();
   const { isDevelopment } = useSyncReady();
   const { resolvedTheme, setTheme } = useTheme();
+  const [menuOpen, setMenuOpen] = useState(false);
   const isDark = resolvedTheme === 'dark';
+
+  const navLinks = [
+    { name: 'Dashboard',      path: '/'              },
+    { name: 'Goals',          path: '/goals'         },
+    { name: 'Habits',         path: '/habits'        },
+    { name: 'Books',          path: '/books'         },
+    { name: 'Finances',       path: '/finances'      },
+    { name: 'Content System', path: '/content-system'},
+    { name: 'Expenses',       path: '/pantry'        },
+    { name: 'Wardrobe',       path: '/wardrobe'      },
+    { name: 'Health',         path: '/health-system' },
+  ];
 
   return (
     <header
-      className="pwa-only fixed top-0 left-0 right-0 z-[998] flex-col
+      className="pwa-only fixed top-0 left-0 right-0 z-[998] flex flex-col
                  bg-white/85 dark:bg-zinc-950/90
                  backdrop-blur-xl
                  border-b border-zinc-200/80 dark:border-zinc-800/80"
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       <div className="flex items-center justify-between px-4 h-14">
-        {/* App name */}
-        <Link
-          href="/"
-          onClick={() => haptic(6)}
-          className="text-base font-semibold text-zinc-900 dark:text-zinc-100
-                     hover:opacity-70 transition-opacity"
-        >
-          Personal OS
-        </Link>
+        {/* Left side: Hamburger + App name */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => {
+              haptic(4);
+              setMenuOpen(!menuOpen);
+            }}
+            className="p-2 -ml-2 text-zinc-500 dark:text-zinc-400
+                       hover:text-zinc-900 dark:hover:text-white
+                       transition-colors"
+            aria-label="Toggle menu"
+          >
+            {menuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+          
+          <Link
+            href="/"
+            onClick={() => {
+              haptic(6);
+              setMenuOpen(false);
+            }}
+            className="text-base font-bold text-zinc-900 dark:text-zinc-100
+                       hover:opacity-70 transition-opacity"
+          >
+            Personal OS
+          </Link>
+        </div>
 
         {/* Right side: sync + theme toggle */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <SyncStatus
             status={syncStatus}
             errorMessage={errorMessage}
             isDevelopment={isDevelopment}
+            compact={true}
           />
 
           {/* Compact theme toggle for PWA */}
@@ -64,6 +97,42 @@ function PWATopBar() {
             }
           </button>
         </div>
+      </div>
+
+      {/* PWA Slide-down Menu Overlay */}
+      <div 
+        className={`overflow-hidden transition-all duration-300 ease-in-out
+                    ${menuOpen ? 'max-h-[500px] opacity-100 border-t border-zinc-100 dark:border-zinc-800/50' : 'max-h-0 opacity-0 pointer-events-none'}`}
+      >
+        <nav className="grid grid-cols-2 gap-2 p-4 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md">
+          {navLinks.map((link) => (
+            <Link
+              key={link.path}
+              href={link.path}
+              onClick={() => {
+                haptic(2);
+                setMenuOpen(false);
+              }}
+              className={`flex items-center justify-center py-2.5 px-4 rounded-xl text-xs font-bold transition-all
+                          ${pathname === (link.path === '/' ? '/' : link.path) 
+                            ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-sm' 
+                            : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}
+            >
+              {link.name}
+            </Link>
+          ))}
+          <button
+            onClick={() => { 
+              haptic(10);
+              setMenuOpen(false); 
+              supabase.auth.signOut(); 
+            }}
+            className="col-span-2 text-xs font-bold text-rose-500 dark:text-rose-400 py-3 mt-2 
+                       border-t border-zinc-100 dark:border-zinc-800/50 active:bg-rose-500/5 transition-colors"
+          >
+            Sign Out
+          </button>
+        </nav>
       </div>
     </header>
   );

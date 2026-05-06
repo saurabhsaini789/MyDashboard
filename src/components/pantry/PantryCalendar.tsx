@@ -63,9 +63,9 @@ export function PantryCalendar({ records, onUpdateRecords, viewingDate, setViewi
 
   const getDayColor = (total: number) => {
     if (total === 0) return '';
-    if (total < 500) return 'bg-emerald-50 border-emerald-100 text-emerald-700';
-    if (total < 2000) return 'bg-amber-50 border-amber-100 text-amber-700';
-    return 'bg-rose-50 border-rose-100 text-rose-700';
+    if (total < 500) return 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400';
+    if (total < 2000) return 'bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20 text-amber-700 dark:text-amber-400';
+    return 'bg-rose-50 dark:bg-rose-500/10 border-rose-100 dark:border-rose-500/20 text-rose-700 dark:text-rose-400';
   };
 
   if (!isMounted) return <div className="min-h-[400px] animate-pulse bg-zinc-100 dark:bg-zinc-900 rounded-3xl" />;
@@ -75,7 +75,7 @@ export function PantryCalendar({ records, onUpdateRecords, viewingDate, setViewi
   return (
     <div className="flex flex-col gap-8 w-full font-bold uppercase transition-all duration-500">
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 md:p-10 shadow-sm">
-        <div className="grid grid-cols-7 gap-1 md:gap-4 border-b pb-4 mb-4">
+        <div className="grid grid-cols-7 gap-1 md:gap-4 border-b dark:border-zinc-800 pb-4 mb-4">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="text-center text-[10px] text-zinc-400 font-bold">{d}</div>)}
         </div>
         <div className="grid grid-cols-7 gap-1 md:gap-4">
@@ -88,7 +88,7 @@ export function PantryCalendar({ records, onUpdateRecords, viewingDate, setViewi
             const isToday = todayStr === ds;
 
             return (
-              <div key={day} onClick={() => handleDateClick(ds)} className={`relative h-11 md:h-32 rounded-xl border flex flex-col p-1 md:p-4 cursor-pointer transition-all hover:scale-[1.02] ${total > 0 ? getDayColor(total) : 'bg-zinc-50 border-transparent hover:bg-zinc-100'} ${isToday ? 'ring-2 ring-zinc-900 shadow-xl' : ''}`}>
+              <div key={day} onClick={() => handleDateClick(ds)} className={`relative h-11 md:h-32 rounded-xl border flex flex-col p-1 md:p-4 cursor-pointer transition-all hover:scale-[1.02] ${total > 0 ? getDayColor(total) : 'bg-zinc-50 dark:bg-zinc-800/30 border-transparent dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800/50'} ${isToday ? 'ring-2 ring-zinc-900 dark:ring-white shadow-xl' : ''}`}>
                 <div className="flex justify-between items-start"><span className="text-[10px] md:text-sm">{day}</span>{total > 0 && <span className="hidden md:inline text-xs">${total.toLocaleString()}</span>}</div>
                 <div className="mt-2 hidden md:flex flex-col gap-1 overflow-hidden">{itemsOnDay.slice(0, 2).map((r, idx) => <span key={idx} className="text-[10px] truncate opacity-60">{r.vendor || r.category}</span>)}</div>
               </div>
@@ -101,12 +101,12 @@ export function PantryCalendar({ records, onUpdateRecords, viewingDate, setViewi
       <Modal isOpen={isMobilePopupOpen && !!popupDateStr} onClose={() => setIsMobilePopupOpen(false)} title="Pantry Details" isReadonly={true}>
         <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
           {popupDateStr && recordsByDate[popupDateStr]?.map(r => (
-            <div key={r.id} onClick={() => { setEditingRecord(r); setPreferredTab('form'); setIsMobilePopupOpen(false); setIsModalOpen(true); }} className="flex justify-between p-4 bg-zinc-50 rounded-2xl font-bold uppercase cursor-pointer">
+            <div key={r.id} onClick={() => { setEditingRecord(r); setPreferredTab('form'); setIsMobilePopupOpen(false); setIsModalOpen(true); }} className="flex justify-between p-4 bg-zinc-50 dark:bg-zinc-800 rounded-2xl font-bold uppercase cursor-pointer">
               <div className="flex flex-col"><span className="text-sm">{r.vendor || r.subcategory}</span><span className="text-[10px] text-zinc-400">{r.category}</span></div>
               <span className="text-lg">${r.amount.toLocaleString()}</span>
             </div>
           ))}
-          <button onClick={() => { setEditingRecord(null); setPreferredTab('form'); setIsMobilePopupOpen(false); setIsModalOpen(true); }} className="p-4 bg-zinc-900 text-white rounded-2xl font-bold uppercase text-xs mt-4">Add Entry</button>
+          <button onClick={() => { setEditingRecord(null); setPreferredTab('form'); setIsMobilePopupOpen(false); setIsModalOpen(true); }} className="p-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl font-bold uppercase text-xs mt-4">Add Entry</button>
         </div>
       </Modal>
     </div>

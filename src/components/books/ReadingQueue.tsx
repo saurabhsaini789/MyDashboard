@@ -202,7 +202,7 @@ export function ReadingQueue({ onPromote }: ReadingQueueProps) {
         </div>
         
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="bg-zinc-100 dark:bg-zinc-800 p-1 rounded-2xl flex items-center gap-1 shadow-inner border border-zinc-200 overflow-hidden">
+          <div className="bg-zinc-100 dark:bg-zinc-800 p-1 rounded-2xl flex items-center gap-1 shadow-inner border border-zinc-200 dark:border-zinc-700 overflow-hidden">
             <button
               onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 text-teal-500 shadow-sm' : 'text-zinc-400'}`}
@@ -219,7 +219,7 @@ export function ReadingQueue({ onPromote }: ReadingQueueProps) {
 
           <button
             onClick={() => setIsAdding(true)}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-6 py-2.5 rounded-2xl text-sm font-bold hover:scale-[1.02] transition-all"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-zinc-900 dark:bg-teal-600 text-white px-6 py-2.5 rounded-2xl text-sm font-bold hover:scale-[1.02] transition-all shadow-sm"
           >
             <Plus size={18} />
             Add Book
