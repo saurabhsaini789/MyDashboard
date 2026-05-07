@@ -167,25 +167,25 @@ export function IncomeSection() {
           <div className="flex items-center justify-between px-8 mb-8">
             <Text variant="label" as="span">Detailed Records</Text>
           </div>
-          <div className="overflow-x-auto px-4 text-sm font-medium">
-            <table className="w-full text-left border-collapse">
-              <thead className="dark:bg-zinc-800/50">
+          <div className="overflow-x-auto px-4 text-sm font-medium custom-scrollbar">
+            <table className="w-full text-left border-collapse min-w-[700px]">
+              <thead className="dark:bg-zinc-800/50 text-[10px] md:text-xs text-zinc-500 uppercase font-bold">
                 <tr className="border-b dark:border-zinc-800">
-                  <th className="px-4 py-4 text-zinc-500 uppercase text-xs">Date</th>
-                  <th className="px-4 py-4 text-zinc-500 uppercase text-xs">Source</th>
-                  <th className="px-4 py-4 text-zinc-500 uppercase text-xs">Type</th>
-                  <th className="px-4 py-4 text-zinc-500 uppercase text-xs text-right">Amount</th>
-                  <th className="px-4 py-4"></th>
+                  <th className="px-4 py-4 whitespace-nowrap">Date</th>
+                  <th className="px-4 py-4 whitespace-nowrap">Source</th>
+                  <th className="px-4 py-4 whitespace-nowrap">Type</th>
+                  <th className="px-4 py-4 whitespace-nowrap text-right">Amount</th>
+                  <th className="px-4 py-4 whitespace-nowrap text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="text-sm md:text-base">
                 {filteredRecords.map(record => (
                   <tr key={record.id} className="border-b dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                    <td className="px-4 py-5 font-bold text-zinc-400">{new Date(record.date).toLocaleDateString()}</td>
-                    <td className="px-4 py-5 font-bold text-zinc-900 dark:text-zinc-100">{record.source === 'other' ? record.customSource : record.source}</td>
-                    <td className="px-4 py-5"><span className="px-2 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-100 dark:border-emerald-900/30">{record.type}</span></td>
-                    <td className="px-4 py-5 text-right font-bold text-zinc-900 dark:text-zinc-100">${record.amount.toLocaleString()}</td>
-                    <td className="px-4 py-5 text-right"><button onClick={() => openEditModal(record)} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Edit</button></td>
+                    <td className="px-4 py-5 font-bold text-zinc-400 whitespace-nowrap">{new Date(record.date).toLocaleDateString()}</td>
+                    <td className="px-4 py-5 font-bold text-zinc-900 dark:text-zinc-100 whitespace-nowrap">{record.source === 'other' ? record.customSource : record.source}</td>
+                    <td className="px-4 py-5 whitespace-nowrap"><span className="px-2 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-100 dark:border-emerald-900/30">{record.type}</span></td>
+                    <td className="px-4 py-5 text-right font-bold text-zinc-900 dark:text-zinc-100 whitespace-nowrap">${record.amount.toLocaleString()}</td>
+                    <td className="px-4 py-5 text-right whitespace-nowrap"><button onClick={() => openEditModal(record)} className="text-emerald-600 font-bold hover:underline">Edit</button></td>
                   </tr>
                 ))}
               </tbody>

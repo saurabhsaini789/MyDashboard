@@ -173,7 +173,7 @@ input[type="number"] {
 /* Hidden by default; shown only in standalone PWA */
 .pwa-only  { display: none !important; }
 /* Shown by default; hidden only in standalone PWA */
-.pwa-hide  { display: block; }
+.pwa-hide  { }
 
 @media (display-mode: standalone) {
   /* Flip visibility */
@@ -186,5 +186,20 @@ input[type="number"] {
   .pwa-content {
     padding-top: calc(56px + env(safe-area-inset-top, 0px)) !important;
     padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* ── Date input overflow fix ──────────────────────────────────────────
+     Native <input type="date"> has a large intrinsic minimum width on
+     iOS/Android. In PWA standalone mode the safe-area insets reduce the
+     available width enough to push them outside the modal edge.
+     Force them to honour their flex/grid container instead.            */
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"],
+  input[type="month"] {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    max-width: 100% !important;
   }
 }

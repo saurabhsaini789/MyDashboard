@@ -217,24 +217,24 @@ export function AssetsSection() {
           })}
         </div>
       ) : (
-        <div className="bg-white dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead className="bg-zinc-50 dark:bg-zinc-800/50">
+        <div className="bg-white dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-x-auto shadow-sm custom-scrollbar">
+          <table className="w-full text-left border-collapse min-w-[700px]">
+            <thead className="bg-zinc-50 dark:bg-zinc-800/50 text-[10px] md:text-xs text-zinc-500 uppercase font-bold">
               <tr>
-                <th className="p-4 px-6 text-xs uppercase text-zinc-500">Asset</th>
-                <th className="p-4 px-6 text-xs uppercase text-zinc-500">Balance</th>
-                <th className="p-4 px-6 text-xs uppercase text-zinc-500">APY %</th>
-                <th className="p-4 px-6 text-xs uppercase text-zinc-500 text-right">Actions</th>
+                <th className="p-4 px-4 whitespace-nowrap">Asset</th>
+                <th className="p-4 px-4 whitespace-nowrap">Balance</th>
+                <th className="p-4 px-4 whitespace-nowrap">APY %</th>
+                <th className="p-4 px-4 whitespace-nowrap text-right">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-sm md:text-base">
               {assets.map(asset => (
                 <tr key={asset.id} className="border-b dark:border-zinc-800 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                  <td className="p-4 px-6 font-semibold">{asset.name}</td>
-                  <td className="p-4 px-6 font-bold">${calculateAssetBalance(asset).toLocaleString()}</td>
-                  <td className="p-4 px-6">{asset.growthRate}%</td>
-                  <td className="p-4 px-6 text-right">
-                    <button onClick={() => openEditModal(asset)} className="text-emerald-600">Edit</button>
+                  <td className="p-4 px-4 font-semibold whitespace-nowrap">{asset.name}</td>
+                  <td className="p-4 px-4 font-bold whitespace-nowrap">${calculateAssetBalance(asset).toLocaleString()}</td>
+                  <td className="p-4 px-4 whitespace-nowrap">{asset.growthRate}%</td>
+                  <td className="p-4 px-4 text-right whitespace-nowrap">
+                    <button onClick={() => openEditModal(asset)} className="text-emerald-600 font-bold hover:underline">Edit</button>
                   </td>
                 </tr>
               ))}

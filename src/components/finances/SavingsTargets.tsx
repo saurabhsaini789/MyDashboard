@@ -256,26 +256,26 @@ export function SavingsTargets() {
           })}
         </div>
       ) : (
-        <div className="bg-white dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-zinc-50 dark:bg-zinc-800/50">
+        <div className="bg-white dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-x-auto shadow-sm custom-scrollbar">
+          <table className="w-full min-w-[700px] text-left border-collapse">
+            <thead className="bg-zinc-50 dark:bg-zinc-800/50 text-[10px] md:text-xs text-zinc-500 uppercase font-bold">
               <tr>
-                <th className="p-4 px-6 text-xs uppercase text-zinc-500">Goal</th>
-                <th className="p-4 px-6 text-xs uppercase text-zinc-500">Target</th>
-                <th className="p-4 px-6 text-xs uppercase text-zinc-500">Progress</th>
-                <th className="p-4 px-6 text-xs uppercase text-zinc-500">Actions</th>
+                <th className="p-4 px-4 whitespace-nowrap">Goal</th>
+                <th className="p-4 px-4 whitespace-nowrap">Target</th>
+                <th className="p-4 px-4 whitespace-nowrap">Progress</th>
+                <th className="p-4 px-4 whitespace-nowrap text-right">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-sm md:text-base">
               {goals.map(goal => {
-                const { progress, currentTotal, status } = calculateTrajectoryMetrics(goal);
+                const { progress } = calculateTrajectoryMetrics(goal);
                 return (
                   <tr key={goal.id} className="border-b dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                    <td className="p-4 px-6 font-semibold">{goal.name}</td>
-                    <td className="p-4 px-6">${goal.targetAmount.toLocaleString()}</td>
-                    <td className="p-4 px-6">{progress.toFixed(0)}%</td>
-                    <td className="p-4 px-6">
-                      <button onClick={() => openEditModal(goal)} className="text-blue-600">Edit</button>
+                    <td className="p-4 px-4 font-semibold whitespace-nowrap">{goal.name}</td>
+                    <td className="p-4 px-4 font-bold whitespace-nowrap">${goal.targetAmount.toLocaleString()}</td>
+                    <td className="p-4 px-4 whitespace-nowrap">{progress.toFixed(0)}%</td>
+                    <td className="p-4 px-4 text-right whitespace-nowrap">
+                      <button onClick={() => openEditModal(goal)} className="text-blue-600 font-bold hover:underline">Edit</button>
                     </td>
                   </tr>
                 );

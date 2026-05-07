@@ -93,7 +93,8 @@ export function InventoryTracker({ records }: InventoryTrackerProps) {
           </div>
         </div>
 
-        {viewMode === 'grid' ? (
+        <div className="max-h-[500px] md:max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
+          {viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {inventoryStatus.map(i => (
               <div key={i.id} className="p-6 bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-100 dark:border-zinc-800 rounded-2xl">
@@ -109,8 +110,8 @@ export function InventoryTracker({ records }: InventoryTrackerProps) {
             ))}
           </div>
         ) : (
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
-            <table className="w-full text-left">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl overflow-x-auto custom-scrollbar shadow-sm">
+            <table className="w-full text-left min-w-[600px]">
               <thead className="bg-zinc-50 dark:bg-zinc-800 text-[10px] text-zinc-500 font-bold uppercase">
                 <tr>
                   <th className="px-6 py-4">Item</th>
@@ -141,6 +142,7 @@ export function InventoryTracker({ records }: InventoryTrackerProps) {
             </table>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

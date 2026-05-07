@@ -212,19 +212,27 @@ export function LiabilitiesSection() {
           })}
         </div>
       ) : (
-        <div className="bg-white dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden mx-1 md:mx-2 shadow-sm">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead className="bg-zinc-50 dark:bg-zinc-800/50 text-xs text-zinc-500 uppercase font-bold">
-              <tr><th className="p-4 px-6">Liability</th><th className="p-4 px-6">Balance</th><th className="p-4 px-6">Rate</th><th className="p-4 px-6">EMI</th><th className="p-4 px-6 text-right">Actions</th></tr>
+        <div className="bg-white dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-x-auto mx-1 md:mx-2 shadow-sm custom-scrollbar">
+          <table className="w-full text-left border-collapse min-w-[700px]">
+            <thead className="bg-zinc-50 dark:bg-zinc-800/50 text-[10px] md:text-xs text-zinc-500 uppercase font-bold">
+              <tr>
+                <th className="p-4 px-4 whitespace-nowrap">Liability</th>
+                <th className="p-4 px-4 whitespace-nowrap">Balance</th>
+                <th className="p-4 px-4 whitespace-nowrap">Rate</th>
+                <th className="p-4 px-4 whitespace-nowrap">EMI</th>
+                <th className="p-4 px-4 whitespace-nowrap text-right">Actions</th>
+              </tr>
             </thead>
-            <tbody>
+            <tbody className="text-sm md:text-base">
               {liabilities.map(l => (
                 <tr key={l.id} className="border-b dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                  <td className="p-4 px-6 font-semibold">{l.name}</td>
-                  <td className="p-4 px-6 font-bold">${calculateLiabilityBalance(l).toLocaleString()}</td>
-                  <td className="p-4 px-6">{l.interestRate}%</td>
-                  <td className="p-4 px-6 font-bold text-rose-500">${l.emi.toLocaleString()}</td>
-                  <td className="p-4 px-6 text-right"><button onClick={() => openEditModal(l)} className="text-rose-500">Edit</button></td>
+                  <td className="p-4 px-4 font-semibold whitespace-nowrap">{l.name}</td>
+                  <td className="p-4 px-4 font-bold whitespace-nowrap">${calculateLiabilityBalance(l).toLocaleString()}</td>
+                  <td className="p-4 px-4 whitespace-nowrap">{l.interestRate}%</td>
+                  <td className="p-4 px-4 font-bold text-rose-500 whitespace-nowrap">${l.emi.toLocaleString()}</td>
+                  <td className="p-4 px-4 text-right whitespace-nowrap">
+                    <button onClick={() => openEditModal(l)} className="text-rose-500 font-bold hover:underline">Edit</button>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -188,8 +188,8 @@ export function BusinessChannelsSection() {
       </div>
 
       {viewMode === 'table' ? (
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
-          <table className="w-full text-left">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl overflow-x-auto shadow-sm">
+          <table className="w-full text-left min-w-[700px]">
             <thead className="bg-zinc-50 dark:bg-zinc-800 text-[10px] font-bold uppercase text-zinc-400">
               <tr><th className="px-6 py-4">Status</th><th className="px-6 py-4">Channel</th><th className="px-6 py-4">Platform</th><th className="px-6 py-4">Schedules</th><th className="px-6 py-4"></th></tr>
             </thead>

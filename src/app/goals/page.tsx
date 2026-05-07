@@ -114,7 +114,7 @@ export default function GoalsPage() {
             <SectionTitle className="mb-0">Goals Tracker</SectionTitle>
 
             
-            <div className="bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-xl flex items-center gap-1 shadow-inner">
+            <div className="pwa-hide hidden md:flex bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-xl items-center gap-1 shadow-inner">
               <button
                 onClick={() => setView('grid')}
                 className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 ${view === 'grid' ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white' }`}
@@ -124,7 +124,7 @@ export default function GoalsPage() {
               </button>
               <button
                 onClick={() => setView('gantt')}
-                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 ${view === 'gantt' ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white' }`}
+                className={`pwa-hide hidden md:flex px-4 py-1.5 rounded-lg text-xs font-semibold transition-all items-center gap-2 ${view === 'gantt' ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white' }`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10h18M3 14h18M3 18h18M7 6v4M17 6v4" /></svg>
                 Gantt

@@ -7,7 +7,7 @@ import { DynamicForm } from '../ui/DynamicForm';
 import { SupplementItem, SUPPLEMENT_CATEGORIES, FAMILY_MEMBERS, DOSE_UNITS, type InventoryStatus } from '@/types/health-system';
 import { Text, SectionTitle } from '../ui/Text';
 import { SYNC_KEYS } from '@/lib/sync-keys';
-import { LayoutGrid, List, User, Plus, Trash2, Settings, Search } from 'lucide-react';
+import { LayoutGrid, List, User, Plus, Trash2, Settings, Search, Pill, Clock, Calendar, AlertCircle, CheckCircle2, Info, ChevronRight } from 'lucide-react';
 import { useStorageSubscription } from '@/hooks/useStorageSubscription';
 
 const STORAGE_KEY = SYNC_KEYS.HEALTH_SUPPLEMENTS;
@@ -80,13 +80,23 @@ export function SupplementSection({ externalFilter }: SupplementSectionProps) {
   };
 
   const getStatusStyles = (status: InventoryStatus) => {
-    const base = "text-[13px] font-bold uppercase px-2 py-1 rounded-md inline-block";
+    const base = "flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm";
     switch (status) {
-      case 'OK': return `${base} text-emerald-600 bg-emerald-50`;
-      case 'LOW': return `${base} text-amber-600 bg-amber-50`;
-      case 'MISSING': return `${base} text-rose-600 bg-rose-50`;
-      case 'EXPIRED': return `${base} text-zinc-500 bg-zinc-100 dark:bg-zinc-800`;
+      case 'OK': return `${base} text-emerald-700 bg-emerald-100/50 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-500/20`;
+      case 'LOW': return `${base} text-amber-700 bg-amber-100/50 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/20`;
+      case 'MISSING': return `${base} text-rose-700 bg-rose-100/50 dark:bg-rose-500/10 dark:text-rose-400 border border-rose-200/50 dark:border-rose-500/20`;
+      case 'EXPIRED': return `${base} text-zinc-600 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700`;
       default: return `${base} text-zinc-500 bg-zinc-100 dark:bg-zinc-800`;
+    }
+  };
+
+  const getStatusIcon = (status: InventoryStatus) => {
+    switch (status) {
+      case 'OK': return <CheckCircle2 size={12} />;
+      case 'LOW': return <AlertCircle size={12} />;
+      case 'MISSING': return <AlertCircle size={12} />;
+      case 'EXPIRED': return <Clock size={12} />;
+      default: return null;
     }
   };
 
@@ -214,41 +224,129 @@ export function SupplementSection({ externalFilter }: SupplementSectionProps) {
       </div>
 
       {viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map(i => (
-            <div key={i.id} onClick={() => openEditModal(i)} className="p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm cursor-pointer hover:bg-zinc-50 dark:hover:bg-white/5 transition-all font-bold">
-               <div className="flex justify-between">
-                 <div><h3 className="text-lg">{i.itemName}</h3><div className="flex gap-2 items-center"><span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded uppercase">{i.category}</span>{i.purpose && <span className="text-[10px] text-zinc-400 font-medium">{i.purpose}</span>}</div></div>
-                 <span className={getStatusStyles(getStatus(i))}>{getStatus(i)}</span>
-               </div>
-               <div className="mt-4 grid grid-cols-2 text-xs">
-                 <div><span className="text-zinc-400 font-bold uppercase">Qty</span><div>{i.quantity} / {i.targetQuantity}</div></div>
-                 <div className="text-right"><span className="text-zinc-400 font-bold uppercase">Expiry</span><div>{new Date(i.expiryDate).toLocaleDateString()}</div></div>
-               </div>
-               {i.notes && <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 text-[11px] text-zinc-400 italic line-clamp-2">"{i.notes}"</div>}
-            </div>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[700px] overflow-y-auto custom-scrollbar pr-2 pb-6">
+          {filtered.map(i => {
+            const status = getStatus(i);
+            const progress = Math.min((i.quantity / i.targetQuantity) * 100, 100);
+            
+            return (
+              <div 
+                key={i.id} 
+                onClick={() => openEditModal(i)} 
+                className="relative group bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2.5rem] p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col h-full"
+              >
+                {/* Status Badge Floating */}
+                <div className="absolute top-6 right-6">
+                  <span className={getStatusStyles(status)}>
+                    {getStatusIcon(status)}
+                    {status}
+                  </span>
+                </div>
+
+                {/* Header Content */}
+                <div className="mb-6 pr-20">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 shrink-0 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-300">
+                      <Pill size={20} />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 leading-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                        {i.itemName}
+                      </h3>
+                      <div className="flex gap-2 mt-1">
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{i.category}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {i.purpose && (
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium italic mt-2 line-clamp-1">
+                      {i.purpose}
+                    </p>
+                  )}
+                </div>
+
+                {/* Progress Section */}
+                <div className="mt-auto space-y-4">
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-end px-1">
+                      <span className="text-[10px] font-black uppercase text-zinc-400 tracking-tighter">Current Stock</span>
+                      <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                        {i.quantity} <span className="text-zinc-400 font-medium">/ {i.targetQuantity}</span>
+                      </span>
+                    </div>
+                    <div className="h-2.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          status === 'OK' ? 'bg-emerald-500' : 
+                          status === 'LOW' ? 'bg-amber-500' : 
+                          'bg-rose-500'
+                        }`}
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Info Grid */}
+                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-zinc-400">
+                        <Clock size={12} />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Dose</span>
+                      </div>
+                      <div className="text-[11px] font-bold text-zinc-700 dark:text-zinc-300 truncate">
+                        {i.dose || 'Not set'}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-zinc-400">
+                        <Calendar size={12} />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Expiry</span>
+                      </div>
+                      <div className={`text-[11px] font-bold ${status === 'EXPIRED' ? 'text-rose-500' : 'text-zinc-700 dark:text-zinc-300'}`}>
+                        {new Date(i.expiryDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer Badge */}
+                  <div className="flex items-center justify-between mt-2 pt-2">
+                    <div className="flex items-center gap-2 bg-zinc-50 dark:bg-white/5 px-3 py-1.5 rounded-2xl border border-zinc-100 dark:border-zinc-800/50">
+                      <User size={12} className="text-zinc-400" />
+                      <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400">{i.person || 'Shared'}</span>
+                    </div>
+                    {i.notes && (
+                      <div title={i.notes} className="p-2 text-zinc-300 hover:text-emerald-500 transition-colors">
+                        <Info size={16} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
-          <table className="w-full text-left font-bold">
-            <thead className="bg-zinc-50 dark:bg-zinc-800 text-[10px] text-zinc-500 uppercase">
-              <tr><th className="p-4">Status</th><th className="p-4">Name</th><th className="p-4">Purpose</th><th className="p-4">Person</th><th className="p-4">Qty</th><th className="p-4">Expiry</th><th className="p-4">Notes</th></tr>
-            </thead>
-            <tbody className="text-sm">
-              {filtered.map(i => (
-                <tr key={i.id} onClick={() => openEditModal(i)} className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors cursor-pointer">
-                  <td className="p-4"><span className={getStatusStyles(getStatus(i))}>{getStatus(i)}</span></td>
-                  <td className="p-4">{i.itemName}</td>
-                  <td className="p-4 text-zinc-500 font-medium">{i.purpose || '-'}</td>
-                  <td className="p-4">{i.person || 'Shared'}</td>
-                  <td className="p-4">{i.quantity}</td>
-                  <td className="p-4">{new Date(i.expiryDate).toLocaleDateString()}</td>
-                  <td className="p-4 text-[11px] text-zinc-400 max-w-[150px] truncate">{i.notes || '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto max-h-[600px] overflow-y-auto custom-scrollbar">
+            <table className="w-full text-left font-bold min-w-[800px]">
+              <thead className="bg-zinc-50 dark:bg-zinc-800 text-[10px] text-zinc-500 uppercase">
+                <tr><th className="p-4">Status</th><th className="p-4">Name</th><th className="p-4">Purpose</th><th className="p-4">Person</th><th className="p-4">Qty</th><th className="p-4">Expiry</th><th className="p-4">Notes</th></tr>
+              </thead>
+              <tbody className="text-sm">
+                {filtered.map(i => (
+                  <tr key={i.id} onClick={() => openEditModal(i)} className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors cursor-pointer">
+                    <td className="p-4"><span className={getStatusStyles(getStatus(i))}>{getStatus(i)}</span></td>
+                    <td className="p-4">{i.itemName}</td>
+                    <td className="p-4 text-zinc-500 font-medium">{i.purpose || '-'}</td>
+                    <td className="p-4">{i.person || 'Shared'}</td>
+                    <td className="p-4">{i.quantity}</td>
+                    <td className="p-4">{new Date(i.expiryDate).toLocaleDateString()}</td>
+                    <td className="p-4 text-[11px] text-zinc-400 max-w-[150px] truncate">{i.notes || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

@@ -111,7 +111,7 @@ export function SupplementRoutineSection() {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm">
               <h3 className="text-[11px] uppercase text-zinc-400 mb-5 font-bold">Frequency Breakdown</h3>
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
                 {FREQ_ORDER.filter(g => byFreq[g]?.length > 0).map(group => (
                   <div key={group}>
                     <div className="flex items-center gap-2 mb-2 text-zinc-500 text-xs uppercase font-bold"><span>{group} Routine</span><span>· {byFreq[group].length}</span></div>
@@ -128,7 +128,7 @@ export function SupplementRoutineSection() {
 
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm">
               <h3 className="text-[11px] uppercase text-zinc-400 mb-5 font-bold">Category Coverage</h3>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
                 {categoryCoverage.map(c => (
                   <div key={c.cat} className={`flex justify-between p-3 rounded-xl border text-xs font-bold transition-all ${c.count === 0 ? 'bg-zinc-50 dark:bg-zinc-800/50 border-zinc-100 dark:border-zinc-800 opacity-60' : c.hasOk ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20' : 'bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20'}`}>
                     <span>{c.cat}</span>

@@ -47,28 +47,28 @@ function BookItem({ book, onEdit }: BookItemProps) {
 
   return (
     <div
-      className="group flex items-center gap-4 p-4 mb-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl transition-all hover:shadow-md cursor-pointer"
+      className="group flex items-center gap-4 sm:gap-6 p-4 sm:p-5 mb-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl transition-all hover:shadow-md cursor-pointer"
       onClick={() => onEdit(book)}
     >
-      <div className="flex-shrink-0 w-10 h-10 flex flex-col items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded-xl text-zinc-500 group-hover:bg-teal-50 group-hover:text-teal-600 transition-colors">
-        <Text variant="label" as="span" className="opacity-50 text-[10px]">Pos</Text>
-        <Text variant="body" as="span" className="font-bold leading-none">{book.order}</Text>
+      <div className="flex-shrink-0 w-11 h-11 sm:w-12 sm:h-12 flex flex-col items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded-xl text-zinc-500 group-hover:bg-teal-50 group-hover:text-teal-600 transition-colors">
+        <Text variant="label" as="span" className="opacity-50 text-[9px] sm:text-[11px]">Pos</Text>
+        <Text variant="body" as="span" className="font-bold text-sm sm:text-lg leading-none">{book.order}</Text>
       </div>
 
-      <div className="flex-1 min-w-0 flex items-center gap-4">
-        <Text variant="body" as="h4" className="text-base font-bold truncate group-hover:text-teal-600 transition-colors shrink-0 max-w-[40%]">
+      <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-6">
+        <Text variant="body" as="h4" className="text-base sm:text-lg font-bold truncate sm:max-w-[50%] group-hover:text-teal-600 transition-colors">
           {book.name}
         </Text>
-        <div className="flex items-center gap-4 border-l-2 border-zinc-100 dark:border-zinc-800/50 pl-4 overflow-x-auto no-scrollbar">
-          <Text variant="label" as="span" className="font-semibold whitespace-nowrap">{book.author}</Text>
-          <Text variant="label" as="span" className="flex items-center gap-1.5 font-semibold whitespace-nowrap"><Languages size={12} className="opacity-40" />{book.language}</Text>
+        <div className="flex items-center gap-4 sm:gap-6 sm:border-l-2 border-zinc-100 dark:border-zinc-800/50 sm:pl-6 overflow-x-auto no-scrollbar">
+          <Text variant="label" as="span" className="font-semibold whitespace-nowrap text-xs sm:text-sm opacity-70 sm:opacity-100">{book.author}</Text>
+          <Text variant="label" as="span" className="flex items-center gap-2 font-semibold whitespace-nowrap text-xs sm:text-sm opacity-70 sm:opacity-100"><Languages size={12} className="opacity-40" />{book.language}</Text>
         </div>
       </div>
 
       <Text 
         variant="label"
         as="div"
-        className={`px-3 py-1.5 rounded-full font-bold border flex items-center gap-1.5 transition-colors ${getStatusStyle(book.status)}`}
+        className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-bold border flex items-center gap-2 transition-colors text-xs sm:text-sm shrink-0 ${getStatusStyle(book.status)}`}
       >
         {getStatusIcon(book.status)}
         {book.status}

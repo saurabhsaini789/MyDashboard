@@ -192,33 +192,34 @@ function BookCard({ book, viewMode, onEdit }: { book: CompletedBook, viewMode: '
     return (
       <div 
         onClick={onEdit}
-        className="group flex items-center gap-4 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl transition-all hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-700 cursor-pointer"
+        className="group flex items-center gap-4 sm:gap-6 p-4 sm:p-5 mb-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl transition-all hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-700 cursor-pointer"
       >
-        <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded-xl text-amber-500 group-hover:bg-amber-50 dark:group-hover:bg-amber-500/10 transition-colors">
-          <div className="flex items-center gap-1">
-            <Text variant="body" as="span" className="text-lg font-semibold leading-none">{book.rating}</Text>
+        <div className="flex-shrink-0 w-11 h-11 sm:w-14 sm:h-14 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded-xl text-amber-500 group-hover:bg-amber-50 dark:group-hover:bg-amber-500/10 transition-colors">
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            <Text variant="body" as="span" className="text-base sm:text-xl font-bold leading-none">{book.rating}</Text>
             <Star size={14} fill="currentColor" className="mb-0.5" />
           </div>
         </div>
 
-        <div className="flex-1 min-w-0 flex items-center gap-4">
-          <Text variant="body" as="h4" className="text-base font-bold truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors shrink-0 max-w-[40%]">
+        <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-6">
+          <Text variant="body" as="h4" className="text-base sm:text-lg font-bold truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors sm:max-w-[50%]">
             {book.name}
           </Text>
-          <div className="flex items-center gap-4 border-l-2 border-zinc-100 dark:border-zinc-800/50 pl-4 overflow-x-auto no-scrollbar">
-            <Text variant="label" as="span" className="font-semibold whitespace-nowrap">{book.author}</Text>
-            <Text variant="label" as="span" className="flex items-center gap-1.5 font-semibold whitespace-nowrap"><Languages size={12} className="opacity-40" />{book.language}</Text>
-            <Text variant="label" as="span" className="flex items-center gap-1.5 font-semibold whitespace-nowrap"><Calendar size={12} className="opacity-40" />{new Date(book.completionDate).toLocaleDateString()}</Text>
+          <div className="flex items-center gap-4 sm:gap-6 sm:border-l-2 border-zinc-100 dark:border-zinc-800/50 sm:pl-6 overflow-x-auto no-scrollbar">
+            <Text variant="label" as="span" className="font-semibold whitespace-nowrap text-xs sm:text-sm opacity-70 sm:opacity-100">{book.author}</Text>
+            <Text variant="label" as="span" className="flex items-center gap-2 font-semibold whitespace-nowrap text-xs sm:text-sm opacity-70 sm:opacity-100"><Languages size={12} className="opacity-40" />{book.language}</Text>
+            <Text variant="label" as="span" className="flex items-center gap-2 font-semibold whitespace-nowrap text-xs sm:text-sm opacity-70 sm:opacity-100"><Calendar size={12} className="opacity-40" />{new Date(book.completionDate).toLocaleDateString()}</Text>
           </div>
         </div>
 
         <Text 
           variant="label"
           as="div"
-          className={`px-3 py-1.5 rounded-full font-bold border flex items-center gap-1.5 transition-colors ${ book.wouldRecommend ? 'bg-teal-50 dark:bg-teal-500/10 text-teal-600 border-teal-100' : 'bg-zinc-50 dark:bg-zinc-500/10 text-zinc-600 border-zinc-100' }`}
+          className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-bold border flex items-center gap-2 transition-colors text-xs sm:text-sm shrink-0 ${ book.wouldRecommend ? 'bg-teal-50 dark:bg-teal-500/10 text-teal-600 border-teal-100' : 'bg-zinc-50 dark:bg-zinc-500/10 text-zinc-600 border-zinc-100' }`}
         >
           {book.wouldRecommend ? <ThumbsUp size={12} /> : <ThumbsDown size={12} />}
-          {book.wouldRecommend ? 'Recommended' : 'Mixed'}
+          <span className="hidden sm:inline">{book.wouldRecommend ? 'Recommended' : 'Mixed'}</span>
+          <span className="sm:hidden">{book.wouldRecommend ? 'Rec' : 'Mix'}</span>
         </Text>
       </div>
     );

@@ -204,7 +204,7 @@ export function FirstAidMobileSection({ externalFilter }: FirstAidMobileSectionP
 
       {viewMode === 'table' ? (
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto max-h-[500px] overflow-y-auto custom-scrollbar">
+          <div className="overflow-x-auto max-h-[600px] overflow-y-auto custom-scrollbar">
             <table className="w-full text-left">
               <thead className="bg-zinc-50 dark:bg-zinc-800 text-[11px] font-bold uppercase text-zinc-500">
                 <tr>
@@ -234,7 +234,7 @@ export function FirstAidMobileSection({ externalFilter }: FirstAidMobileSectionP
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
           {finalItems.map(item => (
             <div key={item.id} onClick={()=>openEditModal(item)} className="p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 group cursor-pointer hover:-translate-y-1 transition-all shadow-sm">
               <div className="flex justify-between items-start mb-4">

@@ -71,35 +71,76 @@ export function PriceIntelligence({ records }: PriceIntelligenceProps) {
       const last = group.history[group.history.length-1];
       const low = group.history.reduce((p,c) => c.price < p.price ? c : p);
       return { ...group, averagePrice: avg, lowestPrice: low, lastPurchase: last, priceTrend: ((last.price-avg)/avg)*100, smartInsights: [] as any[] };
-    }).sort((a,b) => b.history.length - a.history.length);
+    }).sort((a,b) => Math.abs(b.priceTrend) - Math.abs(a.priceTrend));
   }, [records]);
 
   const filteredStats = itemStats.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-700 font-bold uppercase">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6 p-8 bg-white dark:bg-zinc-900 border border-zinc-100 rounded-2xl shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6 p-8 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl shadow-sm">
         <div><SectionTitle>Price Intelligence</SectionTitle><p className="text-[10px] text-zinc-400">Smart tracking of commodity price cycles.</p></div>
         <div className="flex items-center gap-3">
           <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
-            <button onClick={() => toggleViewMode('grid')} className={`p-1.5 rounded-lg ${viewMode==='grid'?'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white':'text-zinc-400'}`}><LayoutGrid size={16}/></button>
-            <button onClick={() => toggleViewMode('table')} className={`p-1.5 rounded-lg ${viewMode==='table'?'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white':'text-zinc-400'}`}><List size={16}/></button>
+            <button onClick={() => toggleViewMode('grid')} className={`p-1.5 rounded-lg transition-all ${viewMode==='grid'?'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white':'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200'}`}><LayoutGrid size={16}/></button>
+            <button onClick={() => toggleViewMode('table')} className={`p-1.5 rounded-lg transition-all ${viewMode==='table'?'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white':'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200'}`}><List size={16}/></button>
           </div>
           <input type="text" placeholder="Search..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} className="bg-zinc-50 dark:bg-zinc-800 px-4 py-2 rounded-xl text-xs font-bold outline-none border border-zinc-100 dark:border-zinc-700 w-48"/>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {filteredStats.map(stat => (
-          <div key={stat.name} onClick={() => setActiveItemStats(stat)} className="p-6 bg-white dark:bg-zinc-900 border border-zinc-100 rounded-2xl shadow-sm cursor-pointer hover:border-teal-500 transition-all">
-            <div className="flex justify-between items-start mb-4">
-              <span className="font-bold truncate max-w-[120px]">{stat.name}</span>
-              <span className={`text-[10px] px-2 py-0.5 rounded ${stat.priceTrend > 0 ? 'bg-rose-50 text-rose-500' : 'bg-teal-50 text-teal-600'}`}>{stat.priceTrend.toFixed(1)}%</span>
-            </div>
-            <div className="text-3xl font-bold mb-1">${stat.lastPurchase.price.toLocaleString()}</div>
-            <div className="text-[10px] text-zinc-400 truncate">at {stat.lastPurchase.vendor}</div>
+      <div className="max-h-[500px] md:max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+        {viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {filteredStats.map(stat => (
+              <div key={stat.name} onClick={() => setActiveItemStats(stat)} className="p-6 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl shadow-sm cursor-pointer hover:border-teal-500 transition-all group">
+                <div className="flex justify-between items-start mb-4">
+                  <span className="font-bold truncate max-w-[120px] group-hover:text-teal-500 transition-colors">{stat.name}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded font-black ${stat.priceTrend > 0 ? 'bg-rose-50 text-rose-500 dark:bg-rose-500/10' : 'bg-teal-50 text-teal-600 dark:bg-teal-500/10'}`}>
+                    {stat.priceTrend > 0 ? '+' : ''}{stat.priceTrend.toFixed(1)}%
+                  </span>
+                </div>
+                <div className="text-3xl font-black mb-1 tracking-tighter">${stat.lastPurchase.price.toLocaleString()}</div>
+                <div className="text-[10px] text-zinc-400 truncate font-medium">at {stat.lastPurchase.vendor}</div>
+              </div>
+            ))}
           </div>
-        ))}
+        ) : (
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto custom-scrollbar">
+              <table className="w-full text-left border-collapse min-w-[600px]">
+                <thead>
+                  <tr className="bg-zinc-50/50 dark:bg-zinc-800/30">
+                    <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Item</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Last Price</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Trend</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Avg Price</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Vendor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStats.map(stat => (
+                    <tr 
+                      key={stat.name} 
+                      onClick={() => setActiveItemStats(stat)}
+                      className="border-t border-zinc-50 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 cursor-pointer transition-colors group"
+                    >
+                      <td className="px-6 py-4 font-black group-hover:text-teal-500 transition-colors">{stat.name}</td>
+                      <td className="px-6 py-4 font-black text-right tracking-tighter">${stat.lastPurchase.price.toLocaleString()}</td>
+                      <td className="px-6 py-4 text-right">
+                        <span className={`inline-block px-2 py-0.5 rounded font-black text-[10px] ${stat.priceTrend > 0 ? 'bg-rose-50 text-rose-500 dark:bg-rose-500/10' : 'bg-teal-50 text-teal-600 dark:bg-teal-500/10'}`}>
+                          {stat.priceTrend > 0 ? '+' : ''}{stat.priceTrend.toFixed(1)}%
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right font-bold text-zinc-400">${stat.averagePrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                      <td className="px-6 py-4 text-right text-zinc-400 font-bold truncate max-w-[150px]">{stat.lastPurchase.vendor}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       {activeItemStats && (

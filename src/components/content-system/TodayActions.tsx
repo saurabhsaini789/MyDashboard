@@ -123,7 +123,7 @@ export function TodayActions() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse min-w-[600px]">
                 <thead>
                   <tr className="border-b border-zinc-100 dark:border-zinc-800">
                     <th className="px-4 py-3 text-[10px] font-bold uppercase text-zinc-400">Channel</th>

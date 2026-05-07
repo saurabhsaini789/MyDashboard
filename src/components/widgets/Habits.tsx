@@ -15,6 +15,7 @@ interface Habit {
   name: string;
   records: Record<string, HabitStatus[]>;
   monthScope?: string[];
+  monthlyTarget?: number; // e.g. 5 = aim for 5 times this month
 }
 
 interface HabitsProps {
@@ -73,6 +74,8 @@ const HabitRow = React.memo(({
   const missed = days.filter((d: string) => d === 'missed').length;
   const score = completed - missed;
   const streak = useMemo(() => calcStreak(habit), [habit, calcStreak]);
+  const hasTarget = habit.monthlyTarget && habit.monthlyTarget > 0;
+  const targetMet = hasTarget && completed >= habit.monthlyTarget!;
 
   return (
     <tr className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border-b border-zinc-100 dark:border-zinc-800/50 transition-colors">
@@ -116,9 +119,32 @@ const HabitRow = React.memo(({
         );
       })}
       <td className="p-4 sticky right-0 z-10 bg-white dark:bg-zinc-900 border-l border-zinc-100 dark:border-zinc-800/50 text-right hidden md:table-cell">
-        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${score > 0 ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-teal-400' : score < 0 ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400'}`}>
-          {score > 0 ? `+${score}` : score}
-        </span>
+        {hasTarget ? (
+          <div className="flex flex-col items-end gap-1">
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              targetMet
+                ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-teal-400'
+                : completed > 0
+                  ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400'
+            }`}>
+              {completed}<span className="opacity-50">/{habit.monthlyTarget}</span>
+              {targetMet && <span className="ml-1">✓</span>}
+            </span>
+            <div className="w-12 h-1 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  targetMet ? 'bg-emerald-500' : 'bg-amber-400'
+                }`}
+                style={{ width: `${Math.min(100, (completed / habit.monthlyTarget!) * 100)}%` }}
+              />
+            </div>
+          </div>
+        ) : (
+          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${score > 0 ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-teal-400' : score < 0 ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400'}`}>
+            {score > 0 ? `+${score}` : score}
+          </span>
+        )}
       </td>
     </tr>
   );
@@ -184,6 +210,7 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
   const [isAddingHabit, setIsAddingHabit] = useState(false);
   const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
   const [newHabitName, setNewHabitName] = useState('');
+  const [newHabitTarget, setNewHabitTarget] = useState<number | ''>('');
   const [selectedScope, setSelectedScope] = useState<'this-month' | 'next-1' | 'next-2' | 'next-3' | 'next-6' | 'this-year' | 'all'>('this-month');
   const [isFillTodayConfirm, setIsFillTodayConfirm] = useState(false);
   
@@ -231,10 +258,12 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
       id: Math.random().toString(36).substr(2, 9),
       name: newHabitName.trim(),
       records: {},
-      monthScope: scope
+      monthScope: scope,
+      ...(newHabitTarget !== '' && newHabitTarget > 0 ? { monthlyTarget: Number(newHabitTarget) } : {}),
     };
     updateHabits([...localHabits, newHabit]);
     setNewHabitName('');
+    setNewHabitTarget('');
     setIsAddingHabit(false);
   };
 
@@ -427,8 +456,41 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
         </div>
       </div>
 
-      <Modal isOpen={isAddingHabit} onClose={() => setIsAddingHabit(false)} title="New Habit" onSubmit={handleAddHabit}>
-         <DynamicForm sections={[{id:'h', fields:[{name:'name', label:'Habit Name', type:'text', required:true}, {name:'scope', label:'Scope', type:'select', options:[{value:'this-month',label:'This Month'},{value:'all',label:'All Time'}]}]}]} formData={{name:newHabitName, scope:selectedScope}} onChange={(n,v)=>{if(n==='name')setNewHabitName(v);if(n==='scope')setSelectedScope(v as any)}} />
+      <Modal isOpen={isAddingHabit} onClose={() => { setIsAddingHabit(false); setNewHabitName(''); setNewHabitTarget(''); }} title="New Habit" onSubmit={handleAddHabit}>
+        <DynamicForm
+          sections={[{ id: 'h', fields: [
+            { name: 'name', label: 'Habit Name', type: 'text', required: true },
+            { name: 'scope', label: 'Scope', type: 'select', options: [
+              { value: 'this-month', label: 'This Month' },
+              { value: 'all', label: 'All Time' }
+            ]},
+          ]}]}
+          formData={{ name: newHabitName, scope: selectedScope }}
+          onChange={(n, v) => { if (n === 'name') setNewHabitName(v); if (n === 'scope') setSelectedScope(v as any); }}
+        />
+        {/* Monthly Target — outside DynamicForm for number input control */}
+        <div className="flex flex-col gap-1.5 mt-3">
+          <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+            Monthly Target <span className="normal-case font-normal text-zinc-400">(optional)</span>
+          </label>
+          <div className="relative">
+            <input
+              type="number"
+              min={1}
+              max={31}
+              placeholder="e.g. 5  (times per month)"
+              value={newHabitTarget}
+              onChange={e => setNewHabitTarget(e.target.value === '' ? '' : Math.min(31, Math.max(1, parseInt(e.target.value) || 1)))}
+              className="w-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 px-3 py-2 rounded-xl text-sm border border-transparent focus:border-teal-500 focus:outline-none transition-colors"
+            />
+            {newHabitTarget !== '' && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 pointer-events-none">/ mo</span>
+            )}
+          </div>
+          <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+            Leave blank for a daily habit. Set a number to track partial-month goals (e.g. call home 8×/month).
+          </p>
+        </div>
       </Modal>
 
       {habitToDelete && <Modal isOpen={true} onClose={()=>setHabitToDelete(null)} title="Delete Habit" onSubmit={handleDeleteHabit} submitText="Confirm Delete"><p>Delete <b>{habitToDelete.name}</b>?</p></Modal>}
