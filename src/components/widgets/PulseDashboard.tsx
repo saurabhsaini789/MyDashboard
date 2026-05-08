@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { Text, SectionTitle } from '@/components/ui/Text';
 import { useSystemPulse } from '@/hooks/useSystemPulse';
-import { PriorityTier, PulseDataDependencies } from '@/lib/pulse-logic';
+import { PriorityTier, PulseDataDependencies, PLATFORM_ABBREV } from '@/lib/pulse-logic';
 
 interface PulseDashboardProps {
   initialData: PulseDataDependencies;
@@ -143,9 +143,16 @@ export function PulseDashboard({ initialData }: PulseDashboardProps) {
                                     <div className={`p-2 rounded-xl border ${tierColors[action.tier]}`}>
                                         {action.tier === 'CRITICAL' ? <ShieldAlert size={16} /> : action.tier === 'DAILY' ? <Zap size={16} /> : <Calendar size={16} />}
                                     </div>
-                                    <Text variant="body" className="font-semibold group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
-                                        {action.label}
-                                    </Text>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        {action.platform && (
+                                            <span className="shrink-0 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400">
+                                                {PLATFORM_ABBREV[action.platform] ?? action.platform.slice(0, 3).toUpperCase()}
+                                            </span>
+                                        )}
+                                        <Text variant="body" className="font-semibold group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+                                            {action.label}
+                                        </Text>
+                                    </div>
                                 </div>
                                 <ChevronRight size={18} className="text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors" />
                             </Link>

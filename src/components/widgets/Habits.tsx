@@ -415,7 +415,7 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
       </div>
 
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm">
-        <div ref={scrollContainerRef} className="overflow-x-auto overflow-y-auto max-h-[70vh] custom-scrollbar">
+        <div ref={scrollContainerRef} className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse min-w-max">
             <thead className="sticky top-0 z-40 bg-zinc-50 dark:bg-zinc-900">
               <tr className="border-b border-zinc-200 dark:border-zinc-800">

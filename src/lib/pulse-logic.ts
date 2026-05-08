@@ -8,7 +8,19 @@ export interface PulseAction {
   href: string;
   tier: PriorityTier;
   type: string;
+  platform?: string; // optional — set for CONTENT actions
 }
+
+/** Short display abbreviation for known platforms */
+export const PLATFORM_ABBREV: Record<string, string> = {
+  'Instagram':   'IG',
+  'YouTube':     'YT',
+  'LinkedIn':    'LI',
+  'X (Twitter)': 'X',
+  'Facebook':    'FB',
+  'TikTok':      'TT',
+  'Pinterest':   'PIN',
+};
 
 export interface PulseDataDependencies {
   medicine: any[];
@@ -113,13 +125,13 @@ export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseDa
   const habitSuccessRate = totalCount > 0 ? (done / totalCount) * 100 : 100;
 
   // 4. Content System — overdue schedules (strictly past due, not today)
-  const overdueContentItems: { channelName: string; scheduleType: string }[] = [];
+  const overdueContentItems: { channelName: string; scheduleType: string; platform: string }[] = [];
   (channels || [])
     .filter((c: any) => c.status === 'Active')
     .forEach((c: any) => {
       (c.schedules || []).forEach((s: any) => {
         if (s.nextPostDueDate && s.nextPostDueDate < todayStr) {
-          overdueContentItems.push({ channelName: c.name, scheduleType: s.type });
+          overdueContentItems.push({ channelName: c.name, scheduleType: s.type, platform: c.platform || '' });
         }
       });
     });
@@ -167,7 +179,8 @@ export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseDa
       tier: 'CRITICAL',
       type: 'CONTENT',
       label: `${item.channelName} — ${item.scheduleType} overdue`,
-      href: '/content-system'
+      href: '/content-system',
+      platform: item.platform,
     });
   });
 
