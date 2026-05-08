@@ -6,6 +6,11 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
 import Underline from '@tiptap/extension-underline';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
+import Color from '@tiptap/extension-color';
+import Highlight from '@tiptap/extension-highlight';
+import TextStyle from '@tiptap/extension-text-style';
 import { 
  Bold, 
  Italic, 
@@ -15,7 +20,12 @@ import {
  Heading1, 
  Heading2, 
  Undo, 
- Redo 
+ Redo,
+ Strikethrough,
+ Quote,
+ CheckSquare,
+ Highlighter,
+ Clock
 } from 'lucide-react';
 
 interface EditorProps {
@@ -33,6 +43,13 @@ export function Editor({ content, onChange, placeholder }: EditorProps) {
  }),
  CharacterCount,
  Underline,
+ TextStyle,
+ Color,
+ Highlight.configure({ multicolor: true }),
+ TaskList,
+ TaskItem.configure({
+ nested: true,
+ }),
  ],
  content,
  immediatelyRender: false,
@@ -41,7 +58,7 @@ export function Editor({ content, onChange, placeholder }: EditorProps) {
  },
  });
 
- // Handle external content updates (like Clear button)
+ // Handle external content updates (like Clear button or tab switch)
  useEffect(() => {
  if (editor && content !== editor.getHTML()) {
  editor.commands.setContent(content);
@@ -51,6 +68,11 @@ export function Editor({ content, onChange, placeholder }: EditorProps) {
  if (!editor) {
  return null;
  }
+
+ const addTimestamp = () => {
+  const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  editor.chain().focus().insertContent(`[${time}] `).run();
+ };
 
  return (
  <div className="w-full border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-teal-500/20 transition-all duration-200">
@@ -76,6 +98,13 @@ export function Editor({ content, onChange, placeholder }: EditorProps) {
  title="Underline"
  >
  <UnderlineIcon className="w-4 h-4" />
+ </button>
+ <button
+ onClick={() => editor.chain().focus().toggleStrike().run()}
+ className={`p-2 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors ${editor.isActive('strike') ? 'bg-zinc-200 dark:bg-zinc-800 text-teal-600' : 'text-zinc-600 dark:text-zinc-400'}`}
+ title="Strikethrough"
+ >
+ <Strikethrough className="w-4 h-4" />
  </button>
  
  <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 mx-1" />
@@ -110,6 +139,39 @@ export function Editor({ content, onChange, placeholder }: EditorProps) {
  title="Ordered List"
  >
  <ListOrdered className="w-4 h-4" />
+ </button>
+ <button
+ onClick={() => editor.chain().focus().toggleTaskList().run()}
+ className={`p-2 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors ${editor.isActive('taskList') ? 'bg-zinc-200 dark:bg-zinc-800 text-teal-600' : 'text-zinc-600 dark:text-zinc-400'}`}
+ title="Checklist"
+ >
+ <CheckSquare className="w-4 h-4" />
+ </button>
+
+ <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 mx-1" />
+
+ <button
+ onClick={() => editor.chain().focus().toggleBlockquote().run()}
+ className={`p-2 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors ${editor.isActive('blockquote') ? 'bg-zinc-200 dark:bg-zinc-800 text-teal-600' : 'text-zinc-600 dark:text-zinc-400'}`}
+ title="Quote"
+ >
+ <Quote className="w-4 h-4" />
+ </button>
+
+ <button
+ onClick={() => editor.chain().focus().toggleHighlight().run()}
+ className={`p-2 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors ${editor.isActive('highlight') ? 'bg-zinc-200 dark:bg-zinc-800 text-teal-600' : 'text-zinc-600 dark:text-zinc-400'}`}
+ title="Highlight"
+ >
+ <Highlighter className="w-4 h-4" />
+ </button>
+
+ <button
+ onClick={addTimestamp}
+ className="p-2 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors text-zinc-600 dark:text-zinc-400"
+ title="Insert Timestamp"
+ >
+ <Clock className="w-4 h-4" />
  </button>
 
  <div className="flex-grow" />

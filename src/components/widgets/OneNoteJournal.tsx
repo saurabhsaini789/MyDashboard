@@ -10,67 +10,57 @@ import {
   BookOpen, CloudUpload, CheckCircle2, AlertCircle, Loader2, LogOut,
   ChevronRight, Sun, Zap, Moon,
 } from 'lucide-react';
+import { Editor } from './Editor';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Phase = 'morning' | 'day' | 'evening';
 
 // ─── Phase Templates ─────────────────────────────────────────────────────────
 const PHASE_TEMPLATES: Record<Phase, string> = {
-  morning: `🌅 Morning Journal
+  morning: `<h2><strong>🌅 Morning Journal</strong></h2>
+<p><strong>How do I want today to feel?</strong></p>
+<p></p>
+<p><strong>Top 1–3 priorities:</strong></p>
+<ul data-type="taskList">
+  <li data-checked="false"></li>
+  <li data-checked="false"></li>
+  <li data-checked="false"></li>
+</ul>
+<p></p>
+<p><strong>What could derail me today?</strong></p>
+<p></p>
+<p><strong>How will I respond instead?</strong></p>
+<p></p>
+<p><strong>One personal intention for today:</strong></p>`,
 
-How do I want today to feel?
+  day: `<h2><strong>⚡ Daytime Log</strong></h2>
+<p>Capture reality, patterns, emotions, and ideas as they happen.</p>
+<p></p>
+<p><strong>[idea]</strong> </p>
+<p></p>
+<p><strong>[stress]</strong> </p>
+<p></p>
+<p><strong>[energy]</strong> </p>
+<p></p>
+<p><strong>[win]</strong> </p>
+<p></p>
+<p><strong>[lesson]</strong> </p>
+<p></p>
+<p><strong>[decision]</strong> </p>`,
 
-
-Top 1–3 priorities:
-1. 
-2. 
-3. 
-
-What could derail me today?
-
-
-How will I respond instead?
-
-
-One personal intention for today:
-`,
-
-  day: `⚡ Daytime Log
-
-Capture reality, patterns, emotions, and ideas as they happen.
-
-[idea] 
-
-[stress] 
-
-[energy] 
-
-[win] 
-
-[lesson] 
-
-[decision] 
-`,
-
-  evening: `🌙 Evening Reflection
-
-Wins today (even small ones):
-
-
-What drained me?
-
-
-What worked well today?
-
-
-One lesson or realization:
-
-
-What needs carrying into tomorrow?
-
-
-Gratitude or appreciation:
-`,
+  evening: `<h2><strong>🌙 Evening Reflection</strong></h2>
+<p></p>
+<p><strong>Wins today (even small ones):</strong></p>
+<p></p>
+<p><strong>What drained me?</strong></p>
+<p></p>
+<p><strong>What worked well today?</strong></p>
+<p></p>
+<p><strong>One lesson or realization:</strong></p>
+<p></p>
+<p><strong>What needs carrying into tomorrow?</strong></p>
+<p></p>
+<p><strong>Gratitude or appreciation:</strong></p>`,
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -89,13 +79,7 @@ function buildHtml(phase: Phase, text: string): string {
     evening: `🌙 Evening Reflection — ${ts}`,
   };
 
-  const escaped = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/\n/g, '<br/>');
-
-  return `<h2>${phaseLabel[phase]}</h2><p>${escaped}</p>`;
+  return `<h2>${phaseLabel[phase]}</h2>${text}`;
 }
 
 // ─── Phase Config ─────────────────────────────────────────────────────────────
@@ -238,13 +222,10 @@ export function OneNoteJournal() {
 
             {/* Textarea */}
             <div className="animate-in fade-in duration-300">
-              <textarea
-                key={phase}
-                value={texts[phase]}
-                onChange={e => handleTextChange(e.target.value)}
+              <Editor
+                content={texts[phase]}
+                onChange={handleTextChange}
                 placeholder={`Start writing your ${PHASE_CONFIG[phase].label.toLowerCase()} entry...`}
-                rows={16}
-                className="w-full px-4 py-3 text-sm bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-teal-500/30 resize-none transition-all leading-relaxed font-mono"
               />
             </div>
 
