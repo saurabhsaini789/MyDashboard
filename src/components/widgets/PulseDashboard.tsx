@@ -173,7 +173,7 @@ export function PulseDashboard({ initialData }: PulseDashboardProps) {
                     </Text>
                 </div>
 
-                <div className="space-y-3 overflow-y-auto flex-1 min-h-0 pr-2 custom-scrollbar">
+                <div className="space-y-3 overflow-y-auto flex-1 min-h-0 max-h-[260px] pr-2 custom-scrollbar">
                     {pulse.actions.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center py-8 opacity-40">
                             <ShieldAlert size={40} className="mb-2 text-zinc-300" />
