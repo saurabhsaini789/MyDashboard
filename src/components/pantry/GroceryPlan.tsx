@@ -23,7 +23,16 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
   const viewMode = useStorageSubscription<'table' | 'card'>(SYNC_KEYS.PANTRY_GROCERY_VIEW_MODE, 'table');
   
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    category: string;
+    plannedQuantity: string;
+    unitSize: string;
+    frequency: string;
+    idealTiming: string;
+    expectedPrice: string;
+    consumptionDays: string;
+  }>({
     name: '', category: GROCERY_ITEM_CATEGORIES[0], plannedQuantity: '', unitSize: '', frequency: 'Weekly', idealTiming: '', expectedPrice: '', consumptionDays: ''
   });
   const [editingItem, setEditingItem] = useState<GroceryPlanItem | null>(null);
