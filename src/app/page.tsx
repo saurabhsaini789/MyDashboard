@@ -21,6 +21,7 @@ export default function Home() {
     channels: [],
     income: [],
     expenses: [],
+    journals: [],
   };
 
   return (
