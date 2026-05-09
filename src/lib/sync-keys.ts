@@ -8,6 +8,7 @@ export const SYNC_KEYS = {
  HABITS: 'os_habits',
  GOALS_PROJECTS: 'goals_projects',
  TASKS: 'os_tasks',
+ JOURNAL_LOGS: 'os_journal_logs',
  
  // Finances
  FINANCES_INCOME: 'finances_income',

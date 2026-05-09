@@ -32,8 +32,8 @@ export function GrowthOverview() {
   const projects = useStorageSubscription(SYNC_KEYS.GOALS_PROJECTS, []);
   const income = useStorageSubscription(SYNC_KEYS.FINANCES_INCOME, []);
   const expenses = useStorageSubscription(SYNC_KEYS.FINANCES_EXPENSES, []);
-  const wardrobe = useStorageSubscription(SYNC_KEYS.WARDROBE_INVENTORY, []);
-  
+  const channels = useStorageSubscription(SYNC_KEYS.FINANCES_BUSINESS, []);
+  const journals = useStorageSubscription(SYNC_KEYS.JOURNAL_LOGS, []);
   // Inventory Subscriptions
   const med = useStorageSubscription(SYNC_KEYS.HEALTH_MEDICINE, []);
   const travel = useStorageSubscription(SYNC_KEYS.HEALTH_TRAVEL_KIT, []);
@@ -47,7 +47,8 @@ export function GrowthOverview() {
     projects,
     income,
     expenses,
-    wardrobe,
+    channels,
+    journals,
     inventory: {
       HEALTH_MEDICINE: med,
       HEALTH_TRAVEL_KIT: travel,
@@ -55,7 +56,7 @@ export function GrowthOverview() {
       HEALTH_FIRST_AID_MOBILE: aidMobile,
       HEALTH_SUPPLEMENTS: supplements
     }
-  }), [habits, projects, income, expenses, wardrobe, med, travel, aidHome, aidMobile, supplements]);
+  }), [habits, projects, income, expenses, channels, journals, med, travel, aidHome, aidMobile, supplements]);
 
   const scores = useMemo(() => calculateCategoryScores(growthData, filter), [growthData, filter]);
   const overallScore = useMemo(() => getOverallGrowthScore(scores), [scores]);
@@ -169,7 +170,9 @@ export function GrowthOverview() {
                 {s.name === 'Projects' && <Package size={16} />}
                 {s.name === 'Finance' && <CreditCard size={16} />}
                 {s.name === 'Expenses' && <ShoppingBag size={16} />}
-                {s.name === 'Inventory' && <Package size={16} />}
+                {s.name === 'Health' && <Package size={16} />}
+                {s.name === 'Content' && <TrendingUp size={16} />}
+                {s.name === 'Mindfulness' && <Target size={16} />}
               </div>
               <Text variant="bodySmall" className="font-bold text-zinc-900 dark:text-zinc-100">{s.score}%</Text>
             </div>

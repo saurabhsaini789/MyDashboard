@@ -20,6 +20,7 @@ export function useSystemPulse(initialData?: Partial<PulseDataDependencies>) {
   const channels    = useStorageSubscription<any[]>(SYNC_KEYS.FINANCES_BUSINESS,      initialData?.channels    || []);
   const income      = useStorageSubscription<any[]>(SYNC_KEYS.FINANCES_INCOME,        initialData?.income      || []);
   const expenses    = useStorageSubscription<any[]>(SYNC_KEYS.FINANCES_EXPENSES,      initialData?.expenses    || []);
+  const journals    = useStorageSubscription<string[]>(SYNC_KEYS.JOURNAL_LOGS,        initialData?.journals    || []);
 
   const pulse = useMemo(() => {
     const data: PulseDataDependencies = {
@@ -33,6 +34,7 @@ export function useSystemPulse(initialData?: Partial<PulseDataDependencies>) {
       channels,
       income,
       expenses,
+      journals,
     };
 
     const calculated = calculateSystemPulse(data);
@@ -41,7 +43,7 @@ export function useSystemPulse(initialData?: Partial<PulseDataDependencies>) {
       ...calculated,
       ready: true
     };
-  }, [medicine, travelKit, aidHome, aidMobile, supplements, projects, habits, channels, income, expenses]);
+  }, [medicine, travelKit, aidHome, aidMobile, supplements, projects, habits, channels, income, expenses, journals]);
 
   return pulse;
 }

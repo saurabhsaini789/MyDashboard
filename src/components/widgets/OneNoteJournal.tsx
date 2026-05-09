@@ -154,6 +154,22 @@ export function OneNoteJournal() {
       const pageUrl = response?.links?.oneNoteWebUrl?.href;
       setSaveStatus('success');
       setLastPageUrl(pageUrl);
+
+      // Track locally for Growth/Pulse metrics
+      try {
+        const key = 'os_journal_logs';
+        const raw = localStorage.getItem(key);
+        const logs: string[] = raw ? JSON.parse(raw) : [];
+        const todayStr = new Date().toISOString().split('T')[0];
+        if (!logs.includes(todayStr)) {
+          logs.push(todayStr);
+          localStorage.setItem(key, JSON.stringify(logs));
+          window.dispatchEvent(new Event('local-storage'));
+        }
+      } catch (err) {
+        console.error('Failed to update local journal log', err);
+      }
+
       setTimeout(() => { setSaveStatus('idle'); setLastPageUrl(''); }, 10000);
     } catch (error: any) {
       console.error('Failed to save journal', error);

@@ -1,6 +1,23 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 export type Task = {
  id: string;
@@ -156,9 +173,45 @@ export function ProjectModal({ project, onClose, onUpdateProject, onDeleteProjec
  });
  
  const [newTaskTitle, setNewTaskTitle] = useState('');
+ const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+ const [editingTaskTitle, setEditingTaskTitle] = useState('');
 
+ const sensors = useSensors(
+   useSensor(PointerSensor, {
+     activationConstraint: {
+       distance: 5,
+     },
+   }),
+   useSensor(KeyboardSensor, {
+     coordinateGetter: sortableKeyboardCoordinates,
+   })
+ );
 
+ const handleDragEnd = (event: DragEndEvent) => {
+   const { active, over } = event;
 
+   if (over && active.id !== over.id) {
+     const oldIndex = project.tasks.findIndex((t) => t.id === active.id);
+     const newIndex = project.tasks.findIndex((t) => t.id === over.id);
+     
+     const newTasks = arrayMove(project.tasks, oldIndex, newIndex);
+     onUpdateProject({ ...project, tasks: newTasks });
+   }
+ };
+
+ const startEditingTask = (task: Task) => {
+   setEditingTaskId(task.id);
+   setEditingTaskTitle(task.title);
+ };
+
+ const saveEditedTask = (taskId: string) => {
+   if (!editingTaskTitle.trim()) return;
+   const updatedTasks = project.tasks.map(t =>
+     t.id === taskId ? { ...t, title: editingTaskTitle.trim() } : t
+   );
+   onUpdateProject({ ...project, tasks: updatedTasks });
+   setEditingTaskId(null);
+ };
 
  const handleToggleTask = (taskId: string) => {
  const updatedTasks = project.tasks.map(t =>
@@ -375,21 +428,34 @@ export function ProjectModal({ project, onClose, onUpdateProject, onDeleteProjec
  No tasks defined.
  </div>
  ) : (
- <div className="space-y-2">
- {project.tasks.map(task => (
- <div key={task.id} className="group flex items-center justify-between p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
- <button onClick={() => handleToggleTask(task.id)} className="flex items-center gap-3 text-left flex-1">
- <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${task.isCompleted ? 'bg-teal-500 border-teal-500 text-white' : 'border-zinc-300 dark:border-zinc-600'}`}>
- {task.isCompleted && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>}
- </div>
- <span className={`font-medium text-sm ${task.isCompleted ? 'line-through text-zinc-400' : 'text-zinc-800 dark:text-zinc-200'}`}>
- {task.title}
- </span>
- </button>
- <button onClick={() => handleDeleteTask(task.id)} className="opacity-0 group-hover:opacity-100 px-2 text-rose-500 hover:text-rose-700">✕</button>
- </div>
- ))}
- </div>
+ <DndContext 
+  sensors={sensors}
+  collisionDetection={closestCenter}
+  onDragEnd={handleDragEnd}
+ >
+   <SortableContext 
+    items={project.tasks.map(t => t.id)}
+    strategy={verticalListSortingStrategy}
+   >
+     <div className="space-y-2">
+     {project.tasks.map((task, index) => (
+       <SortableTask
+         key={task.id}
+         task={task}
+         index={index}
+         onToggle={handleToggleTask}
+         onDelete={handleDeleteTask}
+         onEditStart={startEditingTask}
+         isEditing={editingTaskId === task.id}
+         editTitle={editingTaskTitle}
+         setEditTitle={setEditingTaskTitle}
+         onEditSave={saveEditedTask}
+         onEditCancel={() => setEditingTaskId(null)}
+       />
+     ))}
+     </div>
+   </SortableContext>
+ </DndContext>
  )}
  
  <div className="flex gap-2">
@@ -413,4 +479,86 @@ export function ProjectModal({ project, onClose, onUpdateProject, onDeleteProjec
  )}
  </Modal>
  );
+}
+
+function SortableTask({ 
+  task, 
+  index, 
+  onToggle, 
+  onDelete, 
+  onEditStart, 
+  isEditing, 
+  editTitle, 
+  setEditTitle, 
+  onEditSave, 
+  onEditCancel 
+}: any) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: task.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className="group flex items-center justify-between p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 gap-2 shadow-sm"
+    >
+      <div {...attributes} {...listeners} className="cursor-grab text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 p-1 -ml-1">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </div>
+
+      {isEditing ? (
+        <div className="flex-1 flex items-center gap-2">
+          <span className="text-zinc-400 font-medium text-sm">{index + 1}.</span>
+          <input 
+            type="text" 
+            autoFocus
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') onEditSave(task.id);
+              if (e.key === 'Escape') onEditCancel();
+            }}
+            className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+          />
+          <button onClick={() => onEditSave(task.id)} className="text-teal-600 hover:text-teal-700 dark:text-teal-400 p-1.5 bg-teal-50 dark:bg-teal-500/10 rounded-md">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+          </button>
+          <button onClick={onEditCancel} className="text-zinc-500 hover:text-zinc-700 p-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-md">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+          </button>
+        </div>
+      ) : (
+        <>
+          <button onClick={() => onToggle(task.id)} className="flex items-center gap-3 text-left flex-1 min-w-0">
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${task.isCompleted ? 'bg-teal-500 border-teal-500 text-white' : 'border-zinc-300 dark:border-zinc-600'}`}>
+              {task.isCompleted && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>}
+            </div>
+            <span className={`font-medium text-sm flex items-center gap-2 truncate ${task.isCompleted ? 'line-through text-zinc-400' : 'text-zinc-800 dark:text-zinc-200'}`}>
+              <span className="text-zinc-400 shrink-0">{index + 1}.</span> 
+              <span className="truncate">{task.title}</span>
+            </span>
+          </button>
+
+          <div className="flex items-center gap-1 shrink-0">
+            <button onClick={() => onEditStart(task)} className="p-1.5 text-zinc-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors" title="Edit Task">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></svg>
+            </button>
+            <button onClick={() => onDelete(task.id)} className="p-1.5 text-zinc-400 hover:text-rose-500 transition-colors" title="Delete Task">
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }

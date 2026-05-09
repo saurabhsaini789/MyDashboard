@@ -33,17 +33,25 @@ export interface PulseDataDependencies {
   channels: any[];  // BusinessChannel[]
   income: any[];    // IncomeRecord[]
   expenses: any[];  // ExpenseRecord[]
+  journals: string[]; // Journal log dates
 }
 
 export interface SystemPulseData {
   score: number;
   scoreLabel: string;
   actions: PulseAction[];
-  milestone: {
+  activeMilestone: {
+    title: string;
+    bucket: string;
+    progress: number;
+  } | null;
+  upcomingMilestones: {
+    id: string;
     title: string;
     daysDesc: string;
     bucket: string;
-  } | null;
+    diff: number;
+  }[];
   stats: {
     healthReadiness: number;
     goalHealth: number;
@@ -56,7 +64,7 @@ export interface SystemPulseData {
  * Can be run on server or client.
  */
 export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseData {
-  const { medicine, travelKit, aidHome, aidMobile, supplements, projects, habits, channels, income, expenses } = data;
+  const { medicine, travelKit, aidHome, aidMobile, supplements, projects, habits, channels, income, expenses, journals } = data;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayStr = today.toISOString().split('T')[0];
@@ -88,13 +96,13 @@ export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseDa
   const activeProjects = (projects || []).filter((p: any) => !p.isCompleted && p.status !== 'completed');
   const overdueProjects: any[] = [];
   const dueTodayProjects: any[] = [];
-  let nextMilestone: any = null;
+  const nextMilestones: any[] = [];
 
   activeProjects.forEach(p => {
     if (p.dueDate) {
       if (p.dueDate < todayStr) overdueProjects.push(p);
       else if (p.dueDate === todayStr) dueTodayProjects.push(p);
-      if (p.dueDate >= todayStr && (!nextMilestone || p.dueDate < nextMilestone.dueDate)) nextMilestone = p;
+      if (p.dueDate >= todayStr) nextMilestones.push(p);
     }
   });
 
@@ -124,19 +132,24 @@ export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseDa
   }
   const habitSuccessRate = totalCount > 0 ? (done / totalCount) * 100 : 100;
 
-  // 4. Content System — overdue schedules (strictly past due, not today)
+  // 4. Content System — schedules
   const overdueContentItems: { channelName: string; scheduleType: string; platform: string }[] = [];
+  let totalContentSchedules = 0;
+  let overdueContentCount = 0;
   (channels || [])
     .filter((c: any) => c.status === 'Active')
     .forEach((c: any) => {
       (c.schedules || []).forEach((s: any) => {
+        totalContentSchedules++;
         if (s.nextPostDueDate && s.nextPostDueDate < todayStr) {
+          overdueContentCount++;
           overdueContentItems.push({ channelName: c.name, scheduleType: s.type, platform: c.platform || '' });
         }
       });
     });
+  const contentReadiness = totalContentSchedules > 0 ? ((totalContentSchedules - overdueContentCount) / totalContentSchedules) * 100 : 100;
 
-  // 5. Finance staleness — Option A: use last entry date across income + expenses
+  // 5. Admin & Hygiene: Finance staleness
   let lastFinanceEntryStr: string | null = null;
   [...(income || []), ...(expenses || [])].forEach((entry: any) => {
     if (entry.date && (!lastFinanceEntryStr || entry.date > lastFinanceEntryStr)) {
@@ -145,16 +158,36 @@ export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseDa
   });
 
   let financeIsStale = false;
+  let financeHygiene = 100;
   if (lastFinanceEntryStr) {
     const lastEntry = new Date(lastFinanceEntryStr + 'T00:00:00');
     const daysSinceLast = Math.floor((today.getTime() - lastEntry.getTime()) / 86400000);
-    financeIsStale = daysSinceLast >= 5;
+    financeIsStale = daysSinceLast >= 5; // Alert threshold
+    if (daysSinceLast > 3) {
+       financeHygiene = Math.max(0, 100 - ((daysSinceLast - 3) * 20)); // Drops score after 3 days
+    }
   } else {
     financeIsStale = true; // No entries ever → always prompt
+    financeHygiene = 0;
   }
 
+  // 6. Admin & Hygiene: Journal staleness
+  let journalHygiene = 100;
+  let daysSinceJournal = 999;
+  if (journals && journals.length > 0) {
+      const lastJournalStr = journals.reduce((max, d) => d > max ? d : max, '1970-01-01');
+      const lastJ = new Date(lastJournalStr + 'T00:00:00');
+      daysSinceJournal = Math.floor((today.getTime() - lastJ.getTime()) / 86400000);
+  }
+  if (daysSinceJournal > 2) {
+      journalHygiene = Math.max(0, 100 - ((daysSinceJournal - 2) * 25)); // Drops score after 2 days
+  }
+  
+  const adminHygiene = (financeHygiene * 0.5) + (journalHygiene * 0.5);
+
   // --- Pulse Score ---
-  const pulseScore = Math.round((healthReadiness * 0.4) + (goalHealth * 0.35) + (habitSuccessRate * 0.25));
+  // Weights: Habits 30%, Goals 25%, Content 15%, Health 15%, Admin 15%
+  const pulseScore = Math.round((habitSuccessRate * 0.30) + (goalHealth * 0.25) + (contentReadiness * 0.15) + (healthReadiness * 0.15) + (adminHygiene * 0.15));
 
   // --- Build Actions List ---
   const actions: PulseAction[] = [];
@@ -232,22 +265,51 @@ export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseDa
     });
   }
 
-  let milestoneData = null;
-  if (nextMilestone) {
-    const msDate = new Date(nextMilestone.dueDate);
-    const diff = Math.ceil((msDate.getTime() - today.getTime()) / 86400000);
-    milestoneData = {
-      title: nextMilestone.title,
-      daysDesc: diff === 0 ? 'Due Today' : `In ${diff} day(s)`,
-      bucket: nextMilestone.bucketId || 'Goal'
+  // Sort upcoming milestones by due date
+  nextMilestones.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+  const pipeline = nextMilestones.slice(0, 3);
+
+  // Active execution: find the top in-progress project
+  const inProgress = activeProjects.filter((p: any) => p.status === 'in-progress');
+  inProgress.sort((a, b) => {
+    if (a.isImportant && !b.isImportant) return -1;
+    if (!a.isImportant && b.isImportant) return 1;
+    const dA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+    const dB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+    return dA - dB;
+  });
+  const activeMilestoneProj = inProgress.length > 0 ? inProgress[0] : null;
+
+  let activeMilestoneData = null;
+  if (activeMilestoneProj) {
+    const totalTasks = activeMilestoneProj.tasks?.length || 0;
+    const completedTasks = activeMilestoneProj.tasks?.filter((t: any) => t.isCompleted).length || 0;
+    const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    activeMilestoneData = {
+      title: activeMilestoneProj.title,
+      bucket: activeMilestoneProj.bucketId || 'Goal',
+      progress
     };
   }
+
+  const upcomingMilestonesData = pipeline.map(p => {
+    const msDate = new Date(p.dueDate + 'T00:00:00');
+    const diff = Math.ceil((msDate.getTime() - today.getTime()) / 86400000);
+    return {
+      id: p.id,
+      title: p.title,
+      daysDesc: diff === 0 ? 'Due Today' : `In ${diff} day${diff > 1 ? 's' : ''}`,
+      bucket: p.bucketId || 'Goal',
+      diff
+    };
+  });
 
   return {
     score: pulseScore,
     scoreLabel: pulseScore >= 90 ? 'Stable' : pulseScore >= 75 ? 'Optimal' : pulseScore >= 50 ? 'Warning' : 'Critical',
     actions,
-    milestone: milestoneData,
+    activeMilestone: activeMilestoneData,
+    upcomingMilestones: upcomingMilestonesData,
     stats: { healthReadiness, goalHealth, habitConsistency: habitSuccessRate }
   };
 }

@@ -14,7 +14,8 @@ export interface GrowthDataDependencies {
   income: any[];
   expenses: any[];
   inventory: Record<string, any[]>;
-  wardrobe: any[];
+  channels: any[];
+  journals: string[];
 }
 
 export type ScoreRange = '7D' | '1M' | '6M' | '1Y' | 'Custom';
@@ -120,33 +121,40 @@ export function calculateCategoryScores(
     habitsScore = totalPossible > 0 ? (totalDone / totalPossible) * 100 : 0;
   }
 
-  // 2. Projects Score
+  // 2. Projects Score (Tasks vs Projects)
   let projectsScore = 0;
   const projects = data.projects;
   if (Array.isArray(projects) && projects.length > 0) {
-    let totalHistorical = 0;
-    let completedHistorical = 0;
+    let projHistorical = 0, projCompleted = 0;
+    let taskHistorical = 0, taskCompleted = 0;
 
     projects.forEach((p: any) => {
       if ((p.isCompleted || p.status === 'completed') && p.completedAt && isDateInRange(p.completedAt, filter)) {
-         completedHistorical++;
-         totalHistorical++;
+         projCompleted++;
+         projHistorical++;
       } else if (!p.isCompleted && p.status !== 'completed' && p.createdAt && isDateInRange(p.createdAt, filter)) {
-         totalHistorical++;
+         projHistorical++;
       }
 
       if (p.tasks && Array.isArray(p.tasks)) {
         p.tasks.forEach((t: any) => {
           if (t.isCompleted && t.completedAt && isDateInRange(t.completedAt, filter)) {
-            completedHistorical++;
-            totalHistorical++;
+            taskCompleted++;
+            taskHistorical++;
           } else if (!t.isCompleted && t.createdAt && isDateInRange(t.createdAt, filter)) {
-            totalHistorical++;
+            taskHistorical++;
           }
         });
       }
     });
-    projectsScore = totalHistorical > 0 ? (completedHistorical / totalHistorical) * 100 : 0;
+
+    const projRate = projHistorical > 0 ? (projCompleted / projHistorical) : 0;
+    const taskRate = taskHistorical > 0 ? (taskCompleted / taskHistorical) : 0;
+    
+    if (projHistorical === 0 && taskHistorical > 0) projectsScore = taskRate * 100;
+    else if (taskHistorical === 0 && projHistorical > 0) projectsScore = projRate * 100;
+    else if (projHistorical > 0 && taskHistorical > 0) projectsScore = ((taskRate * 0.3) + (projRate * 0.7)) * 100;
+    else projectsScore = 0;
   }
 
   // 3. Finance & Expenses
@@ -160,7 +168,7 @@ export function calculateCategoryScores(
 
   if (totalIncome > 0) {
     const savingsRate = (totalIncome - totalExpenses) / totalIncome;
-    financeScore = normalize(savingsRate, 0, 0.2);
+    financeScore = normalize(savingsRate, 0, 0.4); // 40% savings = 100 score
   }
 
   if (totalExpenses > 0) {
@@ -169,7 +177,7 @@ export function calculateCategoryScores(
       expensesScore = (needs / totalExpenses) * 100;
   }
 
-  // 4. Inventory
+  // 4. Health Readiness
   let inventoryScore = 0;
   let medTotal = 0;
   let medIssues = 0;
@@ -186,28 +194,44 @@ export function calculateCategoryScores(
     }
   });
 
-  let wardrobeScore = 0;
-  const wardrobeItems = data.wardrobe || [];
-  if (Array.isArray(wardrobeItems) && wardrobeItems.length > 0) {
-    const activeCount = wardrobeItems.filter((i: any) => i.status === 'Active').length;
-    wardrobeScore = (activeCount / wardrobeItems.length) * 100;
+  if (medTotal > 0) {
+      inventoryScore = ((medTotal - medIssues) / medTotal) * 100;
   }
+
+  // 5. Content Consistency
+  let contentScore = 0;
+  const activeChannels = (data.channels || []).filter((c: any) => c.status === 'Active');
+  let totalSchedules = 0;
+  let overdueSchedules = 0;
+  activeChannels.forEach((c: any) => {
+      (c.schedules || []).forEach((s: any) => {
+          totalSchedules++;
+          if (s.nextPostDueDate && new Date(s.nextPostDueDate) < now) {
+              overdueSchedules++;
+          }
+      });
+  });
+  contentScore = totalSchedules > 0 ? ((totalSchedules - overdueSchedules) / totalSchedules) * 100 : 0;
+
+  // 6. Mindfulness (Journaling)
+  let mindfulnessScore = 0;
+  const journals = data.journals || [];
+  let daysInFrame = filter.range === '7D' ? 7 : filter.range === '1M' ? 30 : filter.range === '6M' ? 180 : filter.range === '1Y' ? 365 : 30; // Custom defaults to 30
   
-  if (medTotal === 0 && wardrobeScore === 0) {
-      inventoryScore = 0;
-  } else if (medTotal === 0) {
-      inventoryScore = wardrobeScore;
-  } else {
-      const medScore = ((medTotal - medIssues) / medTotal) * 100;
-      inventoryScore = (medScore + wardrobeScore) / 2;
-  }
+  let journalDays = 0;
+  journals.forEach(d => {
+      if (isDateInRange(d, filter)) journalDays++;
+  });
+  mindfulnessScore = Math.min(100, (journalDays / daysInFrame) * 100);
 
   return [
     { name: 'Habits', score: Math.round(habitsScore), color: '#10b981', fullPath: '/habits' },
     { name: 'Projects', score: Math.round(projectsScore), color: '#3b82f6', fullPath: '/goals' },
     { name: 'Finance', score: Math.round(financeScore), color: '#6366f1', fullPath: '/finances' },
     { name: 'Expenses', score: Math.round(expensesScore), color: '#f59e0b', fullPath: '/finances' },
-    { name: 'Inventory', score: Math.round(inventoryScore), color: '#ec4899', fullPath: '/health-system' },
+    { name: 'Health', score: Math.round(inventoryScore), color: '#ec4899', fullPath: '/health-system' },
+    { name: 'Content', score: Math.round(contentScore), color: '#8b5cf6', fullPath: '/content-system' },
+    { name: 'Mindfulness', score: Math.round(mindfulnessScore), color: '#06b6d4', fullPath: '/' },
   ];
 }
 
