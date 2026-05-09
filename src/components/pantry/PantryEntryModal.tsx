@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { ExpenseRecord, ExpenseItem, ExpenseCategory, Asset, PaymentMethod } from '@/types/finance';
+import { PANTRY_CATEGORIES, GROCERY_ITEM_CATEGORIES } from '@/lib/constants';
 import { getPrefixedKey } from '@/lib/keys';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 import { setSyncedItem } from '@/lib/storage';
@@ -22,7 +23,6 @@ interface PantryEntryModalProps {
   initialTab?: 'list' | 'form';
 }
 
-const CATEGORIES: ExpenseCategory[] = ['Grocery', 'Clothing', 'Transport', 'Dining', 'Bills', 'Other'];
 
 export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdateRecords, allRecords, initialRecord, initialTab }: PantryEntryModalProps) {
   const [activeTab, setActiveTab] = useState<'list' | 'form'>(initialTab || (initialRecord ? 'form' : 'list'));
@@ -65,7 +65,7 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
   };
 
   const handleAddItem = () => {
-    setItems([...items, { id: Math.random().toString(36).substr(2, 9), name: '', category: 'Grocery', type: 'need', quantity: '1', unitPrice: 0, totalPrice: 0, brand: '', notes: '', color: '', size: '', person: '', quality: '', itemType: '' }]);
+    setItems([...items, { id: Math.random().toString(36).substr(2, 9), name: '', category: category === 'Grocery' ? GROCERY_ITEM_CATEGORIES[0] : category, type: 'need', quantity: '1', unitPrice: 0, totalPrice: 0, brand: '', notes: '', color: '', size: '', person: '', quality: '', itemType: '', consumptionDays: 0 }]);
   };
 
   const updateItem = (id: string, field: keyof ExpenseItem, value: any) => {
@@ -157,7 +157,7 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
           <div className="space-y-8">
             <FormSection title="Basic Details" accentColor="teal">
               <select value={category} onChange={e => setCategory(e.target.value as ExpenseCategory)} className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 px-4 py-3 rounded-2xl text-sm font-bold w-full outline-none uppercase text-zinc-500">
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                {PANTRY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
               <div className="relative">
                 <input type="text" list="vendor-options" required value={vendor} onChange={e => setVendor(e.target.value)} placeholder="Shop / Vendor Name" className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 px-4 py-3 rounded-2xl text-sm font-bold w-full outline-none"/>
@@ -175,8 +175,15 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
               {items.map((item, index) => (
                 <div key={item.id} className="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 space-y-4 relative">
                   <div className="absolute -top-2 -right-2 bg-zinc-800 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold cursor-pointer hover:bg-rose-500" onClick={() => setItems(items.filter(i => i.id !== item.id))}>✕</div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input placeholder="Item Name" value={item.name} onChange={e => updateItem(item.id, 'name', e.target.value)} className="bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-bold outline-none"/>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <input placeholder="Item Name" value={item.name} onChange={e => updateItem(item.id, 'name', e.target.value)} className="bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-bold outline-none md:col-span-1"/>
+                    <select value={item.category} onChange={e => updateItem(item.id, 'category', e.target.value)} className="bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-bold outline-none uppercase text-zinc-500">
+                      {category === 'Grocery' ? (
+                        GROCERY_ITEM_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)
+                      ) : (
+                        <option value={category}>{category}</option>
+                      )}
+                    </select>
                     <select value={item.type} onChange={e => updateItem(item.id, 'type', e.target.value as 'need'|'want')} className="bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-bold outline-none uppercase text-zinc-500">
                       <option value="need">Need</option>
                       <option value="want">Want</option>
@@ -192,30 +199,42 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
                        <input type="number" placeholder="Unit Price" value={item.unitPrice || ''} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-bold outline-none w-full"/>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 col-span-1 md:col-span-2">
-                     <span className="text-[10px] text-zinc-400 uppercase font-bold w-12">Weight</span>
-                     <div className="flex w-full gap-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-2">
+                       <span className="text-[10px] text-zinc-400 uppercase font-bold w-12">Weight</span>
+                       <div className="flex w-full gap-2">
+                         <input 
+                           type="number" 
+                           placeholder="Value" 
+                           value={parseFloat(item.size || '') || ''} 
+                           onChange={e => {
+                             const unit = (item.size || '').replace(/[\d.\s]/g, '') || 'unit';
+                             updateItem(item.id, 'size', `${e.target.value}${unit}`);
+                           }} 
+                           className="bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-bold outline-none w-full"
+                         />
+                         <select 
+                           value={(item.size || '').replace(/[\d.\s]/g, '') || 'unit'} 
+                           onChange={e => {
+                             const val = parseFloat(item.size || '') || '';
+                             updateItem(item.id, 'size', `${val}${e.target.value}`);
+                           }} 
+                           className="bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-bold outline-none w-24 uppercase text-zinc-500"
+                         >
+                           {['kg', 'g', 'L', 'ml', 'unit', 'pack', 'dozen', 'box', 'bottle', 'lb', 'oz'].map(u => <option key={u} value={u}>{u}</option>)}
+                         </select>
+                       </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <span className="text-[10px] text-zinc-400 uppercase font-bold w-12">Cons.</span>
                        <input 
                          type="number" 
-                         placeholder="Value (e.g. 1, 500)" 
-                         value={parseFloat(item.size || '') || ''} 
-                         onChange={e => {
-                           const unit = (item.size || '').replace(/[\d.\s]/g, '') || 'unit';
-                           updateItem(item.id, 'size', `${e.target.value}${unit}`);
-                         }} 
+                         placeholder="Days/Unit" 
+                         value={item.consumptionDays || ''} 
+                         onChange={e => updateItem(item.id, 'consumptionDays', parseInt(e.target.value) || 0)}
                          className="bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-bold outline-none w-full"
                        />
-                       <select 
-                         value={(item.size || '').replace(/[\d.\s]/g, '') || 'unit'} 
-                         onChange={e => {
-                           const val = parseFloat(item.size || '') || '';
-                           updateItem(item.id, 'size', `${val}${e.target.value}`);
-                         }} 
-                         className="bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-bold outline-none w-32 uppercase text-zinc-500"
-                       >
-                         {['kg', 'g', 'L', 'ml', 'unit', 'pack', 'dozen', 'box', 'bottle', 'lb', 'oz'].map(u => <option key={u} value={u}>{u}</option>)}
-                       </select>
-                     </div>
+                    </div>
                   </div>
                 </div>
               ))}

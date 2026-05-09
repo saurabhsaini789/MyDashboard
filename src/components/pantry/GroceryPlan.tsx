@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { GroceryPlanItem, ExpenseRecord } from '@/types/finance';
+import { GROCERY_ITEM_CATEGORIES } from '@/lib/constants';
 import { List, LayoutGrid, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 import { setSyncedItem } from '@/lib/storage';
@@ -16,7 +17,6 @@ interface GroceryPlanProps {
   onDateChange: (date: Date) => void;
 }
 
-const DEFAULT_CATEGORIES = ['Dairy & Refrigerated', 'Protein (Meat & Alternatives)', 'Grains & Staples', 'Vegetables', 'Fruits', 'Essentials', 'Household Items', 'Other'];
 
 export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanProps) {
   const items = useStorageSubscription<GroceryPlanItem[]>(SYNC_KEYS.FINANCES_GROCERY_PLAN, []);
@@ -24,7 +24,7 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState({
-    name: '', category: DEFAULT_CATEGORIES[0], plannedQuantity: '', unitSize: '', frequency: 'Weekly', idealTiming: '', expectedPrice: '', consumptionDays: ''
+    name: '', category: GROCERY_ITEM_CATEGORIES[0], plannedQuantity: '', unitSize: '', frequency: 'Weekly', idealTiming: '', expectedPrice: '', consumptionDays: ''
   });
   const [editingItem, setEditingItem] = useState<GroceryPlanItem | null>(null);
 
@@ -131,7 +131,7 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
 
                 <div className="flex justify-between items-center pt-4 border-t border-zinc-100 dark:border-zinc-800">
                   <span className="text-[10px] font-bold text-zinc-400 uppercase">{item.plannedQuantity} {item.unitSize} • {item.consumptionDays ? `${item.consumptionDays} days/unit` : item.frequency}</span>
-                  <button onClick={() => { setEditingItem(item); setFormData({ name: item.name, category: item.category || DEFAULT_CATEGORIES[0], plannedQuantity: String(item.plannedQuantity), unitSize: item.unitSize||'', frequency: item.frequency || 'Weekly', idealTiming: item.idealTiming||'', expectedPrice: String(item.expectedPrice), consumptionDays: String(item.consumptionDays||'') }); setIsFormOpen(true); }} className="text-[10px] font-bold uppercase text-zinc-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">Edit</button>
+                  <button onClick={() => { setEditingItem(item); setFormData({ name: item.name, category: item.category || GROCERY_ITEM_CATEGORIES[0], plannedQuantity: String(item.plannedQuantity), unitSize: item.unitSize||'', frequency: item.frequency || 'Weekly', idealTiming: item.idealTiming||'', expectedPrice: String(item.expectedPrice), consumptionDays: String(item.consumptionDays||'') }); setIsFormOpen(true); }} className="text-[10px] font-bold uppercase text-zinc-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">Edit</button>
                 </div>
               </div>
             ))}
@@ -152,7 +152,7 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
               </thead>
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                 {items.map(item => (
-                  <tr key={item.id} onClick={() => { setEditingItem(item); setFormData({ name: item.name, category: item.category || DEFAULT_CATEGORIES[0], plannedQuantity: String(item.plannedQuantity), unitSize: item.unitSize||'', frequency: item.frequency || 'Weekly', idealTiming: item.idealTiming||'', expectedPrice: String(item.expectedPrice), consumptionDays: String(item.consumptionDays||'') }); setIsFormOpen(true); }} className="hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors cursor-pointer group">
+                  <tr key={item.id} onClick={() => { setEditingItem(item); setFormData({ name: item.name, category: item.category || GROCERY_ITEM_CATEGORIES[0], plannedQuantity: String(item.plannedQuantity), unitSize: item.unitSize||'', frequency: item.frequency || 'Weekly', idealTiming: item.idealTiming||'', expectedPrice: String(item.expectedPrice), consumptionDays: String(item.consumptionDays||'') }); setIsFormOpen(true); }} className="hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors cursor-pointer group">
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
                         <span className="font-bold text-sm">{item.name}</span>
@@ -193,11 +193,36 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
         <DynamicForm
           sections={[{ id:'d', fields:[
             { name:'name', label:'Name', type:'text', required:true, fullWidth:true },
-            { name:'category', label:'Category', type:'select', options:DEFAULT_CATEGORIES.map(c=>({label:c,value:c})) },
+            { name:'category', label:'Category', type:'select', options:GROCERY_ITEM_CATEGORIES.map(c=>({label:c,value:c})) },
             { name:'expectedPrice', label:'Price', type:'number', required:true },
             { name:'plannedQuantity', label:'Qty', type:'number', required:true },
-            { name:'unitSize', label:'Unit', type:'text' },
-            { name:'consumptionDays', label:'Days/Unit', type:'number' }
+            { 
+              name:'unitSize', 
+              label:'Unit', 
+              render: (props) => {
+                const val = parseFloat(props.value || '') || '';
+                const unit = (props.value || '').replace(/[\d.\s]/g, '') || 'unit';
+                return (
+                  <div className="flex gap-2">
+                    <input 
+                      type="number" 
+                      placeholder="Size" 
+                      value={val} 
+                      onChange={e => props.onChange(props.name, `${e.target.value}${unit}`)}
+                      className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-bold outline-none w-full"
+                    />
+                    <select 
+                      value={unit} 
+                      onChange={e => props.onChange(props.name, `${val}${e.target.value}`)}
+                      className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-bold outline-none w-32 uppercase text-zinc-500"
+                    >
+                      {['kg', 'g', 'L', 'ml', 'unit', 'pack', 'dozen', 'box', 'bottle', 'lb', 'oz'].map(u => <option key={u} value={u}>{u}</option>)}
+                    </select>
+                  </div>
+                );
+              }
+            },
+            { name:'consumptionDays', label:'Consumption (Days/Unit)', type:'number' }
           ]}]}
           formData={formData}
           onChange={(n,v)=>setFormData(p=>({...p,[n]:v}))}

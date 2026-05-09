@@ -14,6 +14,7 @@ export interface ExpenseItem {
  size?: string;
  brand?: string;
  notes?: string;
+ consumptionDays?: number;
  
  // Clothing extras (supporting multi-item clothing bills)
  itemType?: string; 
