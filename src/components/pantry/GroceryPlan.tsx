@@ -36,6 +36,35 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
 
   const saveItems = (newItems: GroceryPlanItem[]) => setSyncedItem(SYNC_KEYS.FINANCES_GROCERY_PLAN, JSON.stringify(newItems));
 
+  const bestPrices = useMemo(() => {
+    const map: Record<string, { vendor: string; price: number }> = {};
+    records.forEach(record => {
+      const vendor = record.vendor || 'Unknown Store';
+      if (record.items && record.items.length > 0) {
+        record.items.forEach(item => {
+          const name = item.name.trim().toLowerCase(); if (!name) return;
+          const qty = parseFloat(item.quantity) || 1;
+          const price = item.totalPrice > 0 ? (item.totalPrice / qty) : item.unitPrice;
+          if (price <= 0 || isNaN(price)) return;
+          if (!map[name] || price < map[name].price) map[name] = { vendor, price };
+        });
+      } else {
+        const name = (record.subcategory || record.category).trim().toLowerCase(); if (!name) return;
+        const qty = parseFloat(record.quantity || '1') || 1;
+        const price = record.amount / qty;
+        if (price <= 0 || isNaN(price)) return;
+        if (!map[name] || price < map[name].price) map[name] = { vendor, price };
+      }
+    });
+    return map;
+  }, [records]);
+
+  const toggleUnit = (item: GroceryPlanItem, unitIndex: number) => {
+    const newUnits = [...(item.checkedUnits || Array(Math.ceil(item.plannedQuantity || 1)).fill('pending'))];
+    newUnits[unitIndex] = newUnits[unitIndex] === 'bought' ? 'pending' : 'bought';
+    saveItems(items.map(i => i.id === item.id ? { ...i, checkedUnits: newUnits } : i));
+  };
+
   const { plannedTotalCAD, projectedTotalCAD } = useMemo(() => {
     let planned = 0;
     let projected = 0;
@@ -83,8 +112,25 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
                   <div className="flex flex-col"><span className="font-bold">{item.name}</span><span className="text-[10px] font-bold text-zinc-400 uppercase">{item.category}</span></div>
                   <div className="text-right"><span className="text-lg font-bold text-teal-600">${((item.expectedPrice||0)*(item.plannedQuantity||0)).toLocaleString()}</span></div>
                 </div>
+                {bestPrices[item.name.trim().toLowerCase()] && (
+                   <div className="mb-4 inline-flex items-center gap-1.5 px-2 py-1 bg-amber-50 dark:bg-amber-500/10 rounded border border-amber-100 dark:border-amber-500/20 text-[9px] font-black uppercase text-amber-600 dark:text-amber-400">
+                      💡 Buy at {bestPrices[item.name.trim().toLowerCase()].vendor} for ${bestPrices[item.name.trim().toLowerCase()].price.toFixed(2)}
+                   </div>
+                )}
+                
+                <div className="flex gap-2 mb-4 flex-wrap">
+                   {Array.from({ length: Math.ceil(item.plannedQuantity || 1) }).map((_, idx) => {
+                     const isBought = (item.checkedUnits && item.checkedUnits[idx] === 'bought');
+                     return (
+                       <div key={idx} onClick={(e) => { e.stopPropagation(); toggleUnit(item, idx); }} className={`w-5 h-5 rounded-md border flex items-center justify-center cursor-pointer transition-all ${isBought ? 'bg-teal-500 border-teal-500 text-white' : 'bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700'}`}>
+                         {isBought && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
+                       </div>
+                     );
+                   })}
+                </div>
+
                 <div className="flex justify-between items-center pt-4 border-t border-zinc-100 dark:border-zinc-800">
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase">{item.plannedQuantity} {item.unitSize} • {item.frequency}</span>
+                  <span className="text-[10px] font-bold text-zinc-400 uppercase">{item.plannedQuantity} {item.unitSize} • {item.consumptionDays ? `${item.consumptionDays} days/unit` : item.frequency}</span>
                   <button onClick={() => { setEditingItem(item); setFormData({ name: item.name, category: item.category || DEFAULT_CATEGORIES[0], plannedQuantity: String(item.plannedQuantity), unitSize: item.unitSize||'', frequency: item.frequency || 'Weekly', idealTiming: item.idealTiming||'', expectedPrice: String(item.expectedPrice), consumptionDays: String(item.consumptionDays||'') }); setIsFormOpen(true); }} className="text-[10px] font-bold uppercase text-zinc-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">Edit</button>
                 </div>
               </div>
@@ -97,6 +143,7 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
                 <tr>
                   <th className="px-6 py-4">Item</th>
                   <th className="px-6 py-4">Category</th>
+                  <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4 text-center">Qty</th>
                   <th className="px-6 py-4 text-right">Price</th>
                   <th className="px-6 py-4 text-right">Total</th>
@@ -106,8 +153,27 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                 {items.map(item => (
                   <tr key={item.id} onClick={() => { setEditingItem(item); setFormData({ name: item.name, category: item.category || DEFAULT_CATEGORIES[0], plannedQuantity: String(item.plannedQuantity), unitSize: item.unitSize||'', frequency: item.frequency || 'Weekly', idealTiming: item.idealTiming||'', expectedPrice: String(item.expectedPrice), consumptionDays: String(item.consumptionDays||'') }); setIsFormOpen(true); }} className="hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors cursor-pointer group">
-                    <td className="px-6 py-4"><span className="font-bold text-sm">{item.name}</span></td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-bold text-sm">{item.name}</span>
+                        {bestPrices[item.name.trim().toLowerCase()] && (
+                          <span className="text-[9px] font-black uppercase text-amber-600 dark:text-amber-400">💡 {bestPrices[item.name.trim().toLowerCase()].vendor}: ${bestPrices[item.name.trim().toLowerCase()].price.toFixed(2)}</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-6 py-4"><span className="text-[10px] font-bold text-zinc-400 uppercase">{item.category}</span></td>
+                    <td className="px-6 py-4">
+                       <div className="flex gap-1.5 flex-wrap">
+                         {Array.from({ length: Math.ceil(item.plannedQuantity || 1) }).map((_, idx) => {
+                           const isBought = (item.checkedUnits && item.checkedUnits[idx] === 'bought');
+                           return (
+                             <div key={idx} onClick={(e) => { e.stopPropagation(); toggleUnit(item, idx); }} className={`w-4 h-4 rounded-md border flex items-center justify-center cursor-pointer transition-all ${isBought ? 'bg-teal-500 border-teal-500 text-white' : 'bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700'}`}>
+                               {isBought && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
+                             </div>
+                           );
+                         })}
+                       </div>
+                    </td>
                     <td className="px-6 py-4 text-center text-xs font-bold text-zinc-500">{item.plannedQuantity} {item.unitSize}</td>
                     <td className="px-6 py-4 text-right text-xs font-bold text-zinc-500">${(item.expectedPrice || 0).toLocaleString()}</td>
                     <td className="px-6 py-4 text-right"><span className="font-bold text-teal-600">${((item.expectedPrice||0)*(item.plannedQuantity||0)).toLocaleString()}</span></td>
@@ -130,7 +196,8 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
             { name:'category', label:'Category', type:'select', options:DEFAULT_CATEGORIES.map(c=>({label:c,value:c})) },
             { name:'expectedPrice', label:'Price', type:'number', required:true },
             { name:'plannedQuantity', label:'Qty', type:'number', required:true },
-            { name:'unitSize', label:'Unit', type:'text' }
+            { name:'unitSize', label:'Unit', type:'text' },
+            { name:'consumptionDays', label:'Days/Unit', type:'number' }
           ]}]}
           formData={formData}
           onChange={(n,v)=>setFormData(p=>({...p,[n]:v}))}

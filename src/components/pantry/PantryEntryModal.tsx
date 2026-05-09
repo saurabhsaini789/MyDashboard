@@ -34,7 +34,14 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
   const [items, setItems] = useState<ExpenseItem[]>([]);
   const [sgst, setSgst] = useState('');
   const [cgst, setCgst] = useState('');
+  const [category, setCategory] = useState<ExpenseCategory>('Grocery');
   const assets = useStorageSubscription<Asset[]>(SYNC_KEYS.FINANCES_ASSETS, []);
+
+  const uniqueVendors = useMemo(() => {
+    const vendors = new Set<string>();
+    allRecords.forEach(r => { if (r.vendor) vendors.add(r.vendor); });
+    return Array.from(vendors);
+  }, [allRecords]);
 
   useEffect(() => {
     if (initialRecord) {
@@ -48,17 +55,17 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
   }, [recordsOnDate, initialRecord]);
 
   const resetForm = () => {
-    setEditingRecord(null); setVendor(''); setPaidFromId(''); setNotes(''); setItems([]); setSgst(''); setCgst('');
+    setEditingRecord(null); setVendor(''); setPaidFromId(''); setNotes(''); setItems([]); setSgst(''); setCgst(''); setCategory('Grocery');
   };
 
   const startEdit = (record: ExpenseRecord) => {
-    setEditingRecord(record); setVendor(record.vendor || ''); setPaidFromId(record.assetId || ''); setNotes(record.notes || ''); setSgst(record.sgst?.toString() || ''); setCgst(record.cgst?.toString() || '');
+    setEditingRecord(record); setVendor(record.vendor || ''); setPaidFromId(record.assetId || ''); setNotes(record.notes || ''); setSgst(record.sgst?.toString() || ''); setCgst(record.cgst?.toString() || ''); setCategory(record.category || 'Grocery');
     if (record.items) setItems(record.items); else setItems([]);
     setActiveTab('form');
   };
 
   const handleAddItem = () => {
-    setItems([...items, { id: Math.random().toString(36).substr(2, 9), name: '', category: 'Grocery', type: 'need', quantity: '', unitPrice: 0, totalPrice: 0, brand: '', notes: '', color: '', size: '', person: '', quality: '', itemType: '' }]);
+    setItems([...items, { id: Math.random().toString(36).substr(2, 9), name: '', category: 'Grocery', type: 'need', quantity: '1', unitPrice: 0, totalPrice: 0, brand: '', notes: '', color: '', size: '', person: '', quality: '', itemType: '' }]);
   };
 
   const updateItem = (id: string, field: keyof ExpenseItem, value: any) => {
@@ -87,7 +94,7 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
 
     const newRecord: ExpenseRecord = {
       id: editingRecord ? editingRecord.id : Math.random().toString(36).substr(2, 9),
-      entryType: 'Bill', category: (items[0]?.category as ExpenseCategory) || 'Grocery',
+      entryType: 'Bill', category: category,
       vendor, paymentMethod: 'Debit Card', assetId: paidFromId || undefined,
       type: items[0]?.type || 'need', notes: notes, sgst: parseFloat(sgst) || undefined, cgst: parseFloat(cgst) || undefined,
       date: internalDate, amount: totalAmount, subcategory: vendor || items[0]?.name || 'Expense',
@@ -149,22 +156,72 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
         ) : (
           <div className="space-y-8">
             <FormSection title="Basic Details" accentColor="teal">
-              <input type="text" required value={vendor} onChange={e => setVendor(e.target.value)} placeholder="Shop / Vendor Name" className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 px-4 py-3 rounded-2xl text-sm font-bold w-full outline-none"/>
+              <select value={category} onChange={e => setCategory(e.target.value as ExpenseCategory)} className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 px-4 py-3 rounded-2xl text-sm font-bold w-full outline-none uppercase text-zinc-500">
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <div className="relative">
+                <input type="text" list="vendor-options" required value={vendor} onChange={e => setVendor(e.target.value)} placeholder="Shop / Vendor Name" className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 px-4 py-3 rounded-2xl text-sm font-bold w-full outline-none"/>
+                <datalist id="vendor-options">
+                  {uniqueVendors.map(v => <option key={v} value={v}/>)}
+                </datalist>
+              </div>
               <select value={paidFromId} onChange={e => setPaidFromId(e.target.value)} className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 px-4 py-3 rounded-2xl text-sm font-bold w-full outline-none">
                 <option value="">No Account (Manual)</option>
                 {assets.map(a => <option key={a.id} value={a.id}>{a.name} (${calculateAssetBalance(a).toLocaleString()})</option>)}
               </select>
             </FormSection>
             <div className="space-y-4">
-              <div className="flex justify-between items-center"><h3 className="text-[10px] font-bold uppercase text-teal-600">Itemized Bill</h3><button type="button" onClick={handleAddItem} className="text-[10px] font-bold text-zinc-400 uppercase border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 px-3 py-1 rounded-full transition-colors">+ ADD ITEM</button></div>
-              {items.map(item => (
-                <div key={item.id} className="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+              <div className="flex justify-between items-center"><h3 className="text-[10px] font-bold uppercase text-teal-600">Itemized Bill</h3></div>
+              {items.map((item, index) => (
+                <div key={item.id} className="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 space-y-4 relative">
+                  <div className="absolute -top-2 -right-2 bg-zinc-800 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold cursor-pointer hover:bg-rose-500" onClick={() => setItems(items.filter(i => i.id !== item.id))}>✕</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <input placeholder="Item Name" value={item.name} onChange={e => updateItem(item.id, 'name', e.target.value)} className="bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-bold outline-none"/>
-                    <input type="number" placeholder="Price" value={item.unitPrice} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value))} className="bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-bold outline-none"/>
+                    <select value={item.type} onChange={e => updateItem(item.id, 'type', e.target.value as 'need'|'want')} className="bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-bold outline-none uppercase text-zinc-500">
+                      <option value="need">Need</option>
+                      <option value="want">Want</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-2">
+                       <span className="text-[10px] text-zinc-400 uppercase font-bold w-8">Qty</span>
+                       <input type="number" placeholder="Qty" value={item.quantity} onChange={e => updateItem(item.id, 'quantity', e.target.value)} className="bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-bold outline-none w-full"/>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <span className="text-[10px] text-zinc-400 uppercase font-bold w-8">Price</span>
+                       <input type="number" placeholder="Unit Price" value={item.unitPrice || ''} onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-bold outline-none w-full"/>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 col-span-1 md:col-span-2">
+                     <span className="text-[10px] text-zinc-400 uppercase font-bold w-12">Weight</span>
+                     <div className="flex w-full gap-2">
+                       <input 
+                         type="number" 
+                         placeholder="Value (e.g. 1, 500)" 
+                         value={parseFloat(item.size || '') || ''} 
+                         onChange={e => {
+                           const unit = (item.size || '').replace(/[\d.\s]/g, '') || 'unit';
+                           updateItem(item.id, 'size', `${e.target.value}${unit}`);
+                         }} 
+                         className="bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-bold outline-none w-full"
+                       />
+                       <select 
+                         value={(item.size || '').replace(/[\d.\s]/g, '') || 'unit'} 
+                         onChange={e => {
+                           const val = parseFloat(item.size || '') || '';
+                           updateItem(item.id, 'size', `${val}${e.target.value}`);
+                         }} 
+                         className="bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-bold outline-none w-32 uppercase text-zinc-500"
+                       >
+                         {['kg', 'g', 'L', 'ml', 'unit', 'pack', 'dozen', 'box', 'bottle', 'lb', 'oz'].map(u => <option key={u} value={u}>{u}</option>)}
+                       </select>
+                     </div>
                   </div>
                 </div>
               ))}
+              <div className="flex justify-center pt-2">
+                <button type="button" onClick={handleAddItem} className="text-[10px] font-bold text-zinc-600 dark:text-zinc-300 uppercase bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-700 w-full py-3 rounded-xl transition-colors border border-zinc-200 dark:border-zinc-700 border-dashed">+ Add Another Item</button>
+              </div>
             </div>
             <div className="flex justify-between items-center pt-8 border-t border-zinc-50 dark:border-zinc-800">
               <div className="flex flex-col"><span className="text-[10px] font-bold text-zinc-400 uppercase">Total Bill</span><span className="text-4xl font-bold text-teal-600">${totalAmount.toLocaleString()}</span></div>

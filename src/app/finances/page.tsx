@@ -8,6 +8,7 @@ import { ExpenseSection } from '@/components/finances/ExpenseSection';
 import { EmergencyFundSection } from '@/components/finances/EmergencyFundSection';
 import { AssetsSection } from '@/components/finances/AssetsSection';
 import { LiabilitiesSection } from '@/components/finances/LiabilitiesSection';
+import { FinanceInsights } from '@/components/finances/FinanceInsights';
 import { PageTitle, Text, Description } from '@/components/ui/Text';
 
 
@@ -28,6 +29,11 @@ export default function FinancesPage() {
   {/* Finance Overview Grid */}
   <div className="fade-in mb-14" style={{ animationDelay: '0.1s' }}>
   <FinanceOverview />
+  </div>
+
+  {/* Finance Insights */}
+  <div className="fade-in mb-14" style={{ animationDelay: '0.15s' }}>
+  <FinanceInsights />
   </div>
 
   {/* Savings Targets Section */}

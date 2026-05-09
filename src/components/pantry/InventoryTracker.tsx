@@ -62,9 +62,10 @@ export function InventoryTracker({ records }: InventoryTrackerProps) {
 
       if (effectivePurchaseDate && item.consumptionDays) {
         const diff = (now.getTime() - effectivePurchaseDate.getTime()) / 86400000;
-        daysRemaining = Math.max(0, item.consumptionDays - diff);
-        progress = Math.max(0, (daysRemaining / item.consumptionDays) * 100);
-        status = daysRemaining <= 0 ? 'Out' : daysRemaining <= 2 ? 'Low' : 'Fresh';
+        const totalLifespan = item.consumptionDays * totalBoughtLast;
+        daysRemaining = Math.max(0, totalLifespan - diff);
+        progress = Math.max(0, (daysRemaining / totalLifespan) * 100);
+        status = daysRemaining <= 0 ? 'Out' : daysRemaining <= 3 ? 'Low' : 'Fresh';
       } else if (effectivePurchaseDate) { status = 'Fresh'; progress = 100; }
 
       return { ...item, latestPurchaseDate: effectivePurchaseDate, daysRemaining, status, progress, totalBoughtLast };

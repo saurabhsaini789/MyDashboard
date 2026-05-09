@@ -173,7 +173,15 @@ export function calculateCategoryScores(
 
   if (totalExpenses > 0) {
       const filteredExpenses = expenseData.filter((r: any) => isDateInRange(r.date, filter));
-      const needs = filteredExpenses.filter((r: any) => r.type === 'need' || r.type === 'investment').reduce((sum: number, r: any) => sum + (r.amount || 0), 0);
+      const needs = filteredExpenses.reduce((sum: number, r: any) => {
+        if (r.items && Array.isArray(r.items) && r.items.length > 0) {
+           const itemNeeds = r.items.reduce((itemSum: number, item: any) => {
+              return itemSum + (item.type === 'need' || item.type === 'investment' ? (item.totalPrice || 0) : 0);
+           }, 0);
+           return sum + itemNeeds;
+        }
+        return sum + (r.type === 'need' || r.type === 'investment' ? (r.amount || 0) : 0);
+      }, 0);
       expensesScore = (needs / totalExpenses) * 100;
   }
 

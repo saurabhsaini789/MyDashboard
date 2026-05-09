@@ -61,17 +61,7 @@ export function SmartInsights({ records, viewingDate }: SmartInsightsProps) {
  milkPrices.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
  const isMilkRising = milkPrices.length >= 2 && milkPrices[milkPrices.length - 1].price > milkPrices[0].price;
 
- // 2. Spending Behavior logic
- const diningRecords = records.filter(r => r.category === 'Dining');
- const thisWeekDining = diningRecords.filter(r => new Date(r.date) >= startOfThisWeek).reduce((acc, r) => acc + r.amount, 0);
- const avgWeeklyDining = diningRecords.length > 0 ? (diningRecords.reduce((acc, r) => acc + r.amount, 0) / (records.length / 7 || 1)) : 0;
-
- const clothingRecords = records.filter(r => r.category === 'Clothing');
- const thisMonthClothing = clothingRecords.filter(r => {
- if (!r.date) return false;
- const [rYear, rMonth] = r.date.split('-');
- return parseInt(rMonth) - 1 === currentMonth && parseInt(rYear) === currentYear;
- }).reduce((acc, r) => acc + r.amount, 0);
+ // 2. Spending Behavior logic moved to FinanceInsights
 
  // 3. Habit Insights logic
  const milkDates = milkPrices.map(p => new Date(p.date).getTime());
@@ -147,25 +137,7 @@ export function SmartInsights({ records, viewingDate }: SmartInsightsProps) {
  items: groceryItems
  });
  }
-
- // Spending Behavior
- const behaviorItems: InsightItem[] = [];
- if (thisWeekDining > avgWeeklyDining * 1.3 && avgWeeklyDining > 0) {
- behaviorItems.push({ text: "“You spent significantly more on eating out this week than your average”" });
- }
- if (thisMonthClothing > 0) {
- behaviorItems.push({ text: `“Clothing spend tracked at $${thisMonthClothing.toFixed(0)} this month”` });
- }
  
- if (behaviorItems.length > 0) {
- sections.push({
- category: "Spending Behavior",
- icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2m0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
- color: "text-blue-500", bgColor: "bg-blue-50 dark:bg-blue-500/10", borderColor: "border-blue-100 dark:border-blue-500/20",
- items: behaviorItems
- });
- }
-
  // Habit Insights
  const habitItems: InsightItem[] = [];
  if (avgMilkGap > 0) {

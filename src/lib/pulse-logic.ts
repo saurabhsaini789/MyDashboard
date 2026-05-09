@@ -34,6 +34,7 @@ export interface PulseDataDependencies {
   income: any[];    // IncomeRecord[]
   expenses: any[];  // ExpenseRecord[]
   journals: string[]; // Journal log dates
+  pantryPlan?: any[]; // GroceryPlanItem[]
 }
 
 export interface SystemPulseData {
@@ -64,7 +65,7 @@ export interface SystemPulseData {
  * Can be run on server or client.
  */
 export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseData {
-  const { medicine, travelKit, aidHome, aidMobile, supplements, projects, habits, channels, income, expenses, journals } = data;
+  const { medicine, travelKit, aidHome, aidMobile, supplements, projects, habits, channels, income, expenses, journals, pantryPlan } = data;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayStr = today.toISOString().split('T')[0];
@@ -185,6 +186,53 @@ export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseDa
   
   const adminHygiene = (financeHygiene * 0.5) + (journalHygiene * 0.5);
 
+  // 7. Pantry/Grocery Predictive Alerts
+  const lowStockItems: {name: string, status: 'Low' | 'Out', daysRemaining: number}[] = [];
+  (pantryPlan || []).forEach(item => {
+    let latestPurchaseDate: Date | null = null;
+    let totalBoughtLast = 0;
+
+    (expenses || []).forEach(record => {
+      const recordDate = new Date(record.date);
+      const nameMatch = item.name.toLowerCase();
+      const isMatch = record.items?.some((i: any) => i.name.toLowerCase().includes(nameMatch)) || (record.subcategory || record.category || '').toLowerCase().includes(nameMatch);
+
+      if (isMatch) {
+        if (!latestPurchaseDate || recordDate > latestPurchaseDate) {
+          latestPurchaseDate = recordDate;
+          if (record.items) {
+            const match = record.items.find((i: any) => i.name.toLowerCase().includes(nameMatch));
+            totalBoughtLast = parseFloat(match?.quantity || '1') || 1;
+          } else {
+            totalBoughtLast = parseFloat(record.quantity || '1') || 1;
+          }
+        }
+      }
+    });
+
+    let latestManualDate: Date | null = null;
+    (item.checkedUnits || []).forEach((u: any) => {
+      if (typeof u !== 'string' && u.status === 'bought' && u.date) {
+        const d = new Date(u.date);
+        if (!latestManualDate || d > (latestManualDate as Date)) latestManualDate = d;
+      }
+    });
+
+    let effectivePurchaseDate = latestPurchaseDate as Date | null;
+    if (latestManualDate && (!effectivePurchaseDate || (latestManualDate as Date) > (effectivePurchaseDate as Date))) {
+      effectivePurchaseDate = latestManualDate;
+      if (totalBoughtLast === 0) totalBoughtLast = 1; 
+    }
+
+    if (effectivePurchaseDate && item.consumptionDays) {
+      const diff = (today.getTime() - effectivePurchaseDate.getTime()) / 86400000;
+      const totalLifespan = item.consumptionDays * totalBoughtLast;
+      const daysRemaining = Math.max(0, totalLifespan - diff);
+      if (daysRemaining <= 0) lowStockItems.push({name: item.name, status: 'Out', daysRemaining});
+      else if (daysRemaining <= 3) lowStockItems.push({name: item.name, status: 'Low', daysRemaining});
+    }
+  });
+
   // --- Pulse Score ---
   // Weights: Habits 30%, Goals 25%, Content 15%, Health 15%, Admin 15%
   const pulseScore = Math.round((habitSuccessRate * 0.30) + (goalHealth * 0.25) + (contentReadiness * 0.15) + (healthReadiness * 0.15) + (adminHygiene * 0.15));
@@ -249,6 +297,18 @@ export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseDa
       href: '/habits'
     });
   }
+
+  // Pantry Low Stock / Expired — CRITICAL / DAILY (max 3)
+  lowStockItems.sort((a, b) => a.daysRemaining - b.daysRemaining);
+  lowStockItems.slice(0, 3).forEach((item, idx) => {
+    actions.push({
+      id: `pantry-low-${idx}`,
+      tier: item.status === 'Out' ? 'CRITICAL' : 'DAILY',
+      type: 'GROCERY',
+      label: `${item.name} is ${item.status === 'Out' ? 'out of stock' : 'running low'}`,
+      href: '/pantry'
+    });
+  });
 
   // Finance staleness — DAILY normally, CRITICAL on weekends
   if (financeIsStale) {
