@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Habits } from '@/components/widgets/Habits';
 import { HabitsOverview, type TimeFilter } from '@/components/widgets/HabitsOverview';
 import { PageTitle, SectionTitle, Text, Description } from '@/components/ui/Text';
-import { HabitDetailPanel } from '@/components/widgets/HabitDetailPanel';
 import { TrendingUp, TrendingDown, Star, Target, Zap } from 'lucide-react';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 import { useStorageSubscription } from '@/hooks/useStorageSubscription';
@@ -14,7 +13,6 @@ export default function HabitsPage() {
   const [filter, setFilter] = useState<TimeFilter>('Custom Month');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedHabit, setSelectedHabit] = useState<any>(null);
 
   const habits = useStorageSubscription<any[]>(SYNC_KEYS.HABITS, []);
 
@@ -175,10 +173,8 @@ export default function HabitsPage() {
         </section>
 
         <section className="w-full relative fade-in">
-          <Habits onHabitSelect={setSelectedHabit} />
+          <Habits />
         </section>
-
-        <HabitDetailPanel habit={selectedHabit} onClose={() => setSelectedHabit(null)} />
       </div>
     </main>
   );

@@ -1,6 +1,6 @@
 "use client";
 import React, { useMemo, useState } from "react";
-import { X, Flame, TrendingUp, TrendingDown, Calendar, BarChart2, Target, Award, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Flame, TrendingUp, TrendingDown, Calendar, BarChart2, Target, Award, ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import { Text } from "../ui/Text";
 
 type HabitStatus = "none" | "done" | "missed";
@@ -15,6 +15,8 @@ interface Habit {
 interface HabitDetailPanelProps {
   habit: Habit | null;
   onClose: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -240,7 +242,7 @@ function BarChart({ data }: { data: { label: string; rate: number | null }[] }) 
   );
 }
 
-export function HabitDetailPanel({ habit, onClose }: HabitDetailPanelProps) {
+export function HabitDetailPanel({ habit, onClose, onEdit, onDelete }: HabitDetailPanelProps) {
   const now = new Date();
   const [viewDate, setViewDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
 
@@ -333,42 +335,62 @@ export function HabitDetailPanel({ habit, onClose }: HabitDetailPanelProps) {
               </button>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2.5 rounded-xl text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center gap-1">
+            {onEdit && (
+              <button
+                onClick={onEdit}
+                className="p-2.5 rounded-xl text-zinc-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
+                title="Edit habit"
+              >
+                <Pencil className="w-5 h-5" />
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={onDelete}
+                className="p-2.5 rounded-xl text-zinc-400 hover:text-red-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
+                title="Delete habit"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2.5 rounded-xl text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 flex flex-col gap-8">
 
           {/* ── Monthly Calendar Matrix ────────────────── */}
           <section>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 mb-2 md:mb-4">
               <Calendar className="w-5 h-5 text-teal-400" />
               <div className="flex flex-col">
                 <Text variant="label" className="text-zinc-500 uppercase tracking-widest text-xs font-bold">Monthly Analytics Matrix</Text>
                 <Text variant="bodySmall" muted className="text-[10px]">Complete status for {MONTH_NAMES[viewMonth]} {viewYear}</Text>
               </div>
             </div>
-            <div className="bg-zinc-50 dark:bg-zinc-800/40 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-700/50">
-              <div className="grid grid-cols-7 gap-y-6 gap-x-2">
+            <div className="bg-zinc-50 dark:bg-zinc-800/40 p-3 md:p-5 rounded-2xl border border-zinc-200 dark:border-zinc-700/50">
+              <div className="grid grid-cols-7 gap-y-1.5 md:gap-y-6 gap-x-2">
                 {DAY_NAMES.map(d => (
                   <Text key={d} className="text-[10px] text-zinc-400 font-black text-center uppercase tracking-tighter">{d}</Text>
                 ))}
                 {calendarGrid.map((item, idx) => (
-                  <div key={idx} className="flex flex-col items-center justify-center gap-1.5 group min-h-[40px]">
+                  <div key={idx} className="flex flex-col items-center justify-center gap-0.5 md:gap-1.5 group min-h-[26px] md:min-h-[40px]">
                     {item ? (
                       <>
-                        <div 
+                        <div
                           className={`w-3 h-3 rounded-full transition-all duration-300 ${
                             item.status === "done" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" :
                             item.status === "missed" ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]" :
                             item.status === "future" ? "bg-zinc-100 dark:bg-zinc-800 opacity-30" :
                             item.status === "inactive" ? "bg-zinc-100 dark:bg-zinc-800 opacity-10" :
                             "bg-zinc-200 dark:bg-zinc-700 group-hover:bg-zinc-300 dark:group-hover:bg-zinc-600"
-                          }`} 
+                          }`}
                         />
                         <Text className={`text-[10px] font-bold ${item.status === "future" ? "text-zinc-300 dark:text-zinc-600" : "text-zinc-500 group-hover:text-zinc-800 dark:group-hover:text-zinc-200"}`}>
                           {item.day}
@@ -378,7 +400,7 @@ export function HabitDetailPanel({ habit, onClose }: HabitDetailPanelProps) {
                   </div>
                 ))}
               </div>
-              <div className="flex gap-4 justify-center mt-6 pt-4 border-t border-zinc-200/50 dark:border-zinc-700/50 grayscale-[0.8]">
+              <div className="flex gap-4 justify-center mt-2 pt-2 md:mt-6 md:pt-4 border-t border-zinc-200/50 dark:border-zinc-700/50 grayscale-[0.8]">
                   <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500" /><span className="text-[9px] text-zinc-500 uppercase font-black">Done</span></div>
                   <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500" /><span className="text-[9px] text-zinc-500 uppercase font-black">Missed</span></div>
                   <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-zinc-200 dark:bg-zinc-700" /><span className="text-[9px] text-zinc-500 uppercase font-black">None</span></div>

@@ -5,10 +5,12 @@ import { setSyncedItem } from '@/lib/storage';
 import { Modal } from '../ui/Modal';
 import { DynamicForm } from '../ui/DynamicForm';
 import { Text } from '../ui/Text';
-import { Baby, Flame, Zap } from 'lucide-react';
+import { Baby, Flame, Zap, Sunrise, Sun, Moon, Sparkles, Pencil } from 'lucide-react';
 import { useStorageSubscription } from '@/hooks/useStorageSubscription';
+import { HabitDetailPanel } from './HabitDetailPanel';
 
 type HabitStatus = 'none' | 'done' | 'missed';
+type HabitPeriod = 'Morning' | 'Midday' | 'Evening' | 'Anytime';
 
 interface Habit {
   id: string;
@@ -16,11 +18,42 @@ interface Habit {
   records: Record<string, HabitStatus[]>;
   monthScope?: string[];
   monthlyTarget?: number; // e.g. 5 = aim for 5 times this month
+  time?: string; // HH:MM, 24-hour
+  period?: HabitPeriod;
 }
 
-interface HabitsProps {
-  onHabitSelect?: (habit: Habit | null) => void;
-}
+const PERIOD_ORDER: HabitPeriod[] = ['Morning', 'Midday', 'Evening', 'Anytime'];
+
+const PERIOD_META: Record<HabitPeriod, { icon: React.ElementType; color: string }> = {
+  Morning: { icon: Sunrise, color: 'text-amber-500 bg-amber-50 dark:bg-amber-900/20' },
+  Midday: { icon: Sun, color: 'text-orange-500 bg-orange-50 dark:bg-orange-900/20' },
+  Evening: { icon: Moon, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' },
+  Anytime: { icon: Sparkles, color: 'text-zinc-400 bg-zinc-100 dark:bg-zinc-800' },
+};
+
+const getHabitPeriod = (h: Habit): HabitPeriod => h.period || 'Anytime';
+
+// Sort by period (Morning → Midday → Evening → Anytime), then by time ascending within each period.
+// Habits without a time keep a stable position after timed habits in the same period.
+const sortHabitsByTime = (habits: Habit[]): Habit[] => {
+  return [...habits].sort((a, b) => {
+    const pA = PERIOD_ORDER.indexOf(getHabitPeriod(a));
+    const pB = PERIOD_ORDER.indexOf(getHabitPeriod(b));
+    if (pA !== pB) return pA - pB;
+    if (a.time && b.time) return a.time.localeCompare(b.time);
+    if (a.time) return -1;
+    if (b.time) return 1;
+    return 0;
+  });
+};
+
+const formatTime12 = (time: string): string => {
+  const [hStr, mStr] = time.split(':');
+  const h = parseInt(hStr, 10);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${mStr} ${period}`;
+};
 
 const defaultInitialHabits: Habit[] = [
   { id: '1', name: 'No Phone AM', records: {} },
@@ -48,25 +81,27 @@ const defaultInitialHabits: Habit[] = [
   { id: '24', name: 'Adventure', records: {} },
 ];
 
-const HabitRow = React.memo(({ 
-  habit, 
-  monthKey, 
-  daysInMonth, 
-  isCurrentViewRealTodayMonth, 
-  todayDateIndex, 
-  onDayClick, 
-  onHabitSelect, 
+const HabitRow = React.memo(({
+  habit,
+  monthKey,
+  daysInMonth,
+  isCurrentViewRealTodayMonth,
+  todayDateIndex,
+  onDayClick,
+  onHabitSelect,
   onDelete,
-  calcStreak 
-}: { 
-  habit: Habit, 
-  monthKey: string, 
-  daysInMonth: number, 
-  isCurrentViewRealTodayMonth: boolean, 
-  todayDateIndex: number, 
+  onEdit,
+  calcStreak
+}: {
+  habit: Habit,
+  monthKey: string,
+  daysInMonth: number,
+  isCurrentViewRealTodayMonth: boolean,
+  todayDateIndex: number,
   onDayClick: (habitId: string, dayIndex: number, e: React.MouseEvent) => void,
   onHabitSelect?: (habit: Habit) => void,
   onDelete: (habit: Habit) => void,
+  onEdit: (habit: Habit) => void,
   calcStreak: (habit: Habit) => number
 }) => {
   const days = habit.records?.[monthKey] || [];
@@ -76,27 +111,48 @@ const HabitRow = React.memo(({
   const streak = useMemo(() => calcStreak(habit), [habit, calcStreak]);
   const hasTarget = habit.monthlyTarget && habit.monthlyTarget > 0;
   const targetMet = hasTarget && completed >= habit.monthlyTarget!;
+  const periodMeta = PERIOD_META[getHabitPeriod(habit)];
+  const PeriodIcon = periodMeta.icon;
 
   return (
     <tr className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border-b border-zinc-100 dark:border-zinc-800/50 transition-colors">
-      <td className="p-4 sticky left-0 z-20 bg-white dark:bg-zinc-900 group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800/50 border-r border-zinc-100 dark:border-zinc-800/50 transition-colors">
-        <div className="flex items-center justify-between gap-2">
-          <div 
-            className="flex items-center gap-2 cursor-pointer hover:text-teal-600 transition-colors"
+      <td className="p-2 md:p-4 sticky left-0 z-20 bg-white dark:bg-zinc-900 group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800/50 border-r border-zinc-100 dark:border-zinc-800/50 transition-colors w-[104px] max-w-[104px] md:w-[150px] md:max-w-none">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1 md:gap-2">
+          <div
+            className="flex items-start gap-1.5 cursor-pointer hover:text-teal-600 transition-colors min-w-0"
             onClick={() => onHabitSelect?.(habit)}
           >
-            {streak >= 2 && <span className="text-[10px] bg-orange-50 dark:bg-orange-900/30 text-orange-500 dark:text-orange-400 px-1.5 py-0.5 rounded-full"><Flame className="w-2.5 h-2.5 inline" />{streak}</span>}
-            <span className="text-sm text-zinc-900 dark:text-zinc-100">{habit.name}</span>
+            <span className={`shrink-0 inline-flex items-center justify-center w-4 h-4 md:w-5 md:h-5 rounded-full mt-0.5 ${periodMeta.color}`} title={getHabitPeriod(habit)}>
+              <PeriodIcon className="w-2.5 h-2.5 md:w-3 md:h-3" />
+            </span>
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs md:text-sm text-zinc-900 dark:text-zinc-100 break-words leading-tight">{habit.name}</span>
+              <div className="flex items-center gap-1 flex-wrap mt-0.5">
+                {streak >= 2 && <span className="text-[9px] md:text-[10px] bg-orange-50 dark:bg-orange-900/30 text-orange-500 dark:text-orange-400 px-1 md:px-1.5 py-0.5 rounded-full shrink-0"><Flame className="w-2.5 h-2.5 inline" />{streak}</span>}
+                {habit.time && <span className="text-[9px] md:text-[10px] font-normal normal-case text-zinc-400 shrink-0">{formatTime12(habit.time)}</span>}
+              </div>
+            </div>
           </div>
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(habit);
-            }} 
-            className="text-zinc-300 hover:text-red-500 transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          <div className="hidden md:flex items-center gap-1 shrink-0">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(habit);
+              }}
+              className="text-zinc-300 hover:text-teal-500 transition-colors"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(habit);
+              }}
+              className="text-zinc-300 hover:text-red-500 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </td>
       {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -152,7 +208,7 @@ const HabitRow = React.memo(({
 
 HabitRow.displayName = 'HabitRow';
 
-export function Habits({ onHabitSelect }: HabitsProps = {}) {
+export function Habits() {
   const rawHabits = useStorageSubscription<any[]>('os_habits', []);
   
   // Migration & Default logic
@@ -209,8 +265,16 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isAddingHabit, setIsAddingHabit] = useState(false);
   const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+  const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
   const [newHabitName, setNewHabitName] = useState('');
   const [newHabitTarget, setNewHabitTarget] = useState<number | ''>('');
+  const [newHabitTime, setNewHabitTime] = useState('');
+  const [newHabitPeriod, setNewHabitPeriod] = useState<HabitPeriod>('Anytime');
+  const [editName, setEditName] = useState('');
+  const [editTarget, setEditTarget] = useState<number | ''>('');
+  const [editTime, setEditTime] = useState('');
+  const [editPeriod, setEditPeriod] = useState<HabitPeriod>('Anytime');
   const [selectedScope, setSelectedScope] = useState<'this-month' | 'next-1' | 'next-2' | 'next-3' | 'next-6' | 'this-year' | 'all'>('this-month');
   const [isFillTodayConfirm, setIsFillTodayConfirm] = useState(false);
   
@@ -259,12 +323,36 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
       name: newHabitName.trim(),
       records: {},
       monthScope: scope,
+      period: newHabitPeriod,
+      ...(newHabitTime ? { time: newHabitTime } : {}),
       ...(newHabitTarget !== '' && newHabitTarget > 0 ? { monthlyTarget: Number(newHabitTarget) } : {}),
     };
     updateHabits([...localHabits, newHabit]);
     setNewHabitName('');
     setNewHabitTarget('');
+    setNewHabitTime('');
+    setNewHabitPeriod('Anytime');
     setIsAddingHabit(false);
+  };
+
+  const startEditingHabit = (habit: Habit) => {
+    setEditingHabit(habit);
+    setEditName(habit.name);
+    setEditTarget(habit.monthlyTarget ?? '');
+    setEditTime(habit.time || '');
+    setEditPeriod(getHabitPeriod(habit));
+  };
+
+  const handleEditHabit = () => {
+    if (!editingHabit || !editName.trim()) return;
+    updateHabits(localHabits.map(h => h.id === editingHabit.id ? {
+      ...h,
+      name: editName.trim(),
+      period: editPeriod,
+      time: editTime || undefined,
+      monthlyTarget: editTarget !== '' && editTarget > 0 ? Number(editTarget) : undefined,
+    } : h));
+    setEditingHabit(null);
   };
 
   const handleDeleteHabit = () => {
@@ -286,10 +374,10 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
     setHabitToDelete(null);
   };
 
-  const visibleHabits = localHabits.filter(h => {
+  const visibleHabits = useMemo(() => sortHabitsByTime(localHabits.filter(h => {
     if (!h.monthScope || h.monthScope.length === 0) return true;
     return h.monthScope.includes(monthKey);
-  });
+  })), [localHabits, monthKey]);
 
   const handleDayClick = useCallback((habitId: string, dayIndex: number, e: React.MouseEvent) => {
     e.preventDefault();
@@ -419,7 +507,7 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
           <table className="w-full text-left border-collapse min-w-max">
             <thead className="sticky top-0 z-40 bg-zinc-50 dark:bg-zinc-900">
               <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                <th className="p-4 sticky left-0 top-0 z-50 bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 min-w-[150px] text-zinc-900 dark:text-zinc-100">Habit</th>
+                <th className="p-2 md:p-4 sticky left-0 top-0 z-50 bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 w-[104px] max-w-[104px] md:w-[150px] md:max-w-none text-zinc-900 dark:text-zinc-100">Habit</th>
                 {datesOfMonth.map((d, i) => (
                   <th 
                     key={i} 
@@ -437,26 +525,44 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
               </tr>
             </thead>
             <tbody>
-              {visibleHabits.map(h => (
-                <HabitRow 
-                  key={h.id}
-                  habit={h}
-                  monthKey={monthKey}
-                  daysInMonth={daysInMonth}
-                  isCurrentViewRealTodayMonth={isCurrentViewRealTodayMonth}
-                  todayDateIndex={todayDateIndex}
-                  onDayClick={handleDayClick}
-                  onHabitSelect={onHabitSelect}
-                  onDelete={setHabitToDelete}
-                  calcStreak={calcCurrentStreak}
-                />
-              ))}
+              {visibleHabits.map((h, i) => {
+                const period = getHabitPeriod(h);
+                const showDivider = i === 0 || getHabitPeriod(visibleHabits[i - 1]) !== period;
+                const periodMeta = PERIOD_META[period];
+                const PeriodIcon = periodMeta.icon;
+                return (
+                  <React.Fragment key={h.id}>
+                    {showDivider && (
+                      <tr>
+                        <td colSpan={daysInMonth + 2} className={`px-4 py-1.5 text-[10px] font-black tracking-widest normal-case ${periodMeta.color}`}>
+                          <span className="inline-flex items-center gap-1.5">
+                            <PeriodIcon className="w-3 h-3" />
+                            {period}
+                          </span>
+                        </td>
+                      </tr>
+                    )}
+                    <HabitRow
+                      habit={h}
+                      monthKey={monthKey}
+                      daysInMonth={daysInMonth}
+                      isCurrentViewRealTodayMonth={isCurrentViewRealTodayMonth}
+                      todayDateIndex={todayDateIndex}
+                      onDayClick={handleDayClick}
+                      onHabitSelect={setSelectedHabit}
+                      onDelete={setHabitToDelete}
+                      onEdit={startEditingHabit}
+                      calcStreak={calcCurrentStreak}
+                    />
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
 
-      <Modal isOpen={isAddingHabit} onClose={() => { setIsAddingHabit(false); setNewHabitName(''); setNewHabitTarget(''); }} title="New Habit" onSubmit={handleAddHabit}>
+      <Modal isOpen={isAddingHabit} onClose={() => { setIsAddingHabit(false); setNewHabitName(''); setNewHabitTarget(''); setNewHabitTime(''); setNewHabitPeriod('Anytime'); }} title="New Habit" onSubmit={handleAddHabit}>
         <DynamicForm
           sections={[{ id: 'h', fields: [
             { name: 'name', label: 'Habit Name', type: 'text', required: true },
@@ -468,6 +574,7 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
           formData={{ name: newHabitName, scope: selectedScope }}
           onChange={(n, v) => { if (n === 'name') setNewHabitName(v); if (n === 'scope') setSelectedScope(v as any); }}
         />
+        <TimePeriodFields time={newHabitTime} setTime={setNewHabitTime} period={newHabitPeriod} setPeriod={setNewHabitPeriod} />
         {/* Monthly Target — outside DynamicForm for number input control */}
         <div className="flex flex-col gap-1.5 mt-3">
           <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
@@ -493,8 +600,101 @@ export function Habits({ onHabitSelect }: HabitsProps = {}) {
         </div>
       </Modal>
 
+      {editingHabit && (
+        <Modal isOpen={true} onClose={() => setEditingHabit(null)} title="Edit Habit" onSubmit={handleEditHabit}>
+          <DynamicForm
+            sections={[{ id: 'eh', fields: [
+              { name: 'name', label: 'Habit Name', type: 'text', required: true },
+            ]}]}
+            formData={{ name: editName }}
+            onChange={(n, v) => { if (n === 'name') setEditName(v); }}
+          />
+          <TimePeriodFields time={editTime} setTime={setEditTime} period={editPeriod} setPeriod={setEditPeriod} />
+          <div className="flex flex-col gap-1.5 mt-3">
+            <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+              Monthly Target <span className="normal-case font-normal text-zinc-400">(optional)</span>
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min={1}
+                max={31}
+                placeholder="e.g. 5  (times per month)"
+                value={editTarget}
+                onChange={e => setEditTarget(e.target.value === '' ? '' : Math.min(31, Math.max(1, parseInt(e.target.value) || 1)))}
+                className="w-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 px-3 py-2 rounded-xl text-sm border border-transparent focus:border-teal-500 focus:outline-none transition-colors"
+              />
+              {editTarget !== '' && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 pointer-events-none">/ mo</span>
+              )}
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {habitToDelete && <Modal isOpen={true} onClose={()=>setHabitToDelete(null)} title="Delete Habit" onSubmit={handleDeleteHabit} submitText="Confirm Delete"><p>Delete <b>{habitToDelete.name}</b>?</p></Modal>}
       {isFillTodayConfirm && <Modal isOpen={true} onClose={()=>setIsFillTodayConfirm(false)} title="Fill Today" onSubmit={handleFillToday} submitText="Mark Done"><p>Mark all active habits as <b>done</b> for today?</p></Modal>}
+
+      <HabitDetailPanel
+        habit={selectedHabit}
+        onClose={() => setSelectedHabit(null)}
+        onEdit={selectedHabit ? () => {
+          const h = selectedHabit;
+          setSelectedHabit(null);
+          startEditingHabit(h);
+        } : undefined}
+        onDelete={selectedHabit ? () => {
+          const h = selectedHabit;
+          setSelectedHabit(null);
+          setHabitToDelete(h);
+        } : undefined}
+      />
+    </div>
+  );
+}
+
+function TimePeriodFields({ time, setTime, period, setPeriod }: {
+  time: string;
+  setTime: (v: string) => void;
+  period: HabitPeriod;
+  setPeriod: (v: HabitPeriod) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5 mt-3">
+      <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+        Time & Period <span className="normal-case font-normal text-zinc-400">(optional)</span>
+      </label>
+      <div className="flex gap-2">
+        <input
+          type="time"
+          value={time}
+          onChange={e => setTime(e.target.value)}
+          className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 px-3 py-2 rounded-xl text-sm border border-transparent focus:border-teal-500 focus:outline-none transition-colors"
+        />
+        <div className="flex gap-1.5 flex-wrap">
+          {PERIOD_ORDER.map(p => {
+            const meta = PERIOD_META[p];
+            const Icon = meta.icon;
+            const active = period === p;
+            return (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPeriod(p)}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold normal-case transition-colors ${
+                  active ? meta.color + ' ring-1 ring-inset ring-current' : 'text-zinc-400 bg-zinc-100 dark:bg-zinc-800 hover:text-zinc-600 dark:hover:text-zinc-300'
+                }`}
+              >
+                <Icon className="w-3 h-3" />
+                {p}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+        Period groups habits visually (Morning → Midday → Evening → Anytime); time fine-sorts within a period.
+      </p>
     </div>
   );
 }
