@@ -331,9 +331,14 @@ export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseDa
 
   // Active execution: find the top in-progress project
   const inProgress = activeProjects.filter((p: any) => p.status === 'in-progress');
+  const priorityRank = (p: any) => {
+    const priority = p.priority || (p.isImportant ? 'important' : 'normal');
+    return priority === 'critical' ? 0 : priority === 'important' ? 1 : 2;
+  };
   inProgress.sort((a, b) => {
-    if (a.isImportant && !b.isImportant) return -1;
-    if (!a.isImportant && b.isImportant) return 1;
+    const rA = priorityRank(a);
+    const rB = priorityRank(b);
+    if (rA !== rB) return rA - rB;
     const dA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
     const dB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
     return dA - dB;

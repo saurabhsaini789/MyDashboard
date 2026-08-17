@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useStorageSubscription } from '@/hooks/useStorageSubscription';
 import { SYNC_KEYS } from '@/lib/sync-keys';
-import { Project, Task, getProjectPriorityInfo } from './ProjectModal';
+import { Project, Task, getProjectPriorityInfo, getProjectPriority } from './ProjectModal';
 import { SectionTitle, Text, Description } from '../ui/Text';
 import { TimeFilter } from './GoalsSummary';
 
@@ -73,9 +73,10 @@ export function GoalsInsights({ filter, selectedMonth, selectedYear }: GoalsInsi
       const due = p.dueDate ? new Date(p.dueDate + 'T00:00:00') : null;
       const isUrgent = due && due <= soon;
       
-      if (p.isImportant && isUrgent) quadrants.doFirst.push(p);
-      else if (p.isImportant && !isUrgent) quadrants.schedule.push(p);
-      else if (!p.isImportant && isUrgent) quadrants.delegate.push(p);
+      const isImportant = getProjectPriority(p) !== 'normal';
+      if (isImportant && isUrgent) quadrants.doFirst.push(p);
+      else if (isImportant && !isUrgent) quadrants.schedule.push(p);
+      else if (!isImportant && isUrgent) quadrants.delegate.push(p);
       else quadrants.eliminate.push(p);
     });
 

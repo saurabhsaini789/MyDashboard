@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { setSyncedItem } from '@/lib/storage';
 import { getPrefixedKey } from '@/lib/keys';
 import { SectionTitle } from '@/components/ui/Text';
-import { ProjectModal, type Project, getProjectPriorityInfo, sortProjects } from './ProjectModal';
+import { ProjectModal, type Project, getProjectPriorityInfo, getProjectPriority, sortProjects } from './ProjectModal';
 import { useStorageSubscription } from '@/hooks/useStorageSubscription';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 
@@ -110,8 +110,8 @@ export function Goals({ view, setView }: GoalsProps) {
                             </span>
                             <h4 className="font-semibold text-[17px] leading-tight break-words flex items-center gap-2">
                               {project.title}
-                              {project.isImportant && (
-                                <span className="text-amber-500 flex-shrink-0 animate-pulse-subtle">
+                              {getProjectPriority(project) !== 'normal' && (
+                                <span className={`flex-shrink-0 animate-pulse-subtle ${getProjectPriority(project) === 'critical' ? 'text-rose-500' : 'text-amber-500'}`}>
                                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
                                 </span>
                               )}
@@ -215,7 +215,7 @@ export function Goals({ view, setView }: GoalsProps) {
             bucketId: creatingForBucket,
             title: '',
             dueDate: new Date().toISOString().split('T')[0],
-            isImportant: false,
+            priority: 'normal',
             status: 'not-started',
             createdAt: new Date().toISOString(),
             tasks: []
