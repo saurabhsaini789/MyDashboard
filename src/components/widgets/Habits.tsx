@@ -31,7 +31,8 @@ const PERIOD_META: Record<HabitPeriod, { icon: React.ElementType; color: string 
   Anytime: { icon: Sparkles, color: 'text-zinc-400 bg-zinc-100 dark:bg-zinc-800' },
 };
 
-const getHabitPeriod = (h: Habit): HabitPeriod => h.period || 'Anytime';
+const getHabitPeriod = (h: Habit): HabitPeriod =>
+  h.period && (PERIOD_ORDER as string[]).includes(h.period) ? h.period : 'Anytime';
 
 // Sort by period (Morning → Midday → Evening → Anytime), then by time ascending within each period.
 // Habits without a time keep a stable position after timed habits in the same period.
