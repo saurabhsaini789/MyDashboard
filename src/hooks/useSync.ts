@@ -18,6 +18,7 @@ export function useSync() {
   const isPushLocked = useRef(false);
   const syncStartTime = useRef(0);
   const currentSyncId = useRef(0);
+  const pendingPushes = useRef<Map<string, string>>(new Map());
   
   // Kill switch for rest sync rollout
   const IS_PUSH_DISABLED = process.env.NEXT_PUBLIC_DISABLE_REST_SYNC === 'true';
@@ -49,7 +50,8 @@ export function useSync() {
   const pushToSupabase = useCallback(async (key: string, taggedValue: string | null) => {
     if (!session || !session.user) return;
     if (isPushLocked.current) {
-      console.warn(`[Sync] Push blocked for ${key}: Initial hydration lock active.`);
+      if (taggedValue) pendingPushes.current.set(key, taggedValue);
+      console.warn(`[Sync] Push deferred for ${key}: Initial hydration lock active. Will retry once lock releases.`);
       return;
     }
     if (IS_PUSH_DISABLED) {
@@ -215,6 +217,15 @@ export function useSync() {
       setTimeout(() => {
         isPushLocked.current = false;
         console.log('[Sync] Initial hydration lock released.');
+
+        // Flush any edits the user made while the lock was active — otherwise
+        // they'd silently vanish on the next reload instead of ever reaching Supabase.
+        const deferred = pendingPushes.current;
+        pendingPushes.current = new Map();
+        deferred.forEach((value, key) => {
+          console.log(`[Sync] Retrying deferred push for ${key}.`);
+          pushToSupabase(key, value);
+        });
       }, 1000);
       
       setTimeout(() => setSyncStatus('idle'), 1000);

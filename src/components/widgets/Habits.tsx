@@ -535,8 +535,8 @@ export function Habits() {
                   <React.Fragment key={h.id}>
                     {showDivider && (
                       <tr>
-                        <td colSpan={daysInMonth + 2} className={`px-4 py-1.5 text-[10px] font-black tracking-widest normal-case ${periodMeta.color}`}>
-                          <span className="inline-flex items-center gap-1.5">
+                        <td colSpan={daysInMonth + 2} className={`py-1.5 text-[10px] font-black tracking-widest normal-case ${periodMeta.color}`}>
+                          <span className="sticky left-0 z-20 inline-flex items-center gap-1.5 px-4">
                             <PeriodIcon className="w-3 h-3" />
                             {period}
                           </span>
