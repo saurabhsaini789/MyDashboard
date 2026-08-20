@@ -44,14 +44,14 @@ function PWATabBar() {
 
   return (
     <nav
-      className="pwa-only fixed bottom-[calc(env(safe-area-inset-bottom,0px)+16px)] left-4 right-4 z-[999] flex-col
+      className="pwa-only fixed bottom-[calc(env(safe-area-inset-bottom,0px)+16px)] left-0 right-0 mx-auto z-[999] w-fit max-w-[calc(100vw-2rem)] flex-col
                  bg-white/90 dark:bg-zinc-950/95
                  backdrop-blur-xl
                  border border-zinc-200/80 dark:border-zinc-800/80
                  rounded-2xl shadow-lg shadow-black/5"
       aria-label="Main navigation"
     >
-      <div className="flex items-stretch gap-0.5 px-1 pt-2 pb-1 h-[58px] overflow-x-auto scrollbar-hide">
+      <div className="flex items-stretch gap-0.5 px-1 pt-2 pb-1 h-[58px] overflow-x-auto scrollbar-hide max-w-full">
         {browserNavItems.map((item) => {
           const active = isActive(item.href);
           const Icon = item.icon;
