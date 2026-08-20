@@ -9,6 +9,7 @@ export const SYNC_KEYS = {
  GOALS_PROJECTS: 'goals_projects',
  TASKS: 'os_tasks',
  JOURNAL_LOGS: 'os_journal_logs',
+ CONTACTS: 'contacts',
  
  // Finances
  FINANCES_INCOME: 'finances_income',

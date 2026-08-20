@@ -23,6 +23,7 @@ export default function Home() {
     expenses: [],
     journals: [],
     pantryPlan: [],
+    contacts: [],
   };
 
   return (

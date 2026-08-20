@@ -35,6 +35,7 @@ export interface PulseDataDependencies {
   expenses: any[];  // ExpenseRecord[]
   journals: string[]; // Journal log dates
   pantryPlan?: any[]; // GroceryPlanItem[]
+  contacts?: any[]; // Contact[]
 }
 
 export interface SystemPulseData {
@@ -65,7 +66,7 @@ export interface SystemPulseData {
  * Can be run on server or client.
  */
 export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseData {
-  const { medicine, travelKit, aidHome, aidMobile, supplements, projects, habits, channels, income, expenses, journals, pantryPlan } = data;
+  const { medicine, travelKit, aidHome, aidMobile, supplements, projects, habits, channels, income, expenses, journals, pantryPlan, contacts } = data;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayStr = today.toISOString().split('T')[0];
@@ -233,6 +234,15 @@ export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseDa
     }
   });
 
+  // 8. Contacts — follow-ups due or overdue
+  const overdueFollowUps: any[] = [];
+  const dueTodayFollowUps: any[] = [];
+  (contacts || []).forEach((c: any) => {
+    if (!c.nextFollowUpDate) return;
+    if (c.nextFollowUpDate < todayStr) overdueFollowUps.push(c);
+    else if (c.nextFollowUpDate === todayStr) dueTodayFollowUps.push(c);
+  });
+
   // --- Pulse Score ---
   // Weights: Habits 30%, Goals 25%, Content 15%, Health 15%, Admin 15%
   const pulseScore = Math.round((habitSuccessRate * 0.30) + (goalHealth * 0.25) + (contentReadiness * 0.15) + (healthReadiness * 0.15) + (adminHygiene * 0.15));
@@ -284,6 +294,28 @@ export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseDa
       type: 'GOALS',
       label: `"${p.title}" — due today`,
       href: '/goals'
+    });
+  });
+
+  // Contacts — overdue follow-ups, individual, CRITICAL (max 5)
+  overdueFollowUps.slice(0, 5).forEach((c: any) => {
+    actions.push({
+      id: `contact-overdue-${c.id}`,
+      tier: 'CRITICAL',
+      type: 'CONTACTS',
+      label: `Follow up with "${c.name}" — overdue`,
+      href: '/contacts'
+    });
+  });
+
+  // Contacts — follow-ups due today, individual, DAILY (max 5)
+  dueTodayFollowUps.slice(0, 5).forEach((c: any) => {
+    actions.push({
+      id: `contact-today-${c.id}`,
+      tier: 'DAILY',
+      type: 'CONTACTS',
+      label: `Follow up with "${c.name}" — due today`,
+      href: '/contacts'
     });
   });
 

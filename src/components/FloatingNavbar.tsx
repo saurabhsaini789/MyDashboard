@@ -13,6 +13,7 @@ import {
   ChevronUp,
   Shirt,
   Activity,
+  Users,
 } from 'lucide-react';
 import { haptic } from '@/lib/haptics';
 
@@ -32,6 +33,7 @@ const browserNavItems = [
   { name: 'Goals',          href: '/goals',         icon: Target          },
   { name: 'Habits',         href: '/habits',        icon: Repeat          },
   { name: 'Books',          href: '/books',         icon: BookMarked      },
+  { name: 'Contacts',       href: '/contacts',      icon: Users           },
   { name: 'Finances',       href: '/finances',      icon: CircleDollarSign},
   { name: 'Content System', href: '/content-system',icon: Rocket          },
   { name: 'Expenses',       href: '/pantry',        icon: ShoppingBasket  },
