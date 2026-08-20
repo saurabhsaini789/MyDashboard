@@ -123,17 +123,17 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
   if (!isOpen) return null;
 
   const modalTitle = (
-    <div className="flex items-center gap-3">
-      <input type="date" value={internalDate} onChange={e => setInternalDate(e.target.value)} className="bg-transparent outline-none cursor-pointer text-zinc-900 dark:text-white font-bold uppercase text-lg"/>
-      <span className="w-1.5 h-1.5 rounded-full bg-teal-500"/>
-      <span className="text-zinc-400 font-bold text-[10px] uppercase">{editingRecord ? 'Edit Entry' : 'New Entry'}</span>
+    <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
+      <input type="date" value={internalDate} onChange={e => setInternalDate(e.target.value)} className="bg-transparent outline-none cursor-pointer text-zinc-900 dark:text-white font-bold uppercase text-sm sm:text-lg min-w-0"/>
+      <span className="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0"/>
+      <span className="hidden sm:inline text-zinc-400 font-bold text-[10px] uppercase whitespace-nowrap">{editingRecord ? 'Edit Entry' : 'New Entry'}</span>
     </div>
   );
 
   const headerControls = (
-    <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-full">
-      <button type="button" onClick={() => setActiveTab('list')} className={`px-4 py-2 rounded-full text-[10px] uppercase font-bold transition-all ${activeTab === 'list' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white' : 'text-zinc-400'}`}>Records</button>
-      <button type="button" onClick={() => setActiveTab('form')} className={`px-4 py-2 rounded-full text-[10px] uppercase font-bold transition-all ${activeTab === 'form' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white' : 'text-zinc-400'}`}>Create</button>
+    <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-full shrink-0">
+      <button type="button" onClick={() => setActiveTab('list')} className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[10px] uppercase font-bold transition-all whitespace-nowrap ${activeTab === 'list' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white' : 'text-zinc-400'}`}>Records</button>
+      <button type="button" onClick={() => setActiveTab('form')} className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[10px] uppercase font-bold transition-all whitespace-nowrap ${activeTab === 'form' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white' : 'text-zinc-400'}`}>Create</button>
     </div>
   );
 

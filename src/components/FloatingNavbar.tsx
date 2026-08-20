@@ -17,17 +17,7 @@ import {
 } from 'lucide-react';
 import { haptic } from '@/lib/haptics';
 
-// ─── PWA: 6 Core Tabs ────────────────────────────────────────────────────────
-const pwaNavItems = [
-  { name: 'Home',     href: '/',               icon: LayoutDashboard },
-  { name: 'Habits',   href: '/habits',          icon: Repeat          },
-  { name: 'Goals',    href: '/goals',           icon: Target          },
-  { name: 'Finance',  href: '/finances',        icon: CircleDollarSign},
-  { name: 'Content',  href: '/content-system',  icon: Rocket          },
-  { name: 'Expenses', href: '/pantry',          icon: ShoppingBasket  },
-];
-
-// ─── Browser: Full nav list (unchanged from original) ────────────────────────
+// ─── Shared nav list — PWA tab bar and browser floating nav mirror each other ─
 const browserNavItems = [
   { name: 'Dashboard',      href: '/',              icon: LayoutDashboard },
   { name: 'Goals',          href: '/goals',         icon: Target          },
@@ -61,8 +51,8 @@ function PWATabBar() {
                  rounded-2xl shadow-lg shadow-black/5"
       aria-label="Main navigation"
     >
-      <div className="flex items-stretch justify-around px-1 pt-2 pb-1 h-[58px]">
-        {pwaNavItems.map((item) => {
+      <div className="flex items-stretch gap-0.5 px-1 pt-2 pb-1 h-[58px] overflow-x-auto scrollbar-hide">
+        {browserNavItems.map((item) => {
           const active = isActive(item.href);
           const Icon = item.icon;
 
@@ -71,7 +61,7 @@ function PWATabBar() {
               key={item.href}
               href={item.href}
               onClick={() => haptic(8)}
-              className="relative flex flex-col items-center justify-center flex-1
+              className="relative flex flex-col items-center justify-center shrink-0 min-w-[56px]
                          gap-[3px] py-1 rounded-xl select-none
                          active:opacity-60 transition-opacity duration-100"
               aria-current={active ? 'page' : undefined}

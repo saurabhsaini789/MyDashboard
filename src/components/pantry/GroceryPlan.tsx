@@ -97,18 +97,18 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
       </div>
 
       <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
+          <div className="flex items-center gap-2 shrink-0">
             <button onClick={() => onDateChange(new Date(year, viewingDate.getMonth() - 1, 1))}><ChevronLeft size={16}/></button>
-            <span className="text-xs font-bold uppercase w-24 text-center">{monthName} {year}</span>
+            <span className="text-xs font-bold uppercase w-24 text-center whitespace-nowrap">{monthName} {year}</span>
             <button onClick={() => onDateChange(new Date(year, viewingDate.getMonth() + 1, 1))}><ChevronRight size={16}/></button>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl shrink-0">
               <button onClick={() => toggleViewMode('table')} className={`p-2 rounded-lg ${viewMode==='table'?'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white':'text-zinc-400'}`}><List size={14}/></button>
               <button onClick={() => toggleViewMode('card')} className={`p-2 rounded-lg ${viewMode==='card'?'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white':'text-zinc-400'}`}><LayoutGrid size={14}/></button>
             </div>
-            <button onClick={() => setIsFormOpen(true)} className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-4 py-2 rounded-xl text-xs font-bold">+ ITEM</button>
+            <button onClick={() => setIsFormOpen(true)} className="shrink-0 whitespace-nowrap bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold">+ ITEM</button>
           </div>
         </div>
 
