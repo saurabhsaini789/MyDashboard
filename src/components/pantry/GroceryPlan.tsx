@@ -91,8 +91,8 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 p-8 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl shadow-sm">
         <div><SectionTitle>Grocery Plan</SectionTitle><Text variant="label" className="mt-1">Budget and tracking for your monthly essentials</Text></div>
         <div className="flex gap-8">
-          <div className="flex flex-col items-end"><span className="text-[10px] font-bold uppercase text-zinc-400">Planned</span><span className="text-3xl font-bold">${plannedTotalCAD.toLocaleString()}</span></div>
-          <div className="flex flex-col items-end"><span className="text-[10px] font-bold uppercase text-teal-600">Projected</span><span className="text-3xl font-bold text-teal-600">${projectedTotalCAD.toLocaleString()}</span></div>
+          <div className="flex flex-col items-end"><span className="text-[10px] font-bold uppercase text-zinc-400">Planned</span><span className="text-3xl font-bold">₹{plannedTotalCAD.toLocaleString()}</span></div>
+          <div className="flex flex-col items-end"><span className="text-[10px] font-bold uppercase text-teal-600">Projected</span><span className="text-3xl font-bold text-teal-600">₹{projectedTotalCAD.toLocaleString()}</span></div>
         </div>
       </div>
 
@@ -119,11 +119,11 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
               <div key={item.id} className="p-5 bg-zinc-50 dark:bg-zinc-800/30 rounded-2xl border border-zinc-50 dark:border-zinc-800 relative group">
                 <div className="flex justify-between mb-4">
                   <div className="flex flex-col"><span className="font-bold">{item.name}</span><span className="text-[10px] font-bold text-zinc-400 uppercase">{item.category}</span></div>
-                  <div className="text-right"><span className="text-lg font-bold text-teal-600">${((item.expectedPrice||0)*(item.plannedQuantity||0)).toLocaleString()}</span></div>
+                  <div className="text-right"><span className="text-lg font-bold text-teal-600">₹{((item.expectedPrice||0)*(item.plannedQuantity||0)).toLocaleString()}</span></div>
                 </div>
                 {bestPrices[item.name.trim().toLowerCase()] && (
                    <div className="mb-4 inline-flex items-center gap-1.5 px-2 py-1 bg-amber-50 dark:bg-amber-500/10 rounded border border-amber-100 dark:border-amber-500/20 text-[9px] font-black uppercase text-amber-600 dark:text-amber-400">
-                      💡 Buy at {bestPrices[item.name.trim().toLowerCase()].vendor} for ${bestPrices[item.name.trim().toLowerCase()].price.toFixed(2)}
+                      💡 Buy at {bestPrices[item.name.trim().toLowerCase()].vendor} for ₹{bestPrices[item.name.trim().toLowerCase()].price.toFixed(2)}
                    </div>
                 )}
                 
@@ -166,7 +166,7 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
                       <div className="flex flex-col gap-1">
                         <span className="font-bold text-sm">{item.name}</span>
                         {bestPrices[item.name.trim().toLowerCase()] && (
-                          <span className="text-[9px] font-black uppercase text-amber-600 dark:text-amber-400">💡 {bestPrices[item.name.trim().toLowerCase()].vendor}: ${bestPrices[item.name.trim().toLowerCase()].price.toFixed(2)}</span>
+                          <span className="text-[9px] font-black uppercase text-amber-600 dark:text-amber-400">💡 {bestPrices[item.name.trim().toLowerCase()].vendor}: ₹{bestPrices[item.name.trim().toLowerCase()].price.toFixed(2)}</span>
                         )}
                       </div>
                     </td>
@@ -184,8 +184,8 @@ export function GroceryPlan({ records, viewingDate, onDateChange }: GroceryPlanP
                        </div>
                     </td>
                     <td className="px-6 py-4 text-center text-xs font-bold text-zinc-500">{item.plannedQuantity} {item.unitSize}</td>
-                    <td className="px-6 py-4 text-right text-xs font-bold text-zinc-500">${(item.expectedPrice || 0).toLocaleString()}</td>
-                    <td className="px-6 py-4 text-right"><span className="font-bold text-teal-600">${((item.expectedPrice||0)*(item.plannedQuantity||0)).toLocaleString()}</span></td>
+                    <td className="px-6 py-4 text-right text-xs font-bold text-zinc-500">₹{(item.expectedPrice || 0).toLocaleString()}</td>
+                    <td className="px-6 py-4 text-right"><span className="font-bold text-teal-600">₹{((item.expectedPrice||0)*(item.plannedQuantity||0)).toLocaleString()}</span></td>
                     <td className="px-6 py-4 text-right">
                       <button className="text-[10px] font-bold uppercase text-zinc-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">Edit</button>
                     </td>

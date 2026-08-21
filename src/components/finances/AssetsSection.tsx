@@ -172,7 +172,7 @@ export function AssetsSection() {
         <div className="bg-white dark:bg-zinc-900/60 border border-l-4 border-emerald-100 rounded-2xl p-5 md:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm relative overflow-hidden">
           <div className="flex flex-col gap-1 relative z-10">
             <Text variant="label" as="span">Portfolio valuation</Text>
-            <Text variant="metric" as="span" className="text-2xl md:text-3xl">${totalPortfolioValue.toLocaleString("en-CA", { maximumFractionDigits: 0 })}</Text>
+            <Text variant="metric" as="span" className="text-2xl md:text-3xl">₹{totalPortfolioValue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</Text>
           </div>
           <div className="flex items-center gap-4 sm:flex-col sm:items-end relative z-10">
             <Text variant="label" as="span">Total Assets</Text>
@@ -202,7 +202,7 @@ export function AssetsSection() {
                         </div>
                         <div className="flex flex-col gap-2">
                           <Text variant="title" as="h3" className="text-base md:text-lg truncate">{asset.name}</Text>
-                          <Text variant="title" as="span" className="text-xl">${currentValue.toLocaleString("en-CA", { maximumFractionDigits: 0 })}</Text>
+                          <Text variant="title" as="span" className="text-xl">₹{currentValue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</Text>
                         </div>
                         <div className="grid grid-cols-2 gap-2 mt-auto">
                           <button onClick={() => {setActiveAssetId(asset.id); setIsContribModalOpen(true);}} className="text-xs uppercase p-2 border rounded-xl hover:bg-zinc-50">Log</button>
@@ -231,7 +231,7 @@ export function AssetsSection() {
               {assets.map(asset => (
                 <tr key={asset.id} className="border-b dark:border-zinc-800 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                   <td className="p-4 px-4 font-semibold whitespace-nowrap">{asset.name}</td>
-                  <td className="p-4 px-4 font-bold whitespace-nowrap">${calculateAssetBalance(asset).toLocaleString()}</td>
+                  <td className="p-4 px-4 font-bold whitespace-nowrap">₹{calculateAssetBalance(asset).toLocaleString()}</td>
                   <td className="p-4 px-4 whitespace-nowrap">{asset.growthRate}%</td>
                   <td className="p-4 px-4 text-right whitespace-nowrap">
                     <button onClick={() => openEditModal(asset)} className="text-emerald-600 font-bold hover:underline">Edit</button>

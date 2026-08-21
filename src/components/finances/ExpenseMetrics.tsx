@@ -118,7 +118,7 @@ export function ExpenseMetrics({ records, selectedMonths, selectedYears }: Expen
  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-6">
  <MetricCard 
  label="Total Expenses"
- value={`$${totalExpenses.toLocaleString('en-CA', { maximumFractionDigits: 0 })}`}
+ value={`₹${totalExpenses.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
  subValue={selectionLabel}
  color="rose"
  icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 17h10m0 0V9m0 8l-8-8-4 4-6-6" /></svg>}
@@ -127,7 +127,7 @@ export function ExpenseMetrics({ records, selectedMonths, selectedYears }: Expen
  <MetricCard 
  label="Investment %"
  value={`${investmentPct.toFixed(1)}%`}
- subValue={`$${investmentAmt.toLocaleString('en-CA', { maximumFractionDigits: 0 })} Total`}
+ subValue={`₹${investmentAmt.toLocaleString('en-IN', { maximumFractionDigits: 0 })} Total`}
  color={investmentPct >= 20 ? "emerald" : investmentPct >= 10 ? "amber" : "rose"}
  icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
  />
@@ -151,7 +151,7 @@ export function ExpenseMetrics({ records, selectedMonths, selectedYears }: Expen
  <MetricCard 
  label="Top Category"
  value={topCategoryStr.charAt(0).toUpperCase() + topCategoryStr.slice(1)}
- subValue={`$${topCategoryVal.toLocaleString('en-CA', { maximumFractionDigits: 0 })}`}
+ subValue={`₹${topCategoryVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
  color="rose"
  icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
  />

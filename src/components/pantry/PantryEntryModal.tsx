@@ -146,7 +146,7 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
                 <div key={record.id} onClick={() => startEdit(record)} className="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 hover:border-teal-500 dark:hover:border-teal-500 transition-all cursor-pointer">
                   <div className="flex justify-between items-center">
                     <div className="flex flex-col"><span className="font-bold text-lg">{record.vendor || record.subcategory}</span><span className="text-[10px] font-bold text-zinc-400 uppercase">{record.category}</span></div>
-                    <span className="text-xl font-bold">${record.amount.toLocaleString()}</span>
+                    <span className="text-xl font-bold">₹{record.amount.toLocaleString()}</span>
                   </div>
                 </div>
               ))
@@ -166,7 +166,7 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
               </div>
               <select value={paidFromId} onChange={e => setPaidFromId(e.target.value)} className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 px-4 py-3 rounded-2xl text-sm font-bold w-full outline-none">
                 <option value="">No Account (Manual)</option>
-                {assets.map(a => <option key={a.id} value={a.id}>{a.name} (${calculateAssetBalance(a).toLocaleString()})</option>)}
+                {assets.map(a => <option key={a.id} value={a.id}>{a.name} (₹{calculateAssetBalance(a).toLocaleString()})</option>)}
               </select>
             </FormSection>
             <div className="space-y-4">
@@ -242,7 +242,7 @@ export function PantryEntryModal({ isOpen, date, recordsOnDate, onClose, onUpdat
               </div>
             </div>
             <div className="flex justify-between items-center pt-8 border-t border-zinc-50 dark:border-zinc-800">
-              <div className="flex flex-col"><span className="text-[10px] font-bold text-zinc-400 uppercase">Total Bill</span><span className="text-4xl font-bold text-teal-600">${totalAmount.toLocaleString()}</span></div>
+              <div className="flex flex-col"><span className="text-[10px] font-bold text-zinc-400 uppercase">Total Bill</span><span className="text-4xl font-bold text-teal-600">₹{totalAmount.toLocaleString()}</span></div>
               {editingRecord && <button type="button" onClick={()=>deleteRecord(editingRecord.id)} className="text-[10px] font-bold text-rose-500 uppercase">Delete Record</button>}
             </div>
           </div>

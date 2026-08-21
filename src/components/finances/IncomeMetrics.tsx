@@ -90,7 +90,7 @@ export function IncomeMetrics({ records, selectedMonths, selectedYears }: Income
  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-6">
  <MetricCard 
  label="Total Income"
- value={`$${totalIncome.toLocaleString('en-CA', { maximumFractionDigits: 0 })}`}
+ value={`₹${totalIncome.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
  subValue={selectionLabel}
  color="emerald"
  icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3 1.343 3 3-1.343 3-3 3m0-12c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3m0 12v1m0-18v1" /></svg>}
@@ -98,7 +98,7 @@ export function IncomeMetrics({ records, selectedMonths, selectedYears }: Income
 
  <MetricCard 
  label="Active Income"
- value={`$${typeTotals.active.toLocaleString('en-CA', { maximumFractionDigits: 0 })}`}
+ value={`₹${typeTotals.active.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
  subValue={`${activePct.toFixed(0)}% Total`}
  color="emerald"
  icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
@@ -106,7 +106,7 @@ export function IncomeMetrics({ records, selectedMonths, selectedYears }: Income
 
  <MetricCard 
  label="Passive Income"
- value={`$${typeTotals.passive.toLocaleString('en-CA', { maximumFractionDigits: 0 })}`}
+ value={`₹${typeTotals.passive.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
  subValue={`${passivePct.toFixed(0)}% Total`}
  color="emerald"
  icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
@@ -114,7 +114,7 @@ export function IncomeMetrics({ records, selectedMonths, selectedYears }: Income
 
  <MetricCard 
  label="One-Time"
- value={`$${typeTotals['one time'].toLocaleString('en-CA', { maximumFractionDigits: 0 })}`}
+ value={`₹${typeTotals['one time'].toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
  subValue={`${oneTimePct.toFixed(0)}% Total`}
  color="emerald"
  icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
@@ -123,7 +123,7 @@ export function IncomeMetrics({ records, selectedMonths, selectedYears }: Income
  <MetricCard 
  label="Top Source"
  value={topSourceStr.charAt(0).toUpperCase() + topSourceStr.slice(1)}
- subValue={`$${topSourceVal.toLocaleString('en-CA', { maximumFractionDigits: 0 })}`}
+ subValue={`₹${topSourceVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
  color="emerald"
  icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
  />

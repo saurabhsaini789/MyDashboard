@@ -89,7 +89,7 @@ export function PantryCalendar({ records, onUpdateRecords, viewingDate, setViewi
 
             return (
               <div key={day} onClick={() => handleDateClick(ds)} className={`relative h-11 md:h-32 rounded-xl border flex flex-col p-1 md:p-4 cursor-pointer transition-all hover:scale-[1.02] ${total > 0 ? getDayColor(total) : 'bg-zinc-50 dark:bg-zinc-800/30 border-transparent dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800/50'} ${isToday ? 'ring-2 ring-zinc-900 dark:ring-white shadow-xl' : ''}`}>
-                <div className="flex justify-between items-start"><span className="text-[10px] md:text-sm">{day}</span>{total > 0 && <span className="hidden md:inline text-xs">${total.toLocaleString()}</span>}</div>
+                <div className="flex justify-between items-start"><span className="text-[10px] md:text-sm">{day}</span>{total > 0 && <span className="hidden md:inline text-xs">₹{total.toLocaleString()}</span>}</div>
                 <div className="mt-2 hidden md:flex flex-col gap-1 overflow-hidden">{itemsOnDay.slice(0, 2).map((r, idx) => <span key={idx} className="text-[10px] truncate opacity-60">{r.vendor || r.category}</span>)}</div>
               </div>
             );
@@ -103,7 +103,7 @@ export function PantryCalendar({ records, onUpdateRecords, viewingDate, setViewi
           {popupDateStr && recordsByDate[popupDateStr]?.map(r => (
             <div key={r.id} onClick={() => { setEditingRecord(r); setPreferredTab('form'); setIsMobilePopupOpen(false); setIsModalOpen(true); }} className="flex justify-between p-4 bg-zinc-50 dark:bg-zinc-800 rounded-2xl font-bold uppercase cursor-pointer">
               <div className="flex flex-col"><span className="text-sm">{r.vendor || r.subcategory}</span><span className="text-[10px] text-zinc-400">{r.category}</span></div>
-              <span className="text-lg">${r.amount.toLocaleString()}</span>
+              <span className="text-lg">₹{r.amount.toLocaleString()}</span>
             </div>
           ))}
           <button onClick={() => { setEditingRecord(null); setPreferredTab('form'); setIsMobilePopupOpen(false); setIsModalOpen(true); }} className="p-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl font-bold uppercase text-xs mt-4">Add Entry</button>

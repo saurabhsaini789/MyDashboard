@@ -33,9 +33,9 @@ export function PantrySummary({ totalTotal, totalNeed, totalWant, categoryTotals
           <div className="flex flex-col">
             <span className={labelClassName}>Monthly Spend Total</span>
             <div className="flex items-baseline gap-1">
-              <span className="text-zinc-400 dark:text-zinc-500 text-lg font-medium">$</span>
+              <span className="text-zinc-400 dark:text-zinc-500 text-lg font-medium">₹</span>
               <span className={amountClassName}>
-                {totalTotal.toLocaleString('en-CA', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                {totalTotal.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </span>
               <span className="text-zinc-400 dark:text-zinc-500 text-sm font-medium">
                 .{((totalTotal % 1) * 100).toFixed(0).padStart(2, '0')}
@@ -50,13 +50,13 @@ export function PantrySummary({ totalTotal, totalNeed, totalWant, categoryTotals
             <div className="flex flex-col">
               <span className={labelClassName}>Essential Needs</span>
               <span className={amountClassName}>
-                ${totalNeed.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
+                ₹{totalNeed.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
               </span>
             </div>
             <div className="flex flex-col items-end text-right">
               <span className={labelClassName}>Discretionary Wants</span>
               <span className={amountClassName}>
-                ${totalWant.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
+                ₹{totalWant.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
               </span>
             </div>
           </div>
@@ -90,7 +90,7 @@ export function PantrySummary({ totalTotal, totalNeed, totalWant, categoryTotals
                 {cat}
               </span>
               <span className={amountClassName}>
-                ${total.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
+                ₹{total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
               </span>
             </div>
           ))}

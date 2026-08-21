@@ -159,7 +159,7 @@ export function SmartInsights({ records, viewingDate }: SmartInsightsProps) {
  // Optimization Insights
  const optItems: InsightItem[] = [];
  if (potentialSavings > 0 && bestVendor) {
- optItems.push({ text: `“Buying from ${bestVendor} could save ~$${potentialSavings.toFixed(1)} based on recent comparisons”` });
+ optItems.push({ text: `“Buying from ${bestVendor} could save ~₹${potentialSavings.toFixed(1)} based on recent comparisons”` });
  }
  
  if (optItems.length > 0) {

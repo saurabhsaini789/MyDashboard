@@ -52,7 +52,7 @@ export function FinanceInsights() {
  behaviorItems.push({ text: "“You spent significantly more on eating out this week than your average”" });
  }
  if (thisMonthClothing > 0) {
- behaviorItems.push({ text: `“Clothing spend tracked at $${thisMonthClothing.toFixed(0)} this month”` });
+ behaviorItems.push({ text: `“Clothing spend tracked at ₹${thisMonthClothing.toFixed(0)} this month”` });
  }
  
  if (behaviorItems.length > 0) {

@@ -100,7 +100,7 @@ export function PriceIntelligence({ records }: PriceIntelligenceProps) {
                     {stat.priceTrend > 0 ? '+' : ''}{stat.priceTrend.toFixed(1)}%
                   </span>
                 </div>
-                <div className="text-3xl font-black mb-1 tracking-tighter">${stat.lastPurchase.price.toLocaleString()}</div>
+                <div className="text-3xl font-black mb-1 tracking-tighter">₹{stat.lastPurchase.price.toLocaleString()}</div>
                 <div className="text-[10px] text-zinc-400 truncate font-medium">at {stat.lastPurchase.vendor}</div>
               </div>
             ))}
@@ -126,13 +126,13 @@ export function PriceIntelligence({ records }: PriceIntelligenceProps) {
                       className="border-t border-zinc-50 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 cursor-pointer transition-colors group"
                     >
                       <td className="px-6 py-4 font-black group-hover:text-teal-500 transition-colors">{stat.name}</td>
-                      <td className="px-6 py-4 font-black text-right tracking-tighter">${stat.lastPurchase.price.toLocaleString()}</td>
+                      <td className="px-6 py-4 font-black text-right tracking-tighter">₹{stat.lastPurchase.price.toLocaleString()}</td>
                       <td className="px-6 py-4 text-right">
                         <span className={`inline-block px-2 py-0.5 rounded font-black text-[10px] ${stat.priceTrend > 0 ? 'bg-rose-50 text-rose-500 dark:bg-rose-500/10' : 'bg-teal-50 text-teal-600 dark:bg-teal-500/10'}`}>
                           {stat.priceTrend > 0 ? '+' : ''}{stat.priceTrend.toFixed(1)}%
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right font-bold text-zinc-400">${stat.averagePrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                      <td className="px-6 py-4 text-right font-bold text-zinc-400">₹{stat.averagePrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                       <td className="px-6 py-4 text-right text-zinc-400 font-bold truncate max-w-[150px]">{stat.lastPurchase.vendor}</td>
                     </tr>
                   ))}
@@ -147,8 +147,8 @@ export function PriceIntelligence({ records }: PriceIntelligenceProps) {
         <Modal isOpen={!!activeItemStats} onClose={()=>setActiveItemStats(null)} title={activeItemStats.name}>
           <div className="p-4 space-y-6">
             <div className="grid grid-cols-3 gap-4">
-              <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl text-center border border-zinc-100 dark:border-zinc-800"><span className="text-[10px] text-zinc-400 block mb-1">LOWEST</span><span className="font-bold text-teal-600">${activeItemStats.lowestPrice.price.toLocaleString()}</span></div>
-              <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl text-center border border-zinc-100 dark:border-zinc-800"><span className="text-[10px] text-zinc-400 block mb-1">AVERAGE</span><span className="font-bold">${activeItemStats.averagePrice.toLocaleString()}</span></div>
+              <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl text-center border border-zinc-100 dark:border-zinc-800"><span className="text-[10px] text-zinc-400 block mb-1">LOWEST</span><span className="font-bold text-teal-600">₹{activeItemStats.lowestPrice.price.toLocaleString()}</span></div>
+              <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl text-center border border-zinc-100 dark:border-zinc-800"><span className="text-[10px] text-zinc-400 block mb-1">AVERAGE</span><span className="font-bold">₹{activeItemStats.averagePrice.toLocaleString()}</span></div>
               <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl text-center border border-zinc-100 dark:border-zinc-800"><span className="text-[10px] text-zinc-400 block mb-1">LOGS</span><span className="font-bold">{activeItemStats.history.length}</span></div>
             </div>
           </div>

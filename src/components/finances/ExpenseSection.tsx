@@ -266,7 +266,7 @@ export function ExpenseSection() {
                     <td className="px-4 py-5 text-zinc-400 whitespace-nowrap">{new Date(r.date).toLocaleDateString()}</td>
                     <td className="px-4 py-5 font-bold text-zinc-900 dark:text-zinc-100 whitespace-nowrap">{r.category} <span className="text-xs text-zinc-400 font-normal">({r.subcategory})</span></td>
                     <td className="px-4 py-5 whitespace-nowrap"><span className="px-2 py-1 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 rounded-lg">{r.type}</span></td>
-                    <td className="px-4 py-5 text-right font-bold text-zinc-900 dark:text-zinc-100 whitespace-nowrap">${r.amount.toLocaleString()}</td>
+                    <td className="px-4 py-5 text-right font-bold text-zinc-900 dark:text-zinc-100 whitespace-nowrap">₹{r.amount.toLocaleString()}</td>
                     <td className="px-4 py-5 text-right whitespace-nowrap"><button onClick={() => openEditModal(r)} className="text-rose-600 font-bold hover:underline">Edit</button></td>
                   </tr>
                 ))}

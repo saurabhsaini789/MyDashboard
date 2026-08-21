@@ -154,7 +154,7 @@ export function EmergencyFundSection() {
             <span className={`text-xs px-2 py-0.5 rounded-full uppercase font-semibold ${monthsCovered >= 6 ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
               {progressPercent.toFixed(0)}% Saved
             </span>
-            <span className="text-xs text-zinc-500 uppercase font-medium">${(totalSaved || 0).toLocaleString('en-CA', { maximumFractionDigits: 0 })}</span>
+            <span className="text-xs text-zinc-500 uppercase font-medium">₹{(totalSaved || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
           </div>
         </div>
 
@@ -166,7 +166,7 @@ export function EmergencyFundSection() {
                 {monthsCovered < 10 ? monthsCovered.toFixed(1) : Math.floor(monthsCovered)} / {targetMonths < 10 && targetMonths > 0 ? targetMonths.toFixed(1) : Math.floor(targetMonths)} Months Saved
               </span>
               <span className="text-xl md:text-2xl text-zinc-500 dark:text-zinc-400 font-bold">
-                ${(totalSaved || 0).toLocaleString('en-CA', { maximumFractionDigits: 0 })} / ${(data.targetAmount || 0).toLocaleString('en-CA', { maximumFractionDigits: 0 })} Saved
+                ₹{(totalSaved || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })} / ₹{(data.targetAmount || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })} Saved
               </span>
             </div>
             
@@ -191,13 +191,13 @@ export function EmergencyFundSection() {
             <div className="flex-1 bg-white/40 dark:bg-zinc-800/20 shadow-sm rounded-2xl p-5 border border-l-4 border-white dark:border-zinc-800/50 flex flex-col justify-center transition-all hover:bg-white/60 dark:hover:bg-zinc-800/40">
               <span className="text-xs lg:text-xs text-zinc-600 dark:text-zinc-300 uppercase mb-1 block font-semibold">Monthly Expense</span>
               <div className="flex flex-col">
-                <span className="text-xl lg:text-3xl text-zinc-900 dark:text-white font-bold">${(data.monthlyExpenses || 0).toLocaleString('en-CA', { maximumFractionDigits: 0 })}</span>
+                <span className="text-xl lg:text-3xl text-zinc-900 dark:text-white font-bold">₹{(data.monthlyExpenses || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
               </div>
             </div>
             <div className="flex-1 bg-white/40 dark:bg-zinc-800/20 shadow-sm rounded-2xl p-5 border border-l-4 border-white dark:border-zinc-800/50 flex flex-col justify-center transition-all hover:bg-white/60 dark:hover:bg-zinc-800/40">
               <span className="text-xs lg:text-xs text-zinc-600 dark:text-zinc-300 uppercase mb-1 block font-semibold">Remaining Goal</span>
               <div className="flex flex-col">
-                <span className="text-xl lg:text-3xl text-zinc-900 dark:text-white font-bold">${(remaining || 0).toLocaleString('en-CA', { maximumFractionDigits: 0 })}</span>
+                <span className="text-xl lg:text-3xl text-zinc-900 dark:text-white font-bold">₹{(remaining || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
               </div>
             </div>
           </div>
@@ -213,7 +213,7 @@ export function EmergencyFundSection() {
                 <div key={c.id} className="flex items-center justify-between p-3 bg-white dark:bg-zinc-800/50 rounded-2xl border border-zinc-100/50 dark:border-zinc-700/50 shadow-sm">
                   <div className="flex flex-col">
                     <span className="text-xs text-zinc-500 dark:text-zinc-300 uppercase mb-0.5">Contribution</span>
-                    <span className="text-sm font-bold text-zinc-900 dark:text-white">${(c.amount || 0).toLocaleString('en-CA', { maximumFractionDigits: 0 })}</span>
+                    <span className="text-sm font-bold text-zinc-900 dark:text-white">₹{(c.amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                   </div>
                   <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase font-medium bg-zinc-50 dark:bg-zinc-900/50 px-2 py-1 rounded-lg">
                     {new Date(c.date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
@@ -232,8 +232,8 @@ export function EmergencyFundSection() {
       <Modal isOpen={isTargetModalOpen} onClose={() => setIsTargetModalOpen(false)} title="Adjust pillar" onSubmit={handleUpdateSettings}>
         <DynamicForm
           sections={[{ id: 'settings', title: 'Settings', fields: [
-            { name: 'targetAmount', label: 'Total Goal Target ($)', type: 'number', required: true },
-            { name: 'monthlyExpenses', label: 'Monthly Expenses ($)', type: 'number', required: true }
+            { name: 'targetAmount', label: 'Total Goal Target (₹)', type: 'number', required: true },
+            { name: 'monthlyExpenses', label: 'Monthly Expenses (₹)', type: 'number', required: true }
           ]}]}
           formData={tempData}
           onChange={(n, v) => setTempData(p => ({ ...p, [n]: v }))}
@@ -253,7 +253,7 @@ export function EmergencyFundSection() {
           {(data.contributions || []).map(c => (
             <div key={c.id} className="flex justify-between items-center p-5 bg-zinc-50 dark:bg-zinc-800/30 rounded-2xl border border-zinc-100 group">
               <div className="flex flex-col">
-                <span className="text-lg font-bold">${c.amount.toLocaleString()}</span>
+                <span className="text-lg font-bold">₹{c.amount.toLocaleString()}</span>
                 <span className="text-xs text-zinc-500">{new Date(c.date).toLocaleDateString()}</span>
               </div>
               <button onClick={() => deleteContribution(c.id)} className="text-zinc-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>

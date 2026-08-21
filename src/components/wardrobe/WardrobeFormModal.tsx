@@ -126,7 +126,7 @@ export function WardrobeFormModal({ isOpen, onClose, onSave, initialData }: Ward
       isAdvanced: true,
       initiallyExpanded: true,
       fields: [
-        { name: 'cost', label: 'Cost ($)', type: 'number', min: 0, step: 0.01 },
+        { name: 'cost', label: 'Cost (₹)', type: 'number', min: 0, step: 0.01 },
         { name: 'purchaseDate', label: 'Purchase Date', type: 'date' },
         { name: 'lastReplacedDate', label: 'Date Replaced/Expired', type: 'date' },
         { name: 'purchaseClassification', label: 'Classification', type: 'select', fullWidth: true, options: WARDROBE_CLASSIFICATIONS as unknown as string[] },

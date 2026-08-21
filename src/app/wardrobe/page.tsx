@@ -309,7 +309,7 @@ export default function WardrobePage() {
                     <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
                       <div className="space-y-0.5">
                         <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Cost</p>
-                        <p className="text-sm font-semibold">${item.cost}</p>
+                        <p className="text-sm font-semibold">₹{item.cost}</p>
                       </div>
                       <div className="space-y-0.5">
                         <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Reason</p>
@@ -385,7 +385,7 @@ export default function WardrobePage() {
                         {calcValueScore(item).toFixed(1)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-zinc-500">${item.cost}</td>
+                    <td className="px-4 py-3 text-zinc-500">₹{item.cost}</td>
                     <td className="px-4 py-3">
                       <div className="flex text-amber-400 text-[10px]">
                         {'★'.repeat(item.rating || 0)}{'☆'.repeat(5 - (item.rating || 0))}
@@ -423,7 +423,7 @@ export default function WardrobePage() {
           </div>
           <div className="bg-white dark:bg-zinc-900/60 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
             <Text variant="label" className="mb-4 block">Total Investment</Text>
-            <Text variant="metric">${totalCost.toFixed(0)}</Text>
+            <Text variant="metric">₹{totalCost.toFixed(0)}</Text>
             <Text variant="label" className="mt-2 text-zinc-500 uppercase">Replacement Cost</Text>
           </div>
           <div className="bg-white dark:bg-zinc-900/60 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">

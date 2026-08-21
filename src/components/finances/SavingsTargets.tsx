@@ -234,14 +234,14 @@ export function SavingsTargets() {
                   <div className="flex flex-col gap-4 md:gap-6">
                     <div className="flex justify-between items-end">
                       <span className="text-2xl md:text-3xl text-zinc-900 dark:text-zinc-100 font-bold">{progress.toFixed(0)}%</span>
-                      <span className="text-xs text-zinc-500 dark:text-zinc-300 uppercase font-medium">${(currentTotal || 0).toLocaleString()} / ${(goal.targetAmount || 0).toLocaleString()}</span>
+                      <span className="text-xs text-zinc-500 dark:text-zinc-300 uppercase font-medium">₹{(currentTotal || 0).toLocaleString()} / ₹{(goal.targetAmount || 0).toLocaleString()}</span>
                     </div>
                     <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                       <div className="h-full bg-blue-600 rounded-full transition-all" style={{ width: `${progress}%` }} />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="flex flex-col"><span className="text-xs text-zinc-500 uppercase">Target</span><span className="text-sm font-medium">{new Date(goal.targetDate).toLocaleDateString()}</span></div>
-                      <div className="flex flex-col"><span className="text-xs text-zinc-500 uppercase">Monthly</span><span className="text-sm font-bold text-blue-500">${Math.ceil(requiredMonthly).toLocaleString()}</span></div>
+                      <div className="flex flex-col"><span className="text-xs text-zinc-500 uppercase">Monthly</span><span className="text-sm font-bold text-blue-500">₹{Math.ceil(requiredMonthly).toLocaleString()}</span></div>
                     </div>
                     <button 
                       onClick={() => {setTargetGoalId(goal.id); setIsContributionModalOpen(true);}}
@@ -272,7 +272,7 @@ export function SavingsTargets() {
                 return (
                   <tr key={goal.id} className="border-b dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                     <td className="p-4 px-4 font-semibold whitespace-nowrap">{goal.name}</td>
-                    <td className="p-4 px-4 font-bold whitespace-nowrap">${goal.targetAmount.toLocaleString()}</td>
+                    <td className="p-4 px-4 font-bold whitespace-nowrap">₹{goal.targetAmount.toLocaleString()}</td>
                     <td className="p-4 px-4 whitespace-nowrap">{progress.toFixed(0)}%</td>
                     <td className="p-4 px-4 text-right whitespace-nowrap">
                       <button onClick={() => openEditModal(goal)} className="text-blue-600 font-bold hover:underline">Edit</button>
@@ -290,7 +290,7 @@ export function SavingsTargets() {
         <DynamicForm 
           sections={[{ id: 'basic', fields: [
             { name: 'name', label: 'Name', type: 'text', required: true },
-            { name: 'targetAmount', label: 'Target ($)', type: 'number', required: true },
+            { name: 'targetAmount', label: 'Target (₹)', type: 'number', required: true },
             { name: 'initialAmount', label: 'Initial', type: 'number', required: true },
             { name: 'startDate', label: 'Start', type: 'date', required: true },
             { name: 'targetDate', label: 'Target Date', type: 'date', required: true }
@@ -313,7 +313,7 @@ export function SavingsTargets() {
         <div className="flex flex-col gap-2">
           {goals.find(g => g.id === historyGoalId)?.contributions.map(c => (
             <div key={c.id} className="flex justify-between p-3 bg-zinc-50 rounded-xl">
-              <span>${c.amount.toLocaleString()}</span>
+              <span>₹{c.amount.toLocaleString()}</span>
               <span>{new Date(c.date).toLocaleDateString()}</span>
               <button onClick={() => deleteContribution(historyGoalId as string, c.id)} className="text-red-500">Delete</button>
             </div>

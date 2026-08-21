@@ -178,11 +178,11 @@ export function LiabilitiesSection() {
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5 font-bold uppercase">
           <div className="bg-white dark:bg-zinc-900/60 border border-l-4 border-rose-100 rounded-2xl p-5 md:p-6 flex flex-col gap-1 shadow-sm">
             <span className="text-xs text-zinc-500">Total Debt</span>
-            <span className="text-xl md:text-2xl">${totalDebt.toLocaleString()}</span>
+            <span className="text-xl md:text-2xl">₹{totalDebt.toLocaleString()}</span>
           </div>
           <div className="bg-white dark:bg-zinc-900/60 border border-rose-100 rounded-2xl p-5 md:p-6 flex flex-col gap-1 shadow-sm">
             <span className="text-xs text-zinc-500">Monthly EMI</span>
-            <span className="text-xl md:text-2xl text-rose-500">${totalEMI.toLocaleString()}</span>
+            <span className="text-xl md:text-2xl text-rose-500">₹{totalEMI.toLocaleString()}</span>
           </div>
           <div className="bg-white dark:bg-zinc-900/60 border border-rose-100 rounded-2xl p-5 md:p-6 flex flex-col gap-1 shadow-sm">
             <span className="text-xs text-zinc-500">DTI Ratio</span>
@@ -204,7 +204,7 @@ export function LiabilitiesSection() {
                  <div className="flex flex-col gap-2">
                    <div className="flex justify-between text-xs font-bold text-zinc-500"><span>Progress</span><span>{progress.toFixed(0)}%</span></div>
                    <div className="w-full h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden"><div className="h-full bg-rose-500" style={{width:`${progress}%`}} /></div>
-                   <div className="mt-2"><span className="text-xs font-bold text-zinc-500 uppercase">Balance</span><div className="text-xl font-bold">${calculateLiabilityBalance(l).toLocaleString()}</div></div>
+                   <div className="mt-2"><span className="text-xs font-bold text-zinc-500 uppercase">Balance</span><div className="text-xl font-bold">₹{calculateLiabilityBalance(l).toLocaleString()}</div></div>
                  </div>
                  <div className="grid grid-cols-2 gap-2"><button onClick={() => { setActiveLiabilityId(l.id); setRepayType('Regular EMI'); setRepayAmount(l.emi.toString()); setIsRepayModalOpen(true); }} className="p-2.5 border dark:border-zinc-800 rounded-xl text-xs font-bold uppercase hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">Pay EMI</button><button onClick={() => { setActiveLiabilityId(l.id); setIsSimModalOpen(true); }} className="p-2.5 border dark:border-zinc-800 rounded-xl text-xs font-bold uppercase text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors">Preview</button></div>
                </div>
@@ -227,9 +227,9 @@ export function LiabilitiesSection() {
               {liabilities.map(l => (
                 <tr key={l.id} className="border-b dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                   <td className="p-4 px-4 font-semibold whitespace-nowrap">{l.name}</td>
-                  <td className="p-4 px-4 font-bold whitespace-nowrap">${calculateLiabilityBalance(l).toLocaleString()}</td>
+                  <td className="p-4 px-4 font-bold whitespace-nowrap">₹{calculateLiabilityBalance(l).toLocaleString()}</td>
                   <td className="p-4 px-4 whitespace-nowrap">{l.interestRate}%</td>
-                  <td className="p-4 px-4 font-bold text-rose-500 whitespace-nowrap">${l.emi.toLocaleString()}</td>
+                  <td className="p-4 px-4 font-bold text-rose-500 whitespace-nowrap">₹{l.emi.toLocaleString()}</td>
                   <td className="p-4 px-4 text-right whitespace-nowrap">
                     <button onClick={() => openEditModal(l)} className="text-rose-500 font-bold hover:underline">Edit</button>
                   </td>
