@@ -105,6 +105,7 @@ const HabitRow = React.memo(({
   onEdit: (habit: Habit) => void,
   calcStreak: (habit: Habit) => number
 }) => {
+  const [viewYear, viewMonth] = monthKey.split('-').map(Number);
   const days = habit.records?.[monthKey] || [];
   const completed = days.filter((d: string) => d === 'done').length;
   const missed = days.filter((d: string) => d === 'missed').length;
@@ -157,18 +158,21 @@ const HabitRow = React.memo(({
         </div>
       </td>
       {Array.from({ length: daysInMonth }).map((_, i) => {
-        const status = days[i] || 'none';
+        const isFuture = new Date(viewYear, viewMonth, i + 1) > new Date();
+        const status = isFuture ? 'none' : (days[i] || 'none');
         return (
           <td key={i} className={`p-0.5 text-center transition-colors duration-300 ${isCurrentViewRealTodayMonth && i === todayDateIndex ? 'bg-teal-500/10 dark:bg-teal-500/20 border-x border-teal-500/10 dark:border-teal-500/20' : ''}`}>
-            <button 
-              onClick={e => onDayClick(habit.id, i, e)} 
-              className="w-10 h-10 md:w-8 md:h-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all flex items-center justify-center group mx-auto"
+            <button
+              onClick={e => !isFuture && onDayClick(habit.id, i, e)}
+              disabled={isFuture}
+              aria-disabled={isFuture}
+              className={`w-10 h-10 md:w-8 md:h-8 rounded-full transition-all flex items-center justify-center group mx-auto ${isFuture ? 'cursor-default' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}
             >
               <div className={`rounded-full transition-all ${
-                status === 'done' 
-                  ? 'w-4 h-4 md:w-3 md:h-3 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' 
-                  : status === 'missed' 
-                    ? 'w-4 h-4 md:w-3 md:h-3 bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]' 
+                status === 'done'
+                  ? 'w-4 h-4 md:w-3 md:h-3 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]'
+                  : status === 'missed'
+                    ? 'w-4 h-4 md:w-3 md:h-3 bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]'
                     : 'w-2 h-2 md:w-1.5 md:h-1.5 bg-zinc-200 dark:bg-zinc-700 group-hover:scale-125'
               }`} />
             </button>
@@ -382,6 +386,8 @@ export function Habits() {
 
   const handleDayClick = useCallback((habitId: string, dayIndex: number, e: React.MouseEvent) => {
     e.preventDefault();
+    const [viewYear, viewMonth] = monthKey.split('-').map(Number);
+    if (new Date(viewYear, viewMonth, dayIndex + 1) > new Date()) return;
     if (typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator) {
       navigator.vibrate(10);
     }
