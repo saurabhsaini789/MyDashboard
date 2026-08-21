@@ -10,7 +10,6 @@ import { SupplementSection } from '@/components/health-system/SupplementSection'
 import { HealthInsightsPanel } from '@/components/health-system/HealthInsightsPanel';
 import { SupplementRoutineSection } from '@/components/health-system/SupplementRoutineSection';
 import { PageContainer } from '@/components/PageContainer';
-import { getPrefixedKey } from '@/lib/keys';
 import { PageTitle, Text, Description } from '@/components/ui/Text';
 
 export default function HealthSystemPage() {

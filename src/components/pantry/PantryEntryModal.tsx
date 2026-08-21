@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ExpenseRecord, ExpenseItem, ExpenseCategory, Asset, PaymentMethod } from '@/types/finance';
 import { PANTRY_CATEGORIES, GROCERY_ITEM_CATEGORIES } from '@/lib/constants';
-import { getPrefixedKey } from '@/lib/keys';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 import { setSyncedItem } from '@/lib/storage';
 import { validateLocalData } from '@/lib/security';

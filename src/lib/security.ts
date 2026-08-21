@@ -1,4 +1,4 @@
-import { getPrefixedKey } from './keys';
+import { getDashboardPrefix } from './keys';
 
 export interface TaggedData<T> {
   u: string; // userId
@@ -54,18 +54,20 @@ export function shouldPushData(data: any): boolean {
  */
 export function clearUserCache() {
   if (typeof window === 'undefined') return;
-  
-  const dashboardId = process.env.NEXT_PUBLIC_DASHBOARD_ID;
-  const prefix = dashboardId ? `${dashboardId}:` : '';
-  
+
+  // Throws if NEXT_PUBLIC_DASHBOARD_ID is unset. Never fall back to an empty
+  // prefix here — that would match every localStorage key and wipe the whole
+  // origin's storage, not just this dashboard's.
+  const prefix = `${getDashboardPrefix()}:`;
+
   const keysToRemove: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && (prefix === '' || key.startsWith(prefix))) {
+    if (key && key.startsWith(prefix)) {
       keysToRemove.push(key);
     }
   }
-  
+
   keysToRemove.forEach(k => localStorage.removeItem(k));
   console.log(`[Security] Cleared ${keysToRemove.length} cached keys.`);
 }

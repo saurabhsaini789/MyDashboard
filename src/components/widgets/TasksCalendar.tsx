@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { setSyncedItem } from "@/lib/storage";
-import { getPrefixedKey } from "@/lib/keys";
 import { Text, SectionTitle } from "@/components/ui/Text";
 import { ProjectModal, type Project, getProjectPriorityInfo } from "./ProjectModal";
 import { useStorageSubscription } from "@/hooks/useStorageSubscription";

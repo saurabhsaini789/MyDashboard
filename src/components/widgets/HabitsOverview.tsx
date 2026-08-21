@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { getPrefixedKey } from "@/lib/keys";
 import { Text, SectionTitle } from "@/components/ui/Text";
 import { Flame, Trophy, AlertTriangle, TrendingUp, TrendingDown, Star, Activity, Users } from 'lucide-react';
 import { useStorageSubscription } from "@/hooks/useStorageSubscription";

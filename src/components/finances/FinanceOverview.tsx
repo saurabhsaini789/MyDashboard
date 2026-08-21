@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Wallet, Shield, TrendingUp, TrendingDown, Percent, ChevronDown, ChevronRight } from 'lucide-react';
-import { getPrefixedKey } from '@/lib/keys';
 import { MultiSelectDropdown } from '../ui/MultiSelectDropdown';
 import { MONTHS, YEARS } from '@/lib/constants';
 import { calculateAssetBalance, calculateLiabilityBalance, type Asset, type Liability } from '@/lib/finances';

@@ -36,7 +36,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       console.log(`[AuthGuard] Auth state change event: ${event}`, session ? 'User logged in' : 'No session');
       if (!session) {
-        clearUserCache();
+        try {
+          clearUserCache();
+        } catch (err) {
+          // Must not block sign-out from completing even if the cache
+          // can't be safely cleared (e.g. missing NEXT_PUBLIC_DASHBOARD_ID).
+          console.error('[AuthGuard] Failed to clear cached data:', err);
+        }
       }
       setCurrentUserId(session?.user?.id || null);
       setSession(session);

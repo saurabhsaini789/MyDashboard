@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { getPrefixedKey } from '@/lib/keys';
+import { getPrefixedKey, getDashboardPrefix } from '@/lib/keys';
 import { ALL_SYNC_KEYS, LEGACY_KEY_MIGRATION } from '@/lib/sync-keys';
 import { Session } from '@supabase/supabase-js';
 import { shouldPushData, validateLocalData } from '@/lib/security';
@@ -159,11 +159,11 @@ export function useSync() {
           return;
         }
 
-        // Filter for keys that belong to this project/dashboard
-        const projectID = process.env.NEXT_PUBLIC_DASHBOARD_ID;
-        projectRemoteData = remoteData?.filter(r => 
-          projectID ? r.key.startsWith(`${projectID}:`) : !r.key.includes(':')
-        ) || [];
+        // Filter for keys that belong to this project/dashboard.
+        // getDashboardPrefix() throws if NEXT_PUBLIC_DASHBOARD_ID is unset —
+        // we must not silently adopt every unprefixed row as "ours".
+        const projectPrefix = getDashboardPrefix();
+        projectRemoteData = remoteData?.filter(r => r.key.startsWith(`${projectPrefix}:`)) || [];
 
         // Load remote data into local storage (TAGGED with userId)
         isSyncingFromRemote.current = true;
@@ -183,8 +183,12 @@ export function useSync() {
         console.error('[Sync] Critical error during pull:', e);
         setErrorMessage(e.message);
         setSyncStatus('error');
+        // Stop here — without this return, execution falls through to the
+        // migration loop and 'connected'/isReady below, silently overwriting
+        // the error status we just set (including a missing-prefix throw).
+        return;
       }
-      
+
       // 1. Initial Migration (Local untagged data -> Cloud)
       // Only happens for keys NOT already on remote
       const remoteKeysMap = new Map(projectRemoteData.map((r: any) => [r.key, r.value]));
@@ -296,9 +300,16 @@ export function useSync() {
           const newRow = payload.new as { key: string; value: unknown };
           if (!newRow || !newRow.key) return;
 
-          const projectID = process.env.NEXT_PUBLIC_DASHBOARD_ID;
-          const isProjectKey = projectID ? newRow.key.startsWith(`${projectID}:`) : !newRow.key.includes(':');
-          
+          let isProjectKey: boolean;
+          try {
+            isProjectKey = newRow.key.startsWith(`${getDashboardPrefix()}:`);
+          } catch (e: any) {
+            console.error('[Sync] Ignoring realtime event — dashboard prefix unavailable:', e.message);
+            setErrorMessage(e.message);
+            setSyncStatus('error');
+            return;
+          }
+
           if (isProjectKey) {
             const parts = newRow.key.split(':');
             const baseKey = parts[parts.length - 1];
