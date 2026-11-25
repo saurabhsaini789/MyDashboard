@@ -33,6 +33,8 @@ export const SYNC_KEYS = {
  BOOKS_QUEUE: 'os_books_queue',
  BOOKS_YEARLY_LOG: 'os_books_yearly_log',
  BOOKS_COMPLETED: 'os_books_completed',
+ BOOKS_LIBRARY: 'os_books_library',
+ BOOKS_GOAL: 'os_books_goal',
  
  // Health System
  HEALTH_MEDICINE: 'MEDICINE_INVENTORY',

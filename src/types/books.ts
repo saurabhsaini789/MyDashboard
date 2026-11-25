@@ -59,3 +59,27 @@ export interface CompletedBook {
 }
 
 export type BookSource = 'queue' | 'log';
+
+/**
+ * One record per book. Reading status and owning a physical copy are independent:
+ * a finished book may not be owned (read digitally), an owned book may be unread.
+ */
+export interface LibraryBook {
+ id: string;
+ title: string;
+ author: string;
+ /** Shown on covers only, for Hindi books. */
+ titleHi?: string;
+ authorHi?: string;
+ language: 'English' | 'Hindi';
+ category?: string;
+ status: 'want' | 'reading' | 'done';
+ owned: boolean;
+ /** Reading order among 'want' books (lower first). */
+ order?: number;
+ startedOn?: string; // YYYY-MM-DD
+ finishedOn?: string; // YYYY-MM-DD
+ rating?: number; // 0-5
+ notes?: string;
+ createdAt: string;
+}
