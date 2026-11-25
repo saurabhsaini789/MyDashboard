@@ -58,7 +58,7 @@ export default function Home() {
                     <TasksCalendar />
                 </section>
 
-                <section className="w-full fade-in pb-12" style={{ animationDelay: '200ms' }}>
+                <section id="journal" className="w-full fade-in pb-12 scroll-mt-8" style={{ animationDelay: '200ms' }}>
                     <div className="w-full">
                         <OneNoteJournal />
                     </div>
