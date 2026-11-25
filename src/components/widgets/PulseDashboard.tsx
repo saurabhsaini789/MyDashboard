@@ -5,6 +5,7 @@ import { PageTitle, Description } from '@/components/ui/Text';
 import { useSystemPulse } from '@/hooks/useSystemPulse';
 import { PriorityQueue } from './PriorityQueue';
 import { StrategicFocus } from './StrategicFocus';
+import { JournalCard } from './JournalCard';
 import { PulseDataDependencies } from '@/lib/pulse-logic';
 
 interface PulseDashboardProps {
@@ -75,12 +76,14 @@ export function PulseDashboard({ initialData }: PulseDashboardProps) {
         <div className="fade-in mb-14">
             {/* Header with System Pulse as a compact strip beside the title */}
             <header className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                <div className="flex flex-col items-start">
+                <div className="flex min-w-0 flex-col items-start">
                     <PageTitle>Today Actions</PageTitle>
                     <Description>Command center for your system&apos;s health and daily momentum.</Description>
                 </div>
 
-                <div className="flex items-center gap-5 self-start rounded-2xl border border-zinc-200/80 bg-white px-5 py-3 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900 lg:self-auto">
+                <div className="flex flex-col gap-3 self-start lg:self-auto xl:flex-row xl:items-stretch">
+                <JournalCard />
+                <div className="flex items-center gap-5 rounded-2xl border border-zinc-200/80 bg-white px-5 py-3 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900">
                     <div className="relative h-16 w-16 shrink-0" title="System Pulse">
                         <svg viewBox="0 0 64 64" className="h-full w-full">
                             <circle cx={32} cy={32} r={r} fill="none" strokeWidth="6" stroke="currentColor" className="text-zinc-100 dark:text-zinc-800"
@@ -90,7 +93,7 @@ export function PulseDashboard({ initialData }: PulseDashboardProps) {
                         </svg>
                         <span className={`absolute inset-0 flex items-center justify-center text-xl font-black tabular-nums ${tone.text}`}>{pulse.score}</span>
                     </div>
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1 whitespace-nowrap">
                         <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">System pulse</span>
                         <span className={`w-fit rounded-full px-2 py-0.5 text-[11px] font-bold uppercase ${tone.chip}`}>{pulse.scoreLabel}</span>
                     </div>
@@ -107,6 +110,7 @@ export function PulseDashboard({ initialData }: PulseDashboardProps) {
                             </div>
                         ))}
                     </div>
+                </div>
                 </div>
             </header>
 
