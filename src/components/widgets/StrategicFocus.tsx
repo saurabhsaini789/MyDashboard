@@ -259,7 +259,7 @@ export function TodayPlan({ upcoming }: { upcoming: Upcoming }) {
       </div>
 
       {plan.length > 0 ? (
-        <ul className="custom-scrollbar max-h-[420px] flex-1 divide-y divide-zinc-100 overflow-y-auto pr-1 dark:divide-zinc-800">
+        <ul className="custom-scrollbar flex-1 divide-y divide-zinc-100 lg:max-h-[420px] lg:overflow-y-auto lg:pr-1 dark:divide-zinc-800">
           {plan.map(t => <PlanRow key={t.taskId} task={t} today={today} projects={projects} />)}
         </ul>
       ) : (
@@ -295,7 +295,7 @@ export function ComingUp({ upcoming }: { upcoming: Upcoming }) {
       </div>
 
       {upcoming.length ? (
-        <ul className="custom-scrollbar max-h-[420px] flex-1 divide-y divide-zinc-100 overflow-y-auto pr-1 dark:divide-zinc-800">
+        <ul className="custom-scrollbar flex-1 divide-y divide-zinc-100 lg:max-h-[420px] lg:overflow-y-auto lg:pr-1 dark:divide-zinc-800">
           {upcoming.map(ms => (
             <li key={ms.id} className="flex gap-4 py-3 first:pt-0">
               <span className={`w-[4.5rem] shrink-0 pt-0.5 text-xs font-semibold ${ms.diff === 0 ? 'text-teal-600 dark:text-teal-400' : 'text-zinc-500'}`}>

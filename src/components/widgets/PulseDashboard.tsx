@@ -97,15 +97,15 @@ export function PulseDashboard({ initialData }: PulseDashboardProps) {
 
             {/* System Pulse and Journal, side by side and mirrored */}
             <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <div className="flex flex-col gap-4 rounded-3xl border border-zinc-200/80 bg-white px-7 py-5 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900">
-                    <div className="flex h-14 items-center gap-4">
+                <div className="flex flex-col gap-4 rounded-3xl border border-zinc-200/80 bg-white px-5 py-5 shadow-sm sm:px-7 dark:border-zinc-800/80 dark:bg-zinc-900">
+                    <div className="flex min-h-14 items-center gap-4 sm:h-14">
                         <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${tone.tile}`}>
                             <Activity size={22} />
                         </div>
                         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                             <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">System pulse</span>
                             <span className={`text-lg font-semibold leading-tight ${tone.status}`}>{pulse.scoreLabel}</span>
-                            <span className="truncate text-xs text-zinc-500">{pulseNote}</span>
+                            <span className="text-xs text-zinc-500 sm:truncate">{pulseNote}</span>
                         </div>
                         <div className="relative h-14 w-14 shrink-0" title={`System Pulse ${pulse.score} / 100`}>
                             <svg viewBox="0 0 64 64" className="h-full w-full">
@@ -118,11 +118,11 @@ export function PulseDashboard({ initialData }: PulseDashboardProps) {
                         </div>
                     </div>
 
-                    <div className="grid flex-1 grid-cols-3 content-between gap-x-6 gap-y-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+                    <div className="grid flex-1 grid-cols-2 content-between gap-x-5 sm:grid-cols-3 sm:gap-x-6 gap-y-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
                         {bars.map(([label, v]) => (
                             <div key={label} className="min-w-0">
                                 <div className="flex items-baseline justify-between gap-2">
-                                    <span className="truncate text-xs text-zinc-500">{label}</span>
+                                    <span className="text-xs leading-tight text-zinc-500 sm:truncate">{label}</span>
                                     <span className="text-base font-bold tabular-nums leading-none text-zinc-900 dark:text-white">
                                         {v === null ? <span className="text-zinc-300 dark:text-zinc-600">—</span> : <>{Math.round(v)}<span className="text-xs font-medium text-zinc-400">%</span></>}
                                     </span>

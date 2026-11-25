@@ -73,8 +73,8 @@ export function JournalCard() {
     : `Last entry ${sinceLast} days ago`;
 
   return (
-    <div className="flex flex-col gap-4 rounded-3xl border border-cyan-200/70 bg-white px-7 py-5 shadow-sm dark:border-cyan-500/20 dark:bg-zinc-900">
-      <div className="flex h-14 items-center gap-4">
+    <div className="flex flex-col gap-4 rounded-3xl border border-cyan-200/70 bg-white px-5 py-5 shadow-sm sm:px-7 dark:border-cyan-500/20 dark:bg-zinc-900">
+      <div className="flex flex-wrap items-center gap-4 sm:h-14 sm:flex-nowrap">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-300">
           <NotebookPen size={22} />
         </div>
@@ -89,14 +89,14 @@ export function JournalCard() {
         {!writtenToday && (
           <Link
             href="/#journal"
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-cyan-700"
+            className="inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-xl bg-cyan-600 sm:w-auto px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-cyan-700"
           >
             Write {phaseNow()} entry <ArrowRight size={14} />
           </Link>
         )}
       </div>
 
-      <div className="grid grid-cols-4 gap-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+      <div className="grid grid-cols-2 gap-4 border-t sm:grid-cols-4 border-zinc-100 pt-4 dark:border-zinc-800">
         <Stat value={<>{thisCount}<span className="text-sm font-medium text-zinc-400"> / {dToday}</span></>} label={MONTHS[m - 1]} sub="days written so far" />
         <Stat value={<>{prevCount}<span className="text-sm font-medium text-zinc-400"> / {prevDays}</span></>} label={MONTHS[prevDate.getMonth()]} sub="days written" />
         <Stat value={streak} label="Current streak" sub={streak === 1 ? 'day' : 'days'} />

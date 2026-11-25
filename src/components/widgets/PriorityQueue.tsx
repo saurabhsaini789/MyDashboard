@@ -28,6 +28,8 @@ type Filter = 'ALL' | PriorityTier;
 
 export function PriorityQueue({ actions }: { actions: PulseAction[] }) {
   const [filter, setFilter] = useState<Filter>('ALL');
+  const [expanded, setExpanded] = useState(false);
+  const MOBILE_LIMIT = 5;
   const counts: Record<Filter, number> = {
     ALL: actions.length,
     CRITICAL: actions.filter(a => a.tier === 'CRITICAL').length,
@@ -58,21 +60,21 @@ export function PriorityQueue({ actions }: { actions: PulseAction[] }) {
         ))}
       </div>
 
-      <div className="space-y-2.5 overflow-y-auto flex-1 min-h-0 max-h-[420px] pr-1.5 custom-scrollbar">
+      <div className="space-y-2.5 flex-1 min-h-0 custom-scrollbar lg:max-h-[420px] lg:overflow-y-auto lg:pr-1.5">
         {shown.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center py-8 text-zinc-400">
             <ShieldCheck size={36} className="mb-2 text-emerald-400" />
             <span className="text-sm">Nothing needs you right now</span>
           </div>
         ) : (
-          shown.map(action => {
+          shown.map((action, i) => {
             const src = SOURCES[action.source] ?? SOURCES.project;
             const tier = TIER[action.tier];
             return (
               <Link
                 key={action.id}
                 href={action.href}
-                className="group relative flex flex-col gap-1.5 overflow-hidden rounded-2xl border border-transparent bg-zinc-50 py-3 pl-4 pr-3 transition-all hover:border-zinc-200 hover:bg-white dark:bg-zinc-800/30 dark:hover:border-zinc-700 dark:hover:bg-zinc-800"
+                className={`group relative ${!expanded && i >= MOBILE_LIMIT ? 'hidden lg:flex' : 'flex'} flex-col gap-1.5 overflow-hidden rounded-2xl border border-transparent bg-zinc-50 py-3 pl-4 pr-3 transition-all hover:border-zinc-200 hover:bg-white dark:bg-zinc-800/30 dark:hover:border-zinc-700 dark:hover:bg-zinc-800`}
               >
                 <span className={`absolute left-0 top-0 h-full w-1 ${tier.bar}`} />
                 <div className="flex items-center gap-2 min-w-0">
@@ -91,6 +93,16 @@ export function PriorityQueue({ actions }: { actions: PulseAction[] }) {
           })
         )}
       </div>
+
+      {shown.length > MOBILE_LIMIT && (
+        <button
+          type="button"
+          onClick={() => setExpanded(v => !v)}
+          className="mt-3 w-full rounded-xl bg-zinc-100 py-2.5 text-xs font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 lg:hidden"
+        >
+          {expanded ? 'Show less' : `Show all ${shown.length}`}
+        </button>
+      )}
     </div>
   );
 }
