@@ -70,7 +70,8 @@ export interface SystemPulseData {
     daysDesc: string;
     bucket: string;
     diff: number;
-    kind: 'project' | 'task';
+    /** 'start' = a task whose start date falls in the window (dueDate holds the start date). */
+    kind: 'project' | 'task' | 'start';
     /** For tasks: the project it belongs to. */
     parent?: string;
     dueDate: string;
@@ -488,7 +489,7 @@ export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseDa
 
   // Horizon: projects and tasks due in the next 30 days, soonest first.
   const horizonLimit = localDateStr(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 30));
-  const horizon: { id: string; title: string; dueDate: string; bucket: string; kind: 'project' | 'task'; parent?: string }[] = [];
+  const horizon: { id: string; title: string; dueDate: string; bucket: string; kind: 'project' | 'task' | 'start'; parent?: string }[] = [];
   nextMilestones.forEach((p: any) => {
     if (p.dueDate <= horizonLimit) horizon.push({ id: p.id, title: p.title, dueDate: p.dueDate, bucket: p.bucketId || 'Goal', kind: 'project' });
   });
@@ -497,10 +498,13 @@ export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseDa
       if (!t.isCompleted && t.dueDate && t.dueDate >= todayStr && t.dueDate <= horizonLimit) {
         horizon.push({ id: `${p.id}-${t.id}`, title: t.title, dueDate: t.dueDate, bucket: p.bucketId || 'Goal', kind: 'task', parent: p.title });
       }
+      if (!t.isCompleted && t.startDate && t.startDate > todayStr && t.startDate <= horizonLimit) {
+        horizon.push({ id: `${p.id}-${t.id}-start`, title: t.title, dueDate: t.startDate, bucket: p.bucketId || 'Goal', kind: 'start', parent: p.title });
+      }
     });
   });
   horizon.sort((a, b) => a.dueDate.localeCompare(b.dueDate) || (a.kind === 'project' ? -1 : 1));
-  const pipeline = horizon.slice(0, 4);
+  const pipeline = horizon.slice(0, 6);
 
   // Active execution: find the top in-progress project
   const inProgress = activeProjects.filter((p: any) => p.status === 'in-progress');

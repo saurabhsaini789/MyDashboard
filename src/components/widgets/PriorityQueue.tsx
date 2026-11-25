@@ -38,7 +38,7 @@ export function PriorityQueue({ actions }: { actions: PulseAction[] }) {
   const tabs: [Filter, string][] = [['ALL', 'All'], ['CRITICAL', 'Urgent'], ['DAILY', 'Today'], ['MAINTENANCE', 'Later']];
 
   return (
-    <div className="lg:col-span-5 h-full bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-3xl p-6 shadow-sm flex flex-col min-w-0">
+    <div className="lg:col-span-4 h-full bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-3xl p-6 shadow-sm flex flex-col min-w-0">
       <div className="flex items-baseline justify-between mb-4">
         <h2 className="text-lg font-semibold">Priority</h2>
         <span className="text-sm text-zinc-400">{actions.length} items</span>

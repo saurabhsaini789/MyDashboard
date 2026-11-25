@@ -8,6 +8,8 @@ export type Task = {
  isCompleted: boolean;
  completedAt?: string; // ISO date string
  dueDate?: string; // YYYY-MM-DD
+ startDate?: string; // YYYY-MM-DD, when work can begin (optional)
+ plannedFor?: string; // YYYY-MM-DD, the day it was put on Today's plan
 };
 
 // Tasks with a due date come first (earliest first); undated tasks keep their
@@ -183,9 +185,11 @@ export function ProjectModal({ project, onClose, onUpdateProject, onDeleteProjec
  
  const [newTaskTitle, setNewTaskTitle] = useState('');
  const [newTaskDueDate, setNewTaskDueDate] = useState('');
+ const [newTaskStartDate, setNewTaskStartDate] = useState('');
  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
  const [editingTaskTitle, setEditingTaskTitle] = useState('');
  const [editingTaskDueDate, setEditingTaskDueDate] = useState('');
+ const [editingTaskStartDate, setEditingTaskStartDate] = useState('');
 
  const sortedTasks = useMemo(() => sortTasksByDueDate(project.tasks || []), [project.tasks]);
 
@@ -193,12 +197,13 @@ export function ProjectModal({ project, onClose, onUpdateProject, onDeleteProjec
    setEditingTaskId(task.id);
    setEditingTaskTitle(task.title);
    setEditingTaskDueDate(task.dueDate || '');
+   setEditingTaskStartDate(task.startDate || '');
  };
 
  const saveEditedTask = (taskId: string) => {
    if (!editingTaskTitle.trim()) return;
    const updatedTasks = project.tasks.map(t =>
-     t.id === taskId ? { ...t, title: editingTaskTitle.trim(), dueDate: editingTaskDueDate || undefined } : t
+     t.id === taskId ? { ...t, title: editingTaskTitle.trim(), dueDate: editingTaskDueDate || undefined, startDate: editingTaskStartDate || undefined } : t
    );
    onUpdateProject({ ...project, tasks: updatedTasks });
    setEditingTaskId(null);
@@ -223,10 +228,11 @@ export function ProjectModal({ project, onClose, onUpdateProject, onDeleteProjec
  const handleCreateTask = (e: React.FormEvent) => {
  e.preventDefault();
  if (!newTaskTitle.trim()) return;
- const newTask: Task = { id: crypto.randomUUID(), title: newTaskTitle.trim(), isCompleted: false, dueDate: newTaskDueDate || undefined };
+ const newTask: Task = { id: crypto.randomUUID(), title: newTaskTitle.trim(), isCompleted: false, dueDate: newTaskDueDate || undefined, startDate: newTaskStartDate || undefined };
  onUpdateProject({ ...project, tasks: [...project.tasks, newTask] });
  setNewTaskTitle('');
  setNewTaskDueDate('');
+ setNewTaskStartDate('');
  };
 
   const handleToggleProjectCompletion = () => {
@@ -456,6 +462,8 @@ export function ProjectModal({ project, onClose, onUpdateProject, onDeleteProjec
        setEditTitle={setEditingTaskTitle}
        editDueDate={editingTaskDueDate}
        setEditDueDate={setEditingTaskDueDate}
+       editStartDate={editingTaskStartDate}
+       setEditStartDate={setEditingTaskStartDate}
        onEditSave={saveEditedTask}
        onEditCancel={() => setEditingTaskId(null)}
      />
@@ -463,7 +471,7 @@ export function ProjectModal({ project, onClose, onUpdateProject, onDeleteProjec
    </div>
  )}
 
- <div className="flex gap-2">
+ <div className="space-y-2">
  <input
  type="text"
  placeholder="New task..."
@@ -475,16 +483,13 @@ export function ProjectModal({ project, onClose, onUpdateProject, onDeleteProjec
  handleCreateTask(e as any);
  }
  }}
- className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+ className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
  />
- <input
- type="date"
- value={newTaskDueDate}
- onChange={(e) => setNewTaskDueDate(e.target.value)}
- title="Due date (optional)"
- className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-2 text-sm text-zinc-600 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
- />
- <button onClick={handleCreateTask} disabled={!newTaskTitle} type="button" className="px-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg text-sm font-semibold disabled:opacity-50">Add</button>
+ <div className="flex flex-wrap items-center gap-2">
+ <DateField label="Start" value={newTaskStartDate} onChange={setNewTaskStartDate} />
+ <DateField label="Due" value={newTaskDueDate} onChange={setNewTaskDueDate} />
+ <button onClick={handleCreateTask} disabled={!newTaskTitle} type="button" className="ml-auto px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg text-sm font-semibold disabled:opacity-50">Add</button>
+ </div>
  </div>
  </div>
  </div>
@@ -504,10 +509,13 @@ function TaskRow({
   setEditTitle,
   editDueDate,
   setEditDueDate,
+  editStartDate,
+  setEditStartDate,
   onEditSave,
   onEditCancel
 }: any) {
   const dueBadge = getDueDateBadge(task.dueDate, task.isCompleted);
+  const startBadge = getStartBadge(task.startDate, task.isCompleted);
 
   return (
     <div
@@ -527,13 +535,8 @@ function TaskRow({
             }}
             className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
-          <input
-            type="date"
-            value={editDueDate}
-            onChange={(e) => setEditDueDate(e.target.value)}
-            title="Due date (optional)"
-            className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1.5 text-sm text-zinc-600 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
-          />
+          <DateField label="Start" value={editStartDate} onChange={setEditStartDate} compact />
+          <DateField label="Due" value={editDueDate} onChange={setEditDueDate} compact />
           <button onClick={() => onEditSave(task.id)} className="text-teal-600 hover:text-teal-700 dark:text-teal-400 p-1.5 bg-teal-50 dark:bg-teal-500/10 rounded-md">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
           </button>
@@ -554,6 +557,11 @@ function TaskRow({
           </button>
 
           <div className="flex items-center gap-2 shrink-0">
+            {startBadge && (
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-300">
+                {startBadge}
+              </span>
+            )}
             {dueBadge && (
               <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${dueBadge.classes}`}>
                 {dueBadge.label}
@@ -589,4 +597,29 @@ function getDueDateBadge(dueDate: string | undefined, isCompleted: boolean) {
   }
 
   return { label, classes };
+}
+
+/** "Starts 2 Dec", only while the start date is still ahead. */
+function getStartBadge(startDate: string | undefined, isCompleted: boolean): string | null {
+  if (!startDate || isCompleted) return null;
+  const start = new Date(startDate + 'T00:00:00');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (start.getTime() <= today.getTime()) return null;
+  return `Starts ${start.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`;
+}
+
+function DateField({ label, value, onChange, compact }: { label: string; value: string; onChange: (v: string) => void; compact?: boolean }) {
+  return (
+    <label className={`flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg pl-2.5 pr-1 focus-within:ring-2 focus-within:ring-teal-500 ${compact ? 'py-0.5' : 'py-1'}`}>
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">{label}</span>
+      <input
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        title={`${label} date (optional)`}
+        className="bg-transparent px-1 py-1 text-sm text-zinc-600 dark:text-zinc-300 focus:outline-none"
+      />
+    </label>
+  );
 }
