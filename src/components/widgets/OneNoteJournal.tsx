@@ -6,15 +6,14 @@ import { InteractionStatus } from "@azure/msal-browser";
 import { loginRequest } from '@/lib/msalConfig';
 import { onenoteService } from '@/lib/onenote';
 import { recordJournalDay } from '@/lib/journal-log';
+import { useStorageSubscription } from '@/hooks/useStorageSubscription';
+import { EMPTY_DRAFTS, JOURNAL_DRAFTS_KEY, forToday, plainText, saveDrafts, type JournalDrafts, type Phase } from '@/lib/journal-drafts';
 import { SectionTitle, Description } from '@/components/ui/Text';
 import {
   BookOpen, CloudUpload, CheckCircle2, AlertCircle, Loader2, LogOut,
-  ChevronRight, Sun, Zap, Moon,
+  ChevronRight, Sun, Zap, Moon, Trash2,
 } from 'lucide-react';
 import { Editor } from './Editor';
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-type Phase = 'morning' | 'day' | 'evening';
 
 // ─── Phase Templates ─────────────────────────────────────────────────────────
 const PHASE_TEMPLATES: Record<Phase, string> = {
@@ -96,17 +95,16 @@ export function OneNoteJournal() {
   const autoPhase = useMemo(() => getCurrentPhase(), []);
   const [phase, setPhase] = useState<Phase>(autoPhase);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-  const [lastPageUrl, setLastPageUrl] = useState('');
 
-  // One text entry per phase; track which phases have been visited so we
-  // only inject the template the first time the user switches to that phase.
-  const [texts, setTexts] = useState<Record<Phase, string>>({
-    morning: '',
-    day: '',
-    evening: '',
-  });
+  // Drafts autosave on this device (one per phase) and survive a refresh.
+  const stored = useStorageSubscription<JournalDrafts>(JOURNAL_DRAFTS_KEY, EMPTY_DRAFTS);
+  const drafts = forToday(stored);
+  const texts = drafts.texts;
+  const syncedAt = drafts.synced[phase];
+
+  // Track which phases have been visited so the template is only injected the first time.
   const [visited, setVisited] = useState<Record<Phase, boolean>>({
     morning: false,
     day: false,
@@ -115,17 +113,33 @@ export function OneNoteJournal() {
 
   const isInteractionInProgress = inProgress !== InteractionStatus.None;
 
+  /** Real writing, not an empty editor or an untouched template. */
+  const hasWriting = (p: Phase) => {
+    const t = plainText(texts[p]);
+    return t.length > 0 && t !== plainText(PHASE_TEMPLATES[p]);
+  };
+  const canSync = hasWriting(phase);
+
+  const writeDrafts = (next: Partial<JournalDrafts>) => saveDrafts({ ...forToday(stored), ...next });
+
   const handlePhaseSwitch = (p: Phase) => {
     setPhase(p);
-    // Only inject the template if this phase hasn't been visited yet AND the textarea is empty
-    if (!visited[p] && !texts[p].trim()) {
-      setTexts(prev => ({ ...prev, [p]: PHASE_TEMPLATES[p] }));
+    // Only inject the template if this phase hasn't been visited yet AND the editor is empty
+    if (!visited[p] && !plainText(texts[p]) && !drafts.synced[p]) {
+      writeDrafts({ texts: { ...texts, [p]: PHASE_TEMPLATES[p] } });
     }
     setVisited(prev => ({ ...prev, [p]: true }));
   };
 
   const handleTextChange = (value: string) => {
-    setTexts(prev => ({ ...prev, [phase]: value }));
+    if (value === texts[phase]) return;
+    writeDrafts({ texts: { ...texts, [phase]: value } });
+  };
+
+  const handleClear = () => {
+    if (!plainText(texts[phase])) return;
+    if (!window.confirm(`Clear this ${PHASE_CONFIG[phase].label.toLowerCase()} draft? It hasn't been synced, so it will be lost.`)) return;
+    writeDrafts({ texts: { ...texts, [phase]: '' } });
   };
 
   const handleLogin = () => {
@@ -142,7 +156,9 @@ export function OneNoteJournal() {
 
   const handleSave = async () => {
     const text = texts[phase];
-    if (!text.trim()) return;
+    if (!canSync) return;
+    // OneNote adds each sync to today's page, so a second sync would duplicate the entry.
+    if (syncedAt && !window.confirm(`Your ${PHASE_CONFIG[phase].label.toLowerCase()} entry was already synced at ${syncedAt}. Add this as another entry on today's OneNote page?`)) return;
 
     setIsSaving(true);
     setSaveStatus('idle');
@@ -153,8 +169,16 @@ export function OneNoteJournal() {
       const html = buildHtml(phase, text);
       const response = await onenoteService.createOrUpdatePage(title, html);
       const pageUrl = response?.links?.oneNoteWebUrl?.href;
-      setSaveStatus('success');
-      setLastPageUrl(pageUrl);
+      const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase();
+      // Synced: clear the editor and keep a receipt for this phase.
+      const latest = forToday(stored);
+      saveDrafts({
+        ...latest,
+        texts: { ...latest.texts, [phase]: '' },
+        synced: { ...latest.synced, [phase]: time },
+        pageUrl: pageUrl || latest.pageUrl,
+      });
+      setSaveStatus('idle');
 
       // Record the day in the synced log that the Growth Index and System Pulse read.
       try {
@@ -162,8 +186,6 @@ export function OneNoteJournal() {
       } catch (err) {
         console.error('Failed to update local journal log', err);
       }
-
-      setTimeout(() => { setSaveStatus('idle'); setLastPageUrl(''); }, 10000);
     } catch (error: any) {
       console.error('Failed to save journal', error);
       setSaveStatus('error');
@@ -209,6 +231,9 @@ export function OneNoteJournal() {
                 {isAuto && (
                   <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-teal-500" title="Current phase" />
                 )}
+                {drafts.synced[p] && (
+                  <CheckCircle2 className="absolute top-1.5 left-1.5 w-3.5 h-3.5 text-teal-500" aria-label={`Synced at ${drafts.synced[p]}`} />
+                )}
                 <Icon className={`w-4 h-4 ${isActive ? 'text-teal-500' : ''}`} />
                 <span>{cfg.label}</span>
                 <span className={`text-[10px] ${isActive ? 'text-zinc-400' : 'text-zinc-400 dark:text-zinc-600'}`}>{cfg.time}</span>
@@ -229,6 +254,20 @@ export function OneNoteJournal() {
               </span>
             </div>
 
+            {/* Receipt for this phase once synced today */}
+            {syncedAt && (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-teal-200/70 bg-teal-50 px-4 py-3 text-sm text-teal-800 dark:border-teal-500/20 dark:bg-teal-500/10 dark:text-teal-200">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span className="font-medium">{PHASE_CONFIG[phase].label} entry synced to OneNote at {syncedAt}</span>
+                {drafts.pageUrl && (
+                  <a href={drafts.pageUrl} target="_blank" rel="noopener noreferrer" className="text-teal-600 underline hover:text-teal-700 dark:text-teal-300">
+                    View in OneNote →
+                  </a>
+                )}
+                <span className="text-teal-700/70 dark:text-teal-300/70 sm:ml-auto">Anything you write below is added as a new entry.</span>
+              </div>
+            )}
+
             {/* Textarea */}
             <div className="animate-in fade-in duration-300">
               <Editor
@@ -240,18 +279,14 @@ export function OneNoteJournal() {
 
             {/* Footer Actions */}
             <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800">
-              <div className="flex items-center gap-3">
-                {saveStatus === 'success' && (
-                  <div className="flex flex-col gap-1 items-start animate-in fade-in slide-in-from-left-2">
-                    <div className="flex items-center gap-2 text-teal-600 dark:text-teal-400">
-                      <CheckCircle2 className="w-5 h-5" />
-                      <span className="text-sm font-medium">Synced to OneNote!</span>
-                    </div>
-                    {lastPageUrl && (
-                      <a href={lastPageUrl} target="_blank" rel="noopener noreferrer"
-                        className="text-xs text-teal-500 hover:text-teal-600 underline ml-7">View in OneNote →</a>
-                    )}
-                  </div>
+              <div className="flex items-center gap-4">
+                <button onClick={handleClear} disabled={!plainText(texts[phase]) || isSaving} type="button"
+                  className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-zinc-500 transition-colors hover:bg-rose-50 hover:text-rose-600 disabled:pointer-events-none disabled:opacity-40 dark:hover:bg-rose-500/10"
+                  title="Clear this draft">
+                  <Trash2 className="w-4 h-4" /> Clear
+                </button>
+                {saveStatus !== 'error' && canSync && (
+                  <span className="text-xs text-zinc-400">Draft saved on this device · not synced yet</span>
                 )}
                 {saveStatus === 'error' && (
                   <div className="flex items-center gap-2 text-red-600 dark:text-red-400 animate-in fade-in slide-in-from-left-2">
@@ -261,8 +296,8 @@ export function OneNoteJournal() {
                 )}
               </div>
 
-              <button onClick={handleSave} disabled={isSaving || !texts[phase].trim()}
-                className={`flex items-center gap-2 px-8 py-3 rounded-2xl font-semibold transition-all duration-300 ${isSaving || !texts[phase].trim() ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed' : 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:scale-105 active:scale-95 shadow-lg shadow-zinc-400/20 dark:shadow-none'}`}>
+              <button onClick={handleSave} disabled={isSaving || !canSync}
+                className={`flex items-center gap-2 px-8 py-3 rounded-2xl font-semibold transition-all duration-300 ${isSaving || !canSync ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed' : 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:scale-105 active:scale-95 shadow-lg shadow-zinc-400/20 dark:shadow-none'}`}>
                 {isSaving ? (<><Loader2 className="w-5 h-5 animate-spin" />Syncing...</>) : (<><CloudUpload className="w-5 h-5" />Sync to OneNote</>)}
               </button>
             </div>
