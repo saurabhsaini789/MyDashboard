@@ -5,6 +5,7 @@ import { useMsal, AuthenticatedTemplate, UnauthenticatedTemplate } from '@azure/
 import { InteractionStatus } from "@azure/msal-browser";
 import { loginRequest } from '@/lib/msalConfig';
 import { onenoteService } from '@/lib/onenote';
+import { recordJournalDay } from '@/lib/journal-log';
 import { SectionTitle, Description } from '@/components/ui/Text';
 import {
   BookOpen, CloudUpload, CheckCircle2, AlertCircle, Loader2, LogOut,
@@ -155,17 +156,9 @@ export function OneNoteJournal() {
       setSaveStatus('success');
       setLastPageUrl(pageUrl);
 
-      // Track locally for Growth/Pulse metrics
+      // Record the day in the synced log that the Growth Index and System Pulse read.
       try {
-        const key = 'os_journal_logs';
-        const raw = localStorage.getItem(key);
-        const logs: string[] = raw ? JSON.parse(raw) : [];
-        const todayStr = new Date().toISOString().split('T')[0];
-        if (!logs.includes(todayStr)) {
-          logs.push(todayStr);
-          localStorage.setItem(key, JSON.stringify(logs));
-          window.dispatchEvent(new Event('local-storage'));
-        }
+        recordJournalDay();
       } catch (err) {
         console.error('Failed to update local journal log', err);
       }

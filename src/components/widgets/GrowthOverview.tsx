@@ -1,9 +1,12 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any -- subscribes to loosely-typed stores from many pages */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { TrendingUp, Target, CreditCard, ShoppingBag, Package, Calendar } from 'lucide-react';
-import { calculateCategoryScores, getOverallGrowthScore, getGrowthTrendData, CategoryScore, ScoreRange, ScoreFilter } from '@/lib/growth-score';
+import Link from 'next/link';
+import { TrendingUp, Target, Wallet, HeartPulse, FolderKanban, Calendar, BookOpen, Users, Rocket, Sparkles } from 'lucide-react';
+import { migrateLegacyJournalDays } from '@/lib/journal-log';
+import { calculateCategoryScores, getOverallGrowthScore, getGrowthTrendData, ScoreRange, ScoreFilter } from '@/lib/growth-score';
 import { SectionTitle, Text, Description } from '../ui/Text';
 import { MultiSelectDropdown } from '../ui/MultiSelectDropdown';
 import { MONTHS, YEARS } from '@/lib/constants';
@@ -20,6 +23,19 @@ const GrowthRadarChart = dynamic(() => import('./charts/GrowthRadarChart'), {
   loading: () => <div className="w-full h-full flex items-center justify-center bg-zinc-50 dark:bg-zinc-800/50 animate-pulse rounded-xl" />
 });
 
+const EMPTY: any[] = [];
+
+const ICONS: Record<string, React.ReactNode> = {
+  Habits: <Target size={16} />,
+  Projects: <FolderKanban size={16} />,
+  Money: <Wallet size={16} />,
+  Health: <HeartPulse size={16} />,
+  Reading: <BookOpen size={16} />,
+  Content: <Rocket size={16} />,
+  Relationships: <Users size={16} />,
+  Mindfulness: <Sparkles size={16} />,
+};
+
 export function GrowthOverview() {
   const [filter, setFilter] = useState<ScoreFilter>({ 
     range: 'Custom',
@@ -28,18 +44,24 @@ export function GrowthOverview() {
   });
 
   // Authoritative Subscriptions
-  const habits = useStorageSubscription(SYNC_KEYS.HABITS, []);
-  const projects = useStorageSubscription(SYNC_KEYS.GOALS_PROJECTS, []);
-  const income = useStorageSubscription(SYNC_KEYS.FINANCES_INCOME, []);
-  const expenses = useStorageSubscription(SYNC_KEYS.FINANCES_EXPENSES, []);
-  const channels = useStorageSubscription(SYNC_KEYS.FINANCES_BUSINESS, []);
-  const journals = useStorageSubscription(SYNC_KEYS.JOURNAL_LOGS, []);
+  const habits = useStorageSubscription<any[]>(SYNC_KEYS.HABITS, EMPTY);
+  const projects = useStorageSubscription<any[]>(SYNC_KEYS.GOALS_PROJECTS, EMPTY);
+  const income = useStorageSubscription<any[]>(SYNC_KEYS.FINANCES_INCOME, EMPTY);
+  const expenses = useStorageSubscription<any[]>(SYNC_KEYS.FINANCES_EXPENSES, EMPTY);
+  const channels = useStorageSubscription<any[]>(SYNC_KEYS.FINANCES_BUSINESS, EMPTY);
+  const journals = useStorageSubscription<string[]>(SYNC_KEYS.JOURNAL_LOGS, EMPTY);
+  const books = useStorageSubscription<any[]>(SYNC_KEYS.BOOKS_LIBRARY, EMPTY);
+  const bookGoal = useStorageSubscription<number | string>(SYNC_KEYS.BOOKS_GOAL, 24);
+  const contacts = useStorageSubscription<any[]>(SYNC_KEYS.CONTACTS, EMPTY);
   // Inventory Subscriptions
-  const med = useStorageSubscription(SYNC_KEYS.HEALTH_MEDICINE, []);
-  const travel = useStorageSubscription(SYNC_KEYS.HEALTH_TRAVEL_KIT, []);
-  const aidHome = useStorageSubscription(SYNC_KEYS.HEALTH_FIRST_AID_HOME, []);
-  const aidMobile = useStorageSubscription(SYNC_KEYS.HEALTH_FIRST_AID_MOBILE, []);
-  const supplements = useStorageSubscription(SYNC_KEYS.HEALTH_SUPPLEMENTS, []);
+  const med = useStorageSubscription<any[]>(SYNC_KEYS.HEALTH_MEDICINE, EMPTY);
+  const travel = useStorageSubscription<any[]>(SYNC_KEYS.HEALTH_TRAVEL_KIT, EMPTY);
+  const aidHome = useStorageSubscription<any[]>(SYNC_KEYS.HEALTH_FIRST_AID_HOME, EMPTY);
+  const aidMobile = useStorageSubscription<any[]>(SYNC_KEYS.HEALTH_FIRST_AID_MOBILE, EMPTY);
+  const supplements = useStorageSubscription<any[]>(SYNC_KEYS.HEALTH_SUPPLEMENTS, EMPTY);
+
+  // Journal days used to be saved under an unsynced key; move them over once.
+  useEffect(() => { migrateLegacyJournalDays(); }, []);
 
   // Consolidate dependencies for pure calculation
   const growthData = useMemo(() => ({
@@ -49,18 +71,18 @@ export function GrowthOverview() {
     expenses,
     channels,
     journals,
-    inventory: {
-      HEALTH_MEDICINE: med,
-      HEALTH_TRAVEL_KIT: travel,
-      HEALTH_FIRST_AID_HOME: aidHome,
-      HEALTH_FIRST_AID_MOBILE: aidMobile,
-      HEALTH_SUPPLEMENTS: supplements
-    }
-  }), [habits, projects, income, expenses, channels, journals, med, travel, aidHome, aidMobile, supplements]);
+    books,
+    bookGoal: Number(bookGoal) || 24,
+    contacts,
+    inventory: { med, travel, aidHome, aidMobile, supplements },
+  }), [habits, projects, income, expenses, channels, journals, books, bookGoal, contacts, med, travel, aidHome, aidMobile, supplements]);
 
   const scores = useMemo(() => calculateCategoryScores(growthData, filter), [growthData, filter]);
   const overallScore = useMemo(() => getOverallGrowthScore(scores), [scores]);
   const trendData = useMemo(() => getGrowthTrendData(growthData, filter), [growthData, filter]);
+  const scoredCount = scores.filter(s => s.score !== null).length;
+  // Radar needs numbers; pillars without data sit at 0 and are labelled as such.
+  const radarData = useMemo(() => scores.map(s => ({ name: s.score === null ? `${s.name} (no data)` : s.name, score: s.score ?? 0 })), [scores]);
 
   const ranges: { label: string; value: ScoreRange }[] = [
     { label: '7D', value: '7D' },
@@ -117,11 +139,14 @@ export function GrowthOverview() {
           <div className="flex flex-col">
             <Text variant="label" className="text-[10px] uppercase tracking-wider mb-0.5">Overall Score</Text>
             <div className="flex items-baseline gap-2">
-              <Text variant="metric" className="text-3xl leading-none text-teal-600 dark:text-teal-400">{overallScore}</Text>
+              <Text variant="metric" className="text-3xl leading-none text-teal-600 dark:text-teal-400">{overallScore ?? '—'}</Text>
               <Text variant="label" className="text-zinc-400">/ 100</Text>
             </div>
+            <Text variant="label" className="text-[10px] text-zinc-400 mt-1">
+              {scoredCount} of {scores.length} areas with data
+            </Text>
           </div>
-          <div className={`p-2 rounded-xl scale-110 ${overallScore > 70 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400'}`}>
+          <div className={`p-2 rounded-xl scale-110 ${(overallScore ?? 0) > 70 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400'}`}>
             <TrendingUp size={24} />
           </div>
         </div>
@@ -149,41 +174,38 @@ export function GrowthOverview() {
              <Text variant="label" className="font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-tight">Focus Balance</Text>
           </div>
           <div className="flex-1 w-full relative">
-            <GrowthRadarChart data={scores} />
+            <GrowthRadarChart data={radarData} />
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {scores.map((s, i) => (
-          <div 
-            key={s.name} 
-            className="group flex flex-col p-4 bg-white dark:bg-zinc-900/60 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 hover:border-teal-500/30 transition-all cursor-default"
+          <Link
+            key={s.name}
+            href={s.fullPath}
+            title={s.detail}
+            className={`group flex flex-col p-4 bg-white dark:bg-zinc-900/60 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 hover:border-teal-500/30 transition-all ${s.score === null ? 'opacity-60' : ''}`}
             style={{ animationDelay: `${i * 100}ms` }}
           >
             <div className="flex items-center justify-between mb-3">
-              <div 
+              <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-white"
-                style={{ backgroundColor: s.color }}
+                style={{ backgroundColor: s.score === null ? '#a1a1aa' : s.color }}
               >
-                {s.name === 'Habits' && <Target size={16} />}
-                {s.name === 'Projects' && <Package size={16} />}
-                {s.name === 'Finance' && <CreditCard size={16} />}
-                {s.name === 'Expenses' && <ShoppingBag size={16} />}
-                {s.name === 'Health' && <Package size={16} />}
-                {s.name === 'Content' && <TrendingUp size={16} />}
-                {s.name === 'Mindfulness' && <Target size={16} />}
+                {ICONS[s.name]}
               </div>
-              <Text variant="bodySmall" className="font-bold text-zinc-900 dark:text-zinc-100">{s.score}%</Text>
+              <Text variant="bodySmall" className="font-bold text-zinc-900 dark:text-zinc-100">{s.score === null ? 'No data' : `${s.score}%`}</Text>
             </div>
             <Text variant="label" className="text-[10px] uppercase font-bold text-zinc-500 group-hover:text-teal-600 transition-colors tracking-tight">{s.name}</Text>
             <div className="w-full h-1 bg-zinc-100 dark:bg-zinc-800 rounded-full mt-2 overflow-hidden">
-               <div 
+               <div
                 className="h-full transition-all duration-1000 ease-out"
-                style={{ width: `${s.score}%`, backgroundColor: s.color }}
+                style={{ width: `${s.score ?? 0}%`, backgroundColor: s.color }}
                />
             </div>
-          </div>
+            <Text variant="label" className="text-[11px] text-zinc-400 mt-2 leading-snug line-clamp-2">{s.detail}</Text>
+          </Link>
         ))}
       </div>
     </div>

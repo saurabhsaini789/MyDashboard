@@ -45,9 +45,10 @@ export default function GrowthTrendChart({ data }: GrowthTrendChartProps) {
           itemStyle={{ color: '#14b8a6' }}
           cursor={{ stroke: '#14b8a6', strokeWidth: 1, strokeDasharray: '4 4' }}
         />
-        <Line 
-          type="monotone" 
-          dataKey="score" 
+        <Line
+          type="monotone"
+          connectNulls
+          dataKey="score"
           stroke="#14b8a6" 
           strokeWidth={3} 
           dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} 
