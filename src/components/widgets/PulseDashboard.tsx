@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from 'react';
-import { Text } from '@/components/ui/Text';
+import { PageTitle, Description } from '@/components/ui/Text';
 import { useSystemPulse } from '@/hooks/useSystemPulse';
 import { PriorityQueue } from './PriorityQueue';
 import { StrategicFocus } from './StrategicFocus';
@@ -61,103 +61,62 @@ export function PulseDashboard({ initialData }: PulseDashboardProps) {
 
 
 
-    // ── Gauge geometry ────────────────────────────────────────────────────
-    const gaugeR = 36;
-    const gaugeCirc = 2 * Math.PI * gaugeR;
-    const gaugeTrack = gaugeCirc * 0.75;
-    const gaugeScore = gaugeTrack * (pulse.score / 100);
-    const scoreColorClass = pulse.score >= 80 ? 'text-emerald-500' : pulse.score >= 50 ? 'text-amber-500' : 'text-rose-500';
-    const scoreBgClass = pulse.score >= 80
-        ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
-        : pulse.score >= 50 ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400'
-        : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400';
-    const panelBgClass = pulse.score >= 80
-        ? 'bg-gradient-to-b from-emerald-50/60 to-white dark:from-emerald-500/5 dark:to-zinc-900'
-        : pulse.score >= 50 ? 'bg-gradient-to-b from-amber-50/60 to-white dark:from-amber-500/5 dark:to-zinc-900'
-        : 'bg-gradient-to-b from-rose-50/60 to-white dark:from-rose-500/5 dark:to-zinc-900';
-    const barColorClass = pulse.score >= 80
-        ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
-        : pulse.score >= 50 ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]'
-        : 'bg-rose-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]';
-    const statColor = (val: number) => val >= 75 ? 'bg-emerald-500' : val >= 40 ? 'bg-amber-500' : 'bg-rose-500';
-    const statTextColor = (val: number) => val >= 75 ? 'text-emerald-600 dark:text-emerald-400' : val >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400';
-    // ─────────────────────────────────────────────────────────────────────
+    const tone = pulse.score >= 80
+        ? { text: 'text-emerald-500', chip: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' }
+        : pulse.score >= 50
+        ? { text: 'text-amber-500', chip: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' }
+        : { text: 'text-rose-500', chip: 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' };
+    const barTone = (v: number) => v >= 75 ? 'bg-emerald-500' : v >= 40 ? 'bg-amber-500' : 'bg-rose-500';
+
+    // Compact gauge: a 270° arc.
+    const r = 26, circ = 2 * Math.PI * r, track = circ * 0.75, fill = track * (pulse.score / 100);
 
     return (
-        <div className="fade-in grid grid-cols-1 lg:grid-cols-12 gap-6 mb-14 items-stretch">
-            
-            {/* 1. Pulse Index Gauge */}
-            <div className={`lg:col-span-3 h-full border border-zinc-200/80 dark:border-zinc-800/80 rounded-3xl p-6 flex flex-col shadow-sm relative overflow-hidden group transition-colors duration-700 ${panelBgClass}`}>
-                {/* Glowing top progress bar */}
-                <div className="absolute top-0 left-0 w-full h-2 bg-zinc-100 dark:bg-zinc-800 rounded-t-3xl overflow-hidden">
-                    <div
-                        className={`h-full transition-all duration-1000 ${barColorClass}`}
-                        style={{ width: `${pulse.score}%` }}
-                    />
+        <div className="fade-in mb-14">
+            {/* Header with System Pulse as a compact strip beside the title */}
+            <header className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div className="flex flex-col items-start">
+                    <PageTitle>Today Actions</PageTitle>
+                    <Description>Command center for your system&apos;s health and daily momentum.</Description>
                 </div>
 
-                <Text variant="label" className="uppercase tracking-widest text-[10px] text-zinc-400 mb-4">System Pulse</Text>
-
-                <div className="flex flex-col items-center justify-center flex-1">
-                    {/* SVG Arc Gauge */}
-                    <div className="relative w-32 h-32">
-                        <svg viewBox="0 0 100 100" className="w-full h-full">
-                            <circle
-                                cx={50} cy={50} r={gaugeR}
-                                fill="none" strokeWidth="7" stroke="currentColor"
-                                className="text-zinc-100 dark:text-zinc-800"
-                                strokeDasharray={`${gaugeTrack} ${gaugeCirc}`}
-                                strokeLinecap="round"
-                                transform="rotate(135 50 50)"
-                            />
-                            <circle
-                                cx={50} cy={50} r={gaugeR}
-                                fill="none" strokeWidth="7" stroke="currentColor"
-                                className={scoreColorClass}
-                                strokeDasharray={`${gaugeScore} ${gaugeCirc}`}
-                                strokeLinecap="round"
-                                transform="rotate(135 50 50)"
-                                style={{ transition: 'stroke-dasharray 1s ease' }}
-                            />
+                <div className="flex items-center gap-5 self-start rounded-2xl border border-zinc-200/80 bg-white px-5 py-3 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900 lg:self-auto">
+                    <div className="relative h-16 w-16 shrink-0" title="System Pulse">
+                        <svg viewBox="0 0 64 64" className="h-full w-full">
+                            <circle cx={32} cy={32} r={r} fill="none" strokeWidth="6" stroke="currentColor" className="text-zinc-100 dark:text-zinc-800"
+                                strokeDasharray={`${track} ${circ}`} strokeLinecap="round" transform="rotate(135 32 32)" />
+                            <circle cx={32} cy={32} r={r} fill="none" strokeWidth="6" stroke="currentColor" className={tone.text}
+                                strokeDasharray={`${fill} ${circ}`} strokeLinecap="round" transform="rotate(135 32 32)" style={{ transition: 'stroke-dasharray 1s ease' }} />
                         </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className={`text-3xl font-black tabular-nums leading-none ${scoreColorClass}`}>{pulse.score}</span>
-                            <span className="text-[10px] font-bold text-zinc-400 mt-0.5">%</span>
-                        </div>
+                        <span className={`absolute inset-0 flex items-center justify-center text-xl font-black tabular-nums ${tone.text}`}>{pulse.score}</span>
                     </div>
-
-                    {/* Status badge with pulse animation for non-good states */}
-                    <div className={`mt-3 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-tighter flex items-center gap-1.5 ${scoreBgClass}`}>
-                        {pulse.score < 80 && (
-                            <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${pulse.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'}`} />
-                        )}
-                        {pulse.scoreLabel}
+                    <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">System pulse</span>
+                        <span className={`w-fit rounded-full px-2 py-0.5 text-[11px] font-bold uppercase ${tone.chip}`}>{pulse.scoreLabel}</span>
                     </div>
-                </div>
-
-                <div className="mt-auto w-full space-y-2 pt-4">
-                    <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-tight text-zinc-400">
-                        <span>Health Readiness</span>
-                        <span className={statTextColor(pulse.stats.healthReadiness)}>{Math.round(pulse.stats.healthReadiness)}%</span>
-                    </div>
-                    <div className="h-1.5 bg-zinc-50 dark:bg-zinc-800 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full transition-all duration-700 ${statColor(pulse.stats.healthReadiness)}`} style={{ width: `${pulse.stats.healthReadiness}%` }} />
-                    </div>
-                    <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-tight text-zinc-400">
-                        <span>Goal Health</span>
-                        <span className={statTextColor(pulse.stats.goalHealth)}>{Math.round(pulse.stats.goalHealth)}%</span>
-                    </div>
-                    <div className="h-1.5 bg-zinc-50 dark:bg-zinc-800 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full transition-all duration-700 ${statColor(pulse.stats.goalHealth)}`} style={{ width: `${pulse.stats.goalHealth}%` }} />
+                    <div className="hidden h-10 w-px bg-zinc-100 dark:bg-zinc-800 sm:block" />
+                    <div className="hidden w-40 flex-col gap-2 sm:flex">
+                        {[['Health readiness', pulse.stats.healthReadiness], ['Goal health', pulse.stats.goalHealth]].map(([label, v]) => (
+                            <div key={label as string}>
+                                <div className="flex justify-between text-[10px] font-bold uppercase tracking-tight text-zinc-400">
+                                    <span>{label}</span><span className="tabular-nums text-zinc-600 dark:text-zinc-300">{Math.round(v as number)}%</span>
+                                </div>
+                                <div className="mt-1 h-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                                    <div className={`h-full rounded-full ${barTone(v as number)}`} style={{ width: `${v}%` }} />
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
+            </header>
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-stretch">
+                {/* Priority queue, with a badge showing where each item comes from */}
+                <PriorityQueue actions={pulse.actions} />
+
+                {/* Strategic Focus: what you're working on now and what's coming up */}
+                <StrategicFocus pulse={pulse} />
             </div>
-
-            {/* 2. Priority queue, with a badge showing where each item comes from */}
-            <PriorityQueue actions={pulse.actions} />
-
-            {/* 3. Strategic Focus: what you're working on now and what's due next */}
-            <StrategicFocus pulse={pulse} />
         </div>
     );
 }
