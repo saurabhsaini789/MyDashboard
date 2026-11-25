@@ -14,6 +14,10 @@ export interface BusinessChannel {
  schedules: ContentTypeSchedule[];
  rowColor?: string;
  about?: string;
+ /** Groups accounts across platforms. Falls back to `name` when empty. */
+ brand?: string;
+ /** Brand logo as a small data URL (128px square), shared by every account in the brand. */
+ logo?: string;
 }
 
 export interface ContentIdea {
@@ -24,6 +28,25 @@ export interface ContentIdea {
  status: 'Pending' | 'Completed';
  createdAt: string;
 }
+
+/** One dated measurement for an account, e.g. 12,400 followers on 2026-11-25. */
+export interface ChannelStat {
+ id: string;
+ channelId: string;
+ metric: string;
+ value: number;
+ date: string; // YYYY-MM-DD
+ createdAt: string;
+}
+
+export const STAT_METRICS = [
+ 'Followers',
+ 'Subscribers',
+ 'Views',
+ 'Likes',
+ 'Watch hours',
+ 'Other'
+];
 
 export const DEFAULT_PLATFORMS = [
  'Instagram',

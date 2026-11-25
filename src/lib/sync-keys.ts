@@ -22,6 +22,7 @@ export const SYNC_KEYS = {
  FINANCES_SNAPSHOTS: 'finances_snapshots',
  FINANCES_BUSINESS: 'finances_business',
  FINANCES_BUSINESS_IDEAS: 'finances_business_ideas',
+ FINANCES_BUSINESS_STATS: 'finances_business_stats',
  FINANCES_GROCERY_PLAN: 'finances_grocery_plan',
  FINANCES_INVENTORY: 'finances_inventory',
  
