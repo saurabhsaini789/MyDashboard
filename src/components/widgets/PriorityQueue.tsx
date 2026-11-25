@@ -38,13 +38,13 @@ export function PriorityQueue({ actions }: { actions: PulseAction[] }) {
   const tabs: [Filter, string][] = [['ALL', 'All'], ['CRITICAL', 'Urgent'], ['DAILY', 'Today'], ['MAINTENANCE', 'Later']];
 
   return (
-    <div className="lg:col-span-4 h-full bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-3xl p-6 shadow-sm flex flex-col min-w-0">
+    <div className="h-full bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-3xl p-6 shadow-sm flex flex-col min-w-0">
       <div className="flex items-baseline justify-between mb-4">
         <h2 className="text-lg font-semibold">Priority</h2>
-        <span className="text-sm text-zinc-400">{actions.length} items</span>
+        <span className="text-xs font-semibold text-zinc-400">{actions.length} items</span>
       </div>
 
-      <div className="flex gap-1 rounded-xl bg-zinc-100 dark:bg-zinc-800 p-1 mb-4">
+      <div className="flex h-10 gap-1 rounded-xl bg-zinc-100 dark:bg-zinc-800 p-1 mb-4">
         {tabs.filter(([k]) => k === 'ALL' || counts[k] > 0).map(([k, label]) => (
           <button
             key={k}
@@ -58,7 +58,7 @@ export function PriorityQueue({ actions }: { actions: PulseAction[] }) {
         ))}
       </div>
 
-      <div className="space-y-2.5 overflow-y-auto flex-1 min-h-0 max-h-[280px] pr-1.5 custom-scrollbar">
+      <div className="space-y-2.5 overflow-y-auto flex-1 min-h-0 max-h-[420px] pr-1.5 custom-scrollbar">
         {shown.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center py-8 text-zinc-400">
             <ShieldCheck size={36} className="mb-2 text-emerald-400" />
@@ -83,7 +83,7 @@ export function PriorityQueue({ actions }: { actions: PulseAction[] }) {
                   {action.context && <span className="truncate text-[11px] text-zinc-400">{action.context}</span>}
                   <span className={`ml-auto shrink-0 text-[10px] font-bold uppercase tracking-wider ${tier.text}`}>{tier.label}</span>
                 </div>
-                <span className="line-clamp-2 text-sm font-semibold text-zinc-800 transition-colors group-hover:text-teal-600 dark:text-zinc-100 dark:group-hover:text-teal-400">
+                <span className="text-[15px] font-medium leading-snug text-zinc-900 transition-colors group-hover:text-teal-600 dark:text-zinc-100 dark:group-hover:text-teal-400">
                   {action.label}
                 </span>
               </Link>

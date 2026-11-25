@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- projects are loosely-typed synced JSON */
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowUpRight, Check, ListPlus, Plus, X } from 'lucide-react';
+import { ArrowUpRight, Check, ListPlus, Plus, Printer, X } from 'lucide-react';
 import type { SystemPulseData } from '@/lib/pulse-logic';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 import { useStorageSubscription } from '@/hooks/useStorageSubscription';
@@ -57,7 +57,7 @@ function PlanRow({ task, today, projects }: { task: PlanTask; today: string; pro
         {task.isCompleted && <Check size={12} strokeWidth={3} />}
       </button>
       <div className="min-w-0 flex-1">
-        <p className={`text-base leading-snug ${task.isCompleted ? 'text-zinc-400 line-through' : 'text-zinc-900 dark:text-zinc-100'}`}>{task.title}</p>
+        <p className={`text-[15px] font-medium leading-snug ${task.isCompleted ? 'text-zinc-400 line-through' : 'text-zinc-900 dark:text-zinc-100'}`}>{task.title}</p>
         <p className="mt-0.5 text-xs text-zinc-400">
           {task.projectTitle}
           {due && <> · <span className={due.overdue ? 'text-rose-600 dark:text-rose-400' : ''}>{due.text}</span></>}
@@ -171,90 +171,149 @@ function PickRow({ task, added, projects, today }: { task: PlanTask; added: bool
   );
 }
 
-export function StrategicFocus({ pulse }: { pulse: Pick<SystemPulseData, 'upcomingMilestones'> }) {
+type Upcoming = SystemPulseData['upcomingMilestones'];
+
+/** Shared card shell so the three Today Actions columns line up. */
+export const CARD = 'h-full rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900 flex flex-col min-w-0';
+
+const esc = (t: string) => t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
+
+const blankRow = '<li><span class="box"></span><div class="blank"></div></li>';
+
+/** Opens an A4 print view of today's plan; the browser's print dialog can save it as PDF. */
+function printPlan(plan: PlanTask[], upcoming: Upcoming, today: string, dateLabel: string) {
+  const rows = plan.length
+    ? plan.map(t => {
+        const due = t.isCompleted ? null : dueNote(today, t.dueDate);
+        return `<li><span class="box">${t.isCompleted ? '&#10003;' : ''}</span><div><div class="t${t.isCompleted ? ' done' : ''}">${esc(t.title)}</div><div class="m">${esc(t.projectTitle)}${due ? ` · <span class="${due.overdue ? 'od' : ''}">${due.text}</span>` : ''}</div></div></li>`;
+      }).join('')
+    : blankRow.repeat(5);
+  const coming = upcoming.slice(0, 6).map(u =>
+    `<tr><td class="w">${whenLabel(u.diff, u.dueDate)}</td><td>${u.kind === 'start' ? '<b>Starts</b> ' : ''}${esc(u.title)}<div class="m">${esc(u.kind === 'project' ? `Project · ${u.bucket}` : u.parent || '')}</div></td></tr>`).join('');
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Today's plan — ${esc(dateLabel)}</title><style>
+    @page { size: A4; margin: 18mm 16mm; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #18181b; margin: 0; }
+    h1 { font-size: 26px; margin: 0; } .date { color: #71717a; font-size: 14px; margin-top: 4px; }
+    h2 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #71717a; margin: 28px 0 10px; }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li { display: flex; gap: 14px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid #e4e4e7; break-inside: avoid; }
+    .box { width: 18px; height: 18px; border: 1.6px solid #52525b; border-radius: 4px; flex: none; margin-top: 2px; font-size: 13px; line-height: 15px; text-align: center; }
+    .t { font-size: 16px; font-weight: 500; line-height: 1.35; } .t.done { text-decoration: line-through; color: #a1a1aa; }
+    .m { font-size: 12px; color: #71717a; margin-top: 3px; } .od { color: #e11d48; }
+    .blank { flex: 1; height: 20px; }
+    .notes div { border-bottom: 1px solid #e4e4e7; height: 30px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; } td { padding: 7px 0; border-bottom: 1px solid #f4f4f5; vertical-align: top; } td.w { width: 90px; color: #52525b; font-weight: 600; }
+  </style></head><body>
+    <h1>Today's plan</h1><div class="date">${esc(dateLabel)}</div>
+    <h2>Focus</h2><ul>${rows}</ul>
+    <h2>Also today</h2><ul>${blankRow.repeat(3)}</ul>
+    <h2>Notes</h2><div class="notes">${'<div></div>'.repeat(6)}</div>
+    ${coming ? `<h2>Coming up</h2><table>${coming}</table>` : ''}
+  </body></html>`;
+  const w = window.open('', '_blank', 'width=820,height=1000');
+  if (!w) { alert('Allow pop-ups for this site to print your plan.'); return; }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 300);
+}
+
+export function TodayPlan({ upcoming }: { upcoming: Upcoming }) {
   const projects = useStorageSubscription<any[]>(SYNC_KEYS.GOALS_PROJECTS, EMPTY);
   const [picking, setPicking] = useState(false);
   const today = localDateStr();
   const now = new Date(today + 'T00:00:00');
+  const dateLabel = `${DAY_FULL[now.getDay()]} ${now.getDate()} ${MONTH_FULL[now.getMonth()]}`;
   const plan = todaysPlan(projects, today);
   const done = plan.filter(t => t.isCompleted).length;
   const carried = suggestions(projects, today).filter(s => s.reason === 'carried').length;
 
   return (
-    <div className="lg:col-span-8 h-full rounded-3xl border border-zinc-200/80 bg-white p-7 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900 flex flex-col min-w-0">
-      <div className="mb-6 flex items-baseline justify-between">
-        <h2 className="text-lg font-semibold">Today &amp; ahead</h2>
+    <div className={CARD}>
+      <div className="mb-4 flex items-baseline justify-between gap-3">
+        <h2 className="text-lg font-semibold">Today</h2>
+        <div className="flex items-center gap-4">
+          <button type="button" onClick={() => printPlan(plan, upcoming, today, dateLabel)} title="Print today's plan on A4, or save it as PDF" className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
+            <Printer size={14} /> Print
+          </button>
+          {plan.length > 0 && (
+            <button type="button" onClick={() => setPicking(true)} className="inline-flex items-center gap-1 text-xs font-semibold text-teal-600 hover:text-teal-700 dark:text-teal-400">
+              <ListPlus size={14} /> Edit plan
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="mb-4 flex h-10 flex-col justify-center rounded-xl bg-zinc-50 px-3 dark:bg-zinc-800/50">
+        <div className="flex items-baseline justify-between text-xs">
+          <span className="font-semibold text-zinc-600 dark:text-zinc-300">{dateLabel}</span>
+          {plan.length > 0 && <span className="tabular-nums text-zinc-500">{done} of {plan.length} done</span>}
+        </div>
+        {plan.length > 0 && (
+          <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-zinc-200/70 dark:bg-zinc-700">
+            <div className="h-full rounded-full bg-teal-500 transition-all duration-700" style={{ width: `${(done / plan.length) * 100}%` }} />
+          </div>
+        )}
+      </div>
+
+      {plan.length > 0 ? (
+        <ul className="custom-scrollbar max-h-[420px] flex-1 divide-y divide-zinc-100 overflow-y-auto pr-1 dark:divide-zinc-800">
+          {plan.map(t => <PlanRow key={t.taskId} task={t} today={today} projects={projects} />)}
+        </ul>
+      ) : (
+        <div className="flex flex-1 flex-col items-start justify-center gap-2 rounded-2xl border border-dashed border-zinc-200 p-6 dark:border-zinc-800">
+          <p className="text-[15px] font-medium text-zinc-800 dark:text-zinc-100">What will you get done today?</p>
+          <p className="text-xs text-zinc-500">
+            Pick 3–5 tasks to focus on.
+            {carried > 0 && <> {carried} task{carried === 1 ? '' : 's'} left over from an earlier plan.</>}
+          </p>
+          <button type="button" onClick={() => setPicking(true)} className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700">
+            <ListPlus size={15} /> Plan my day
+          </button>
+        </div>
+      )}
+
+      {picking && <Picker projects={projects} today={today} onClose={() => setPicking(false)} />}
+    </div>
+  );
+}
+
+export function ComingUp({ upcoming }: { upcoming: Upcoming }) {
+  return (
+    <div className={CARD}>
+      <div className="mb-4 flex items-baseline justify-between">
+        <h2 className="text-lg font-semibold">Coming up</h2>
         <Link href="/goals" className="inline-flex items-center gap-1 text-xs font-semibold text-teal-600 hover:text-teal-700 dark:text-teal-400">
           Goals <ArrowUpRight size={13} />
         </Link>
       </div>
 
-      <div className="grid flex-1 grid-cols-1 gap-8 md:grid-cols-[1.25fr_1fr] md:gap-10">
-        {/* Today's plan */}
-        <section className="flex min-w-0 flex-col">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <Label>
-              {DAY_FULL[now.getDay()]} {now.getDate()} {MONTH_FULL[now.getMonth()]}
-              {plan.length > 0 && <span className="ml-2 normal-case tracking-normal text-zinc-500">· {done} of {plan.length} done</span>}
-            </Label>
-            {plan.length > 0 && (
-              <button type="button" onClick={() => setPicking(true)} className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-teal-600 hover:text-teal-700 dark:text-teal-400">
-                <ListPlus size={14} /> Edit plan
-              </button>
-            )}
-          </div>
-
-          {plan.length > 0 && (
-            <div className="mb-4 h-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-              <div className="h-full rounded-full bg-teal-500 transition-all duration-700" style={{ width: `${(done / plan.length) * 100}%` }} />
-            </div>
-          )}
-
-          {plan.length > 0 ? (
-            <ul className="custom-scrollbar max-h-[320px] divide-y divide-zinc-100 overflow-y-auto pr-1 dark:divide-zinc-800">
-              {plan.map(t => <PlanRow key={t.taskId} task={t} today={today} projects={projects} />)}
-            </ul>
-          ) : (
-            <div className="flex flex-1 flex-col items-start justify-center gap-3 rounded-2xl border border-dashed border-zinc-200 p-6 dark:border-zinc-800">
-              <p className="text-base text-zinc-800 dark:text-zinc-100">What will you get done today?</p>
-              <p className="text-sm text-zinc-500">
-                Pick 3–5 tasks to focus on.
-                {carried > 0 && <> {carried} task{carried === 1 ? '' : 's'} left over from an earlier plan.</>}
-              </p>
-              <button type="button" onClick={() => setPicking(true)} className="mt-1 inline-flex items-center gap-1.5 rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700">
-                <ListPlus size={15} /> Plan my day
-              </button>
-            </div>
-          )}
-        </section>
-
-        {/* Coming up */}
-        <section className="min-w-0 md:border-l md:border-zinc-100 md:pl-10 dark:md:border-zinc-800">
-          <div className="mb-3"><Label>Coming up · next 30 days</Label></div>
-          {pulse.upcomingMilestones.length ? (
-            <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
-              {pulse.upcomingMilestones.map(ms => (
-                <li key={ms.id} className="flex gap-4 py-3 first:pt-0">
-                  <span className={`w-[4.5rem] shrink-0 pt-0.5 text-xs font-semibold ${ms.diff === 0 ? 'text-teal-600 dark:text-teal-400' : 'text-zinc-500'}`}>
-                    {whenLabel(ms.diff, ms.dueDate)}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium leading-snug text-zinc-900 dark:text-zinc-100">
-                      {ms.kind === 'start' && <span className="mr-1.5 rounded bg-sky-50 px-1.5 py-0.5 text-[10px] font-bold uppercase text-sky-600 dark:bg-sky-500/10 dark:text-sky-300">Starts</span>}
-                      {ms.title}
-                    </p>
-                    <p className="mt-0.5 text-xs text-zinc-400">{ms.kind === 'project' ? `Project · ${ms.bucket}` : ms.parent}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-zinc-500">Nothing due or starting in the next 30 days.</p>
-          )}
-        </section>
+      <div className="mb-4 flex h-10 items-center rounded-xl bg-zinc-50 px-3 text-xs font-semibold text-zinc-600 dark:bg-zinc-800/50 dark:text-zinc-300">
+        Due or starting in the next 30 days
       </div>
 
-      {picking && <Picker projects={projects} today={today} onClose={() => setPicking(false)} />}
+      {upcoming.length ? (
+        <ul className="custom-scrollbar max-h-[420px] flex-1 divide-y divide-zinc-100 overflow-y-auto pr-1 dark:divide-zinc-800">
+          {upcoming.map(ms => (
+            <li key={ms.id} className="flex gap-4 py-3 first:pt-0">
+              <span className={`w-[4.5rem] shrink-0 pt-0.5 text-xs font-semibold ${ms.diff === 0 ? 'text-teal-600 dark:text-teal-400' : 'text-zinc-500'}`}>
+                {whenLabel(ms.diff, ms.dueDate)}
+              </span>
+              <div className="min-w-0">
+                <p className="text-[15px] font-medium leading-snug text-zinc-900 dark:text-zinc-100">
+                  {ms.kind === 'start' && <span className="mr-1.5 rounded bg-sky-50 px-1.5 py-0.5 align-middle text-[10px] font-bold uppercase text-sky-600 dark:bg-sky-500/10 dark:text-sky-300">Starts</span>}
+                  {ms.title}
+                </p>
+                <p className="mt-0.5 text-xs text-zinc-400">{ms.kind === 'project' ? `Project · ${ms.bucket}` : ms.parent}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-zinc-500">Nothing due or starting in the next 30 days.</p>
+      )}
     </div>
   );
 }

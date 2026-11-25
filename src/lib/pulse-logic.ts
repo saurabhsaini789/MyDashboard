@@ -80,6 +80,12 @@ export interface SystemPulseData {
     healthReadiness: number;
     goalHealth: number;
     habitConsistency: number;
+    /** Finance records kept up to date (drops after 3 days without an entry). */
+    financeHealth: number;
+    /** Share of content schedules not overdue; null when no channels are scheduled. */
+    contentHealth: number | null;
+    /** Journal kept up (drops after 2 days without an entry). */
+    journalHealth: number;
   };
 }
 
@@ -577,6 +583,6 @@ export function calculateSystemPulse(data: PulseDataDependencies): SystemPulseDa
     activeMilestone: activeMilestoneData,
     alsoInProgress,
     upcomingMilestones: upcomingMilestonesData,
-    stats: { healthReadiness, goalHealth, habitConsistency: habitSuccessRate }
+    stats: { healthReadiness, goalHealth, habitConsistency: habitSuccessRate, financeHealth: financeHygiene, contentHealth: contentOrNull, journalHealth: journalHygiene }
   };
 }
