@@ -107,6 +107,35 @@ export interface Brand {
 
 export const brandLogo = (b: Brand) => b.accounts.find(a => a.logo)?.logo;
 
+/** People who handle brands. Saurabh is the default for accounts saved before owners existed. */
+export const DEFAULT_OWNER = 'Saurabh';
+export const KNOWN_OWNERS = ['Saurabh', 'Neha'];
+export const ownerOf = (c: BusinessChannel) => c.owner?.trim() || DEFAULT_OWNER;
+export const brandOwner = (b: Brand) => ownerOf(b.accounts.find(a => a.owner?.trim()) || b.accounts[0]);
+
+/** Owners in display order: known people first, then anyone else alphabetically. */
+export function ownerOrder(names: string[]): string[] {
+  const set = new Set(names);
+  return [...KNOWN_OWNERS.filter(o => set.has(o)), ...[...set].filter(o => !KNOWN_OWNERS.includes(o)).sort()];
+}
+
+/** Days since the newest stat logged for an account. NaN when none. */
+export function daysSinceStat(stats: ChannelStat[], channelId: string): number {
+  let newest = '';
+  for (const s of stats) if (s.channelId === channelId && s.date > newest) newest = s.date;
+  return newest ? -daysFromToday(newest) : NaN;
+}
+
+/** Stats older than this are flagged on stats-only accounts. */
+export const STATS_STALE_DAYS = 30;
+
+export function statAgeLabel(days: number): string {
+  if (isNaN(days)) return 'No stats yet';
+  if (days <= 0) return 'Stats updated today';
+  if (days === 1) return 'Stats updated yesterday';
+  return `Stats updated ${days}d ago`;
+}
+
 /** Center-crops an image file to a small square data URL suitable for syncing. */
 export function imageFileToLogo(file: File, size = 128): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -135,11 +164,11 @@ export function imageFileToLogo(file: File, size = 128): Promise<string> {
   });
 }
 
-/** Groups active accounts into brands, most urgent brand first. */
-export function groupBrands(channels: BusinessChannel[]): Brand[] {
+/** Groups accounts into brands, most urgent brand first: active accounts by default, or drafts and paused ones. */
+export function groupBrands(channels: BusinessChannel[], which: 'active' | 'inactive' = 'active'): Brand[] {
   const map = new Map<string, Brand>();
   for (const c of channels) {
-    if (c.status !== 'Active') continue;
+    if ((c.status === 'Active') !== (which === 'active')) continue;
     const key = brandKey(c);
     if (!map.has(key)) map.set(key, { key, name: brandName(c), accounts: [] });
     map.get(key)!.accounts.push(c);

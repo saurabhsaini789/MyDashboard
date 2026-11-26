@@ -18,6 +18,10 @@ export interface BusinessChannel {
  brand?: string;
  /** Brand logo as a small data URL (128px square), shared by every account in the brand. */
  logo?: string;
+ /** Who handles the brand, e.g. "Saurabh" or "Neha". Shared by every account in the brand. Defaults to Saurabh. */
+ owner?: string;
+ /** Stats-only account: no posting schedule, only followers/views are tracked. */
+ trackOnly?: boolean;
 }
 
 export interface ContentIdea {

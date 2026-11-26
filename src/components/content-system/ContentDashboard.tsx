@@ -1,20 +1,19 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { ChevronDown, Plus } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { setSyncedItem } from '@/lib/storage';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 import { useStorageSubscription } from '@/hooks/useStorageSubscription';
 import type { BusinessChannel, ChannelStat, ContentIdea } from '@/types/business';
 import {
-  brandIdeas, brandKey, brandName, daysFromToday, groupBrands, imageFileToLogo, localDateStr, markAccountPosted,
+  brandIdeas, brandKey, brandName, brandOwner, daysFromToday, groupBrands, imageFileToLogo, KNOWN_OWNERS, localDateStr, markAccountPosted, ownerOf, ownerOrder,
 } from '@/lib/content-system';
 import { SectionTitle, Text } from '../ui/Text';
 import { PlatformTiles } from './PlatformTiles';
 import { WeekStrip } from './WeekStrip';
 import { BrandCard } from './BrandCard';
-import { DraftsShelf } from './DraftsShelf';
 import { ChannelEditor } from './ChannelEditor';
 import { StatsModal } from './StatsModal';
 import { displayNumerals } from './fonts';
@@ -29,6 +28,41 @@ interface UndoState {
   ideas: ContentIdea[];
 }
 
+/** Which brand sections are folded away. Kept on this device only (a viewing preference). */
+const COLLAPSE_KEY = 'content_system_collapsed';
+
+interface SectionHeadProps {
+  count: number;
+  title: string;
+  owner?: string;
+  subtitle: string;
+  open: boolean;
+  onToggle: () => void;
+  action?: React.ReactNode;
+}
+
+function SectionHead({ count, title, owner, subtitle, open, onToggle, action }: SectionHeadProps) {
+  return (
+    <div className={`flex items-end justify-between gap-4 px-1 ${open ? 'mb-4' : ''}`}>
+      <button type="button" onClick={onToggle} aria-expanded={open} className="group flex items-end gap-3 min-w-0 text-left">
+        <span className={`${displayNumerals.className} text-6xl leading-[0.8] tracking-tight tabular-nums transition-colors ${open ? 'text-zinc-900 dark:text-white' : 'text-zinc-300 dark:text-zinc-600'}`}>
+          {String(count).padStart(2, '0')}
+        </span>
+        <span className="pb-0.5 min-w-0">
+          <span className="flex items-center gap-2">
+            <SectionTitle>{title}{owner && <span className="text-zinc-400 font-medium"> — {owner}</span>}</SectionTitle>
+            <ChevronDown size={18} className={`shrink-0 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200 transition-transform ${open ? '' : '-rotate-90'}`} />
+          </span>
+          <Text variant="label" className="mt-1 text-zinc-400">{subtitle}</Text>
+        </span>
+      </button>
+      {action}
+    </div>
+  );
+}
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
 const saveChannels = (list: BusinessChannel[]) => setSyncedItem(SYNC_KEYS.FINANCES_BUSINESS, JSON.stringify(list));
 const saveIdeas = (list: ContentIdea[]) => setSyncedItem(SYNC_KEYS.FINANCES_BUSINESS_IDEAS, JSON.stringify(list));
 const saveStats = (list: ChannelStat[]) => setSyncedItem(SYNC_KEYS.FINANCES_BUSINESS_STATS, JSON.stringify(list));
@@ -40,12 +74,25 @@ export function ContentDashboard() {
   const [statsFor, setStatsFor] = useState<{ brandKey: string; channel: BusinessChannel; key: number } | null>(null);
 
   const [filter, setFilter] = useState('All');
+  // Drafts start folded; everything else starts open.
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({ drafts: true });
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(COLLAPSE_KEY) || 'null');
+      if (saved && typeof saved === 'object') setCollapsed(c => ({ ...c, ...saved }));
+    } catch { /* storage unavailable: keep defaults */ }
+  }, []);
+  const toggleSection = (id: string) => setCollapsed(c => {
+    const next = { ...c, [id]: !c[id] };
+    try { localStorage.setItem(COLLAPSE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+    return next;
+  });
   const [undo, setUndo] = useState<UndoState | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [editor, setEditor] = useState<{ open: boolean; channel: BusinessChannel | null; presetBrand?: string; key?: number }>({ open: false, channel: null });
-  const openEditor = (channel: BusinessChannel | null, presetBrand?: string) =>
-    setEditor({ open: true, channel, presetBrand, key: Date.now() });
+  const [editor, setEditor] = useState<{ open: boolean; channel: BusinessChannel | null; presetBrand?: string; presetOwner?: string; key?: number }>({ open: false, channel: null });
+  const openEditor = (channel: BusinessChannel | null, presetBrand?: string, presetOwner?: string) =>
+    setEditor({ open: true, channel, presetBrand, presetOwner, key: Date.now() });
 
   // Convert legacy single-schedule channels to the schedules[] format.
   useEffect(() => {
@@ -72,9 +119,31 @@ export function ContentDashboard() {
   useEffect(() => () => { if (undoTimer.current) clearTimeout(undoTimer.current); }, []);
 
   const brands = useMemo(() => groupBrands(channels), [channels]);
+  const draftBrands = useMemo(() => groupBrands(channels, 'inactive'), [channels]);
+  const visibleDrafts = filter === 'All' ? draftBrands : draftBrands.filter(b => b.accounts.some(a => a.platform === filter));
+  const draftAccounts = draftBrands.flatMap(b => b.accounts);
+  const pausedAccounts = draftAccounts.filter(a => a.status === 'Paused').length;
   const visibleBrands = filter === 'All' ? brands : brands.filter(b => b.accounts.some(a => a.platform === filter));
   const weekChannels = filter === 'All' ? channels : channels.filter(c => c.platform === filter);
   const allBrandNames = useMemo(() => [...new Set(channels.map(brandName))].sort(), [channels]);
+  const brandOwners = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const c of channels) if (c.owner?.trim() || !map[brandKey(c)]) map[brandKey(c)] = ownerOf(c);
+    return map;
+  }, [channels]);
+  const owners = useMemo(() => ownerOrder([...KNOWN_OWNERS, ...channels.map(ownerOf)]), [channels]);
+  /** Active brands split by who handles them; a person with no active brands is left out. */
+  const ownerGroups = useMemo(() => ownerOrder(brands.map(brandOwner)).map(owner => {
+    const all = brands.filter(b => brandOwner(b) === owner);
+    const accounts = all.flatMap(b => b.accounts);
+    return {
+      owner,
+      all,
+      visible: all.filter(b => visibleBrands.includes(b)),
+      accounts: accounts.length,
+      platforms: new Set(accounts.map(a => a.platform)).size,
+    };
+  }), [brands, visibleBrands]);
 
   const showUndo = (state: UndoState) => {
     if (undoTimer.current) clearTimeout(undoTimer.current);
@@ -132,7 +201,10 @@ export function ContentDashboard() {
 
   const saveChannel = (channel: BusinessChannel) => {
     const exists = channels.some(c => c.id === channel.id);
-    saveChannels(exists ? channels.map(c => (c.id === channel.id ? channel : c)) : [channel, ...channels]);
+    const next = exists ? channels.map(c => (c.id === channel.id ? channel : c)) : [channel, ...channels];
+    // The owner belongs to the whole brand, so keep every account in it in step.
+    const k = brandKey(channel);
+    saveChannels(next.map(c => (brandKey(c) === k && c.id !== channel.id ? { ...c, owner: channel.owner } : c)));
     setEditor({ open: false, channel: null });
   };
 
@@ -155,71 +227,135 @@ export function ContentDashboard() {
         <WeekStrip channels={weekChannels} />
       </section>
 
-      <section>
-        <div className="flex items-end justify-between gap-4 mb-4 px-1">
-          <div className="flex items-end gap-3">
-            <span className={`${displayNumerals.className} text-6xl leading-[0.8] tracking-tight text-zinc-900 dark:text-white tabular-nums`}>
-              {String(brands.length).padStart(2, '0')}
-            </span>
-            <div className="pb-0.5">
-              <SectionTitle>Active brands</SectionTitle>
-              <Text variant="label" className="mt-1 text-zinc-400">
-                {channels.filter(c => c.status === 'Active').length} accounts across {new Set(channels.filter(c => c.status === 'Active').map(c => c.platform)).size} platforms
-              </Text>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => openEditor(null)}
-            className="flex items-center gap-1.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm"
-          >
-            <Plus size={14} /> Add account
-          </button>
-        </div>
-        {visibleBrands.length ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch">
-            {visibleBrands.map(b => (
-              <BrandCard
-                key={b.key}
-                brand={b}
-                index={brands.indexOf(b) + 1}
-                ideas={brandIdeas(b.key, channels, ideas)}
-                stats={stats}
-                onOpenStats={c => setStatsFor({ brandKey: b.key, channel: c, key: Date.now() })}
-                onUploadLogo={file => uploadLogo(b.key, file)}
-                onRemoveLogo={() => setBrandLogo(b.key, undefined)}
-                filter={filter}
-                onPost={handlePost}
-                onAddIdea={title => addIdea(b.key, title)}
-                onDeleteIdea={id => saveIdeas(ideas.filter(i => i.id !== id))}
-                onEdit={c => openEditor(c)}
-                onAddAccount={name => openEditor(null, name)}
-              />
+      {ownerGroups.map((g, gi) => {
+        const id = `owner:${g.owner}`;
+        const open = !collapsed[id];
+        return (
+          <section key={g.owner}>
+            <SectionHead
+              count={g.all.length}
+              title="Active brands"
+              owner={g.owner}
+              subtitle={`${plural(g.accounts, 'account')} across ${plural(g.platforms, 'platform')}`}
+              open={open}
+              onToggle={() => toggleSection(id)}
+              action={
+                <button
+                  type="button"
+                  onClick={() => openEditor(null, undefined, g.owner)}
+                  className={`shrink-0 flex items-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm ${gi === 0
+                    ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900'
+                    : 'bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700'}`}
+                >
+                  <Plus size={14} /> Add account
+                </button>
+              }
+            />
+            {open && (g.visible.length ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch">
+                {g.visible.map(b => (
+                  <BrandCard
+                    key={b.key}
+                    brand={b}
+                    index={g.all.indexOf(b) + 1}
+                    ideas={brandIdeas(b.key, channels, ideas)}
+                    stats={stats}
+                    onOpenStats={c => setStatsFor({ brandKey: b.key, channel: c, key: Date.now() })}
+                    onUploadLogo={file => uploadLogo(b.key, file)}
+                    onRemoveLogo={() => setBrandLogo(b.key, undefined)}
+                    filter={filter}
+                    onPost={handlePost}
+                    onAddIdea={title => addIdea(b.key, title)}
+                    onDeleteIdea={id => saveIdeas(ideas.filter(i => i.id !== id))}
+                    onEdit={c => openEditor(c)}
+                    onAddAccount={name => openEditor(null, name)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 py-8 text-center">
+                <Text variant="label" className="text-zinc-400">No active {filter} accounts for {g.owner}</Text>
+              </div>
             ))}
+          </section>
+        );
+      })}
+
+      {draftBrands.length > 0 && (
+        <section>
+          <SectionHead
+            count={draftBrands.length}
+            title="Drafts and paused"
+            subtitle={[plural(draftAccounts.length, 'account'), pausedAccounts && `${pausedAccounts} paused`, draftAccounts.length - pausedAccounts && plural(draftAccounts.length - pausedAccounts, 'draft')].filter(Boolean).join(' · ')}
+            open={!collapsed.drafts}
+            onToggle={() => toggleSection('drafts')}
+          />
+          {!collapsed.drafts && (visibleDrafts.length ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch">
+              {visibleDrafts.map(b => (
+                <BrandCard
+                  key={b.key}
+                  brand={b}
+                  index={draftBrands.indexOf(b) + 1}
+                  ideas={brandIdeas(b.key, channels, ideas)}
+                  stats={stats}
+                  onOpenStats={c => setStatsFor({ brandKey: b.key, channel: c, key: Date.now() })}
+                  onUploadLogo={file => uploadLogo(b.key, file)}
+                  onRemoveLogo={() => setBrandLogo(b.key, undefined)}
+                  filter={filter}
+                  onPost={handlePost}
+                  onAddIdea={title => addIdea(b.key, title)}
+                  onDeleteIdea={id => saveIdeas(ideas.filter(i => i.id !== id))}
+                  onEdit={c => openEditor(c)}
+                  onAddAccount={name => openEditor(null, name)}
+                  inactive
+                  onActivate={activate}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 py-8 text-center">
+              <Text variant="label" className="text-zinc-400">No {filter} drafts or paused accounts</Text>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {ownerGroups.length === 0 && (
+        <section>
+          <div className="flex items-end justify-between gap-4 mb-4 px-1">
+            <SectionTitle>Active brands</SectionTitle>
+            <button
+              type="button"
+              onClick={() => openEditor(null)}
+              className="flex items-center gap-1.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm"
+            >
+              <Plus size={14} /> Add account
+            </button>
           </div>
-        ) : (
           <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 py-12 text-center">
-            <Text variant="body" className="font-bold">{filter === 'All' ? 'Add your first account' : `No active ${filter} accounts`}</Text>
+            <Text variant="body" className="font-bold">Add your first account</Text>
             <Text variant="label" className="mt-1 text-zinc-400">Each account belongs to a brand, so one brand can span several platforms.</Text>
           </div>
-        )}
-      </section>
-
-      <DraftsShelf channels={channels} onActivate={activate} onEdit={c => openEditor(c)} />
+        </section>
+      )}
 
       {editor.open && <ChannelEditor
         key={editor.key}
         isOpen={editor.open}
         channel={editor.channel}
         presetBrand={editor.presetBrand}
+        presetOwner={editor.presetOwner}
         brands={allBrandNames}
+        brandOwners={brandOwners}
+        owners={owners}
         onClose={() => setEditor({ open: false, channel: null })}
         onSave={saveChannel}
         onDelete={deleteChannel}
       />}
 
       {statsFor && (() => {
-        const b = brands.find(x => x.key === statsFor.brandKey);
+        const b = brands.find(x => x.key === statsFor.brandKey) || draftBrands.find(x => x.key === statsFor.brandKey);
         if (!b) return null;
         return (
           <StatsModal
