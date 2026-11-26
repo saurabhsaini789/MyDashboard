@@ -17,6 +17,7 @@ import { BrandCard } from './BrandCard';
 import { ChannelEditor } from './ChannelEditor';
 import { StatsModal } from './StatsModal';
 import { BulkStatsModal } from './BulkStatsModal';
+import { mergeStats } from '@/lib/content-metrics';
 import { IdeasInbox } from './IdeasInbox';
 import { displayNumerals } from './fonts';
 
@@ -476,8 +477,12 @@ export function ContentDashboard() {
             brand={b}
             initialChannel={statsFor.channel}
             stats={stats}
-            onAdd={s => saveStats([...stats, s])}
-            onDelete={id => saveStats(stats.filter(s => s.id !== id))}
+            onAdd={entries => saveStats(mergeStats(stats, entries))}
+            onDelete={ids => saveStats(stats.filter(s => !ids.includes(s.id)))}
+            onAddMetric={(channelId, name, kind) => saveChannels(channels.map(c => (c.id !== channelId ? c : {
+              ...c,
+              customMetrics: [...(c.customMetrics || []).filter(m => m.name.toLowerCase() !== name.toLowerCase()), { name, kind }],
+            })))}
             onClose={() => setStatsFor(null)}
           />
         );
@@ -487,7 +492,7 @@ export function ContentDashboard() {
         <BulkStatsModal
           accounts={staleStats}
           stats={stats}
-          onAdd={entries => saveStats([...stats, ...entries])}
+          onAdd={entries => saveStats(mergeStats(stats, entries))}
           onClose={() => setBulkStats(false)}
         />
       )}

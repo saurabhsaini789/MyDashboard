@@ -30,6 +30,16 @@ export interface BusinessChannel {
  statusSince?: string;
  /** Dates (YYYY-MM-DD) the account was marked as posted, oldest first. Feeds the posting streak. */
  postLog?: string[];
+ /** Extra metrics logged for this account beyond its platform's preset list. */
+ customMetrics?: CustomMetric[];
+}
+
+/** total = running count (followers); period = activity in the last 28 days (views, likes). */
+export type MetricKind = 'total' | 'period';
+
+export interface CustomMetric {
+ name: string;
+ kind: MetricKind;
 }
 
 export interface ChannelTarget {

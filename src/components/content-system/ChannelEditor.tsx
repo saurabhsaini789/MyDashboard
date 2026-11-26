@@ -3,8 +3,9 @@
 import React, { useState } from 'react';
 import { AlertCircle, BarChart3, Calendar, Link2, Target, UserRound, X } from 'lucide-react';
 import { Modal } from '../ui/Modal';
-import { DEFAULT_PLATFORMS, POST_TYPES, STAT_METRICS, type BusinessChannel, type ChannelTarget, type ContentTypeSchedule } from '@/types/business';
+import { DEFAULT_PLATFORMS, POST_TYPES, type BusinessChannel, type ChannelTarget, type ContentTypeSchedule } from '@/types/business';
 import { brandName, DEFAULT_OWNER, localDateStr, normalizeUrl, ownerOf } from '@/lib/content-system';
+import { targetMetrics } from '@/lib/content-metrics';
 
 interface Props {
   isOpen: boolean;
@@ -165,7 +166,7 @@ export function ChannelEditor({ isOpen, channel, presetBrand, brands, brandOwner
         <span className={`${label} flex items-center gap-1`}><Target size={11} /> Target <span className="normal-case font-medium">(optional)</span></span>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <select value={targetMetric} onChange={e => setTargetMetric(e.target.value)} className={input} aria-label="Target metric">
-            {STAT_METRICS.filter(m => m !== 'Other').map(m => <option key={m} value={m}>{m}</option>)}
+            {[...new Set([...targetMetrics({ ...(channel || { id: '', name: '', status: 'Active', schedules: [] }), platform: platform === 'Other' ? customPlatform : platform } as BusinessChannel), targetMetric])].map(m => <option key={m} value={m}>{m}</option>)}
           </select>
           <input inputMode="numeric" value={targetValue} onChange={e => { setTargetValue(e.target.value); setError(''); }} placeholder="20000" className={input} aria-label="Target value" />
           <input type="date" value={targetBy} min={localDateStr()} onChange={e => setTargetBy(e.target.value)} className={input} aria-label="Target date" />
