@@ -185,16 +185,26 @@ export function brandIdeas(brandK: string, channels: BusinessChannel[], ideas: C
   const ids = new Set(channels.filter(c => brandKey(c) === brandK).map(c => c.id));
   return ideas
     .filter(i => ids.has(i.channelId) && i.status === 'Pending')
-    .sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+    .sort(byIdeaOrder);
 }
 
-/** Marks every due schedule on an account as posted today. */
+/** Queue order: ideas placed by hand first (by `order`), then the rest oldest first. */
+export function byIdeaOrder(a: ContentIdea, b: ContentIdea): number {
+  const oa = a.order ?? Infinity;
+  const ob = b.order ?? Infinity;
+  if (oa !== ob) return oa - ob;
+  return (a.createdAt || '').localeCompare(b.createdAt || '');
+}
+
+/** Marks every due schedule on an account as posted today and records the day for the streak. */
 export function markAccountPosted(channels: BusinessChannel[], channelId: string): BusinessChannel[] {
   const today = localDateStr();
   return channels.map(c => {
     if (c.id !== channelId) return c;
+    const log = c.postLog || [];
     return {
       ...c,
+      postLog: log.includes(today) ? log : [...log, today],
       schedules: (c.schedules || []).map(s => {
         const n = daysFromToday(s.nextPostDueDate);
         if (isNaN(n) || n > 0) return s;
@@ -218,4 +228,100 @@ export function dueOffsets(c: BusinessChannel, days = 7): Set<number> {
     }
   }
   return out;
+}
+
+
+// ---------- Growth, targets and streaks ----------
+
+/** The metric an account card leads with: Subscribers on YouTube, Followers elsewhere, else the latest logged. */
+export function headlineMetric(stats: ChannelStat[], channel: BusinessChannel): string | null {
+  return headlineStat(stats, channel)?.metric ?? null;
+}
+
+export interface Change {
+  delta: number;
+  /** Days between the two entries compared. */
+  days: number;
+}
+
+/** Change over roughly the last 30 days: latest entry vs the last one logged 30+ days ago (or the earliest, if newer). */
+export function recentChange(stats: ChannelStat[], channelId: string, metric: string): Change | null {
+  const hist = statHistory(stats, channelId, metric);
+  if (hist.length < 2) return null;
+  const last = hist[hist.length - 1];
+  const cutoff = addDaysStr(localDateStr(), -30);
+  const older = hist.filter(h => h.date <= cutoff);
+  const base = older.length ? older[older.length - 1] : hist[0];
+  if (base === last) return null;
+  return { delta: last.value - base.value, days: Math.max(1, -daysFromToday(base.date) + daysFromToday(last.date)) };
+}
+
+export type TargetState = 'reached' | 'on-pace' | 'behind' | 'missed' | 'no-date' | 'no-data';
+
+export interface TargetProgress {
+  current: number | null;
+  /** 0-100, share of the target value reached. */
+  pct: number;
+  state: TargetState;
+}
+
+export function targetProgress(stats: ChannelStat[], channel: BusinessChannel): TargetProgress | null {
+  const t = channel.target;
+  if (!t || !(t.value > 0)) return null;
+  const hist = statHistory(stats, channel.id, t.metric);
+  const last = hist[hist.length - 1];
+  if (!last) return { current: null, pct: 0, state: 'no-data' };
+  const current = last.value;
+  const pct = Math.max(0, Math.min(100, Math.round((current / t.value) * 100)));
+  if (current >= t.value) return { current, pct, state: 'reached' };
+  if (!t.by) return { current, pct, state: 'no-date' };
+  if (daysFromToday(t.by) < 0) return { current, pct, state: 'missed' };
+  const before = hist.filter(h => h.date <= t.setOn);
+  const base = before.length ? before[before.length - 1] : hist[0];
+  const total = daysFromToday(t.by) - daysFromToday(base.date);
+  const elapsed = -daysFromToday(base.date);
+  if (total <= 0 || elapsed <= 0) return { current, pct, state: 'on-pace' };
+  const expected = base.value + (t.value - base.value) * (elapsed / total);
+  return { current, pct, state: current >= expected ? 'on-pace' : 'behind' };
+}
+
+export const TARGET_LABEL: Record<TargetState, string> = {
+  reached: 'reached',
+  'on-pace': 'on pace',
+  behind: 'behind pace',
+  missed: 'missed',
+  'no-date': 'no deadline',
+  'no-data': 'log stats to track',
+};
+
+/** Monday-based week number, so posts in the same Mon-Sun week count once. */
+function weekIndex(dateStr: string): number {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const t = Date.UTC(y, m - 1, d) / 86400000; // days since epoch (1970-01-01 was a Thursday)
+  return Math.floor((t + 3) / 7);
+}
+
+/** Weeks in a row (ending this week or last) in which any account of the brand posted. */
+export function postingStreak(brand: Brand): number {
+  const weeks = new Set<number>();
+  for (const a of brand.accounts) {
+    for (const d of a.postLog || []) weeks.add(weekIndex(d));
+    // Posts marked before the log existed still count, through each schedule's last post.
+    for (const s of a.schedules || []) if (s.lastPostedDate && daysFromToday(s.lastPostedDate) <= 0) weeks.add(weekIndex(s.lastPostedDate.split('T')[0]));
+  }
+  let w = weekIndex(localDateStr());
+  if (!weeks.has(w)) w -= 1;
+  let n = 0;
+  while (weeks.has(w)) { n += 1; w -= 1; }
+  return n;
+}
+
+/** Days since the status last changed. NaN when unknown. */
+export const daysInStatus = (c: BusinessChannel) => (c.statusSince ? -daysFromToday(c.statusSince) : NaN);
+
+/** Turns "instagram.com/x" into "https://instagram.com/x"; empty stays empty. */
+export function normalizeUrl(raw: string): string {
+  const v = raw.trim();
+  if (!v) return '';
+  return /^https?:\/\//i.test(v) ? v : `https://${v}`;
 }

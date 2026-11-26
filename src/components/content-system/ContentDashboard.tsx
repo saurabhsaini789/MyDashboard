@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Plus } from 'lucide-react';
+import { AlertCircle, ChevronDown, Plus } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { setSyncedItem } from '@/lib/storage';
 import { SYNC_KEYS } from '@/lib/sync-keys';
 import { useStorageSubscription } from '@/hooks/useStorageSubscription';
-import type { BusinessChannel, ChannelStat, ContentIdea } from '@/types/business';
+import { INBOX_CHANNEL, type BusinessChannel, type ChannelStat, type ContentIdea } from '@/types/business';
 import {
-  brandIdeas, brandKey, brandName, brandOwner, daysFromToday, groupBrands, imageFileToLogo, KNOWN_OWNERS, localDateStr, markAccountPosted, ownerOf, ownerOrder,
+  brandIdeas, brandKey, brandName, brandOwner, byIdeaOrder, daysFromToday, daysSinceStat, STATS_STALE_DAYS, groupBrands, imageFileToLogo, KNOWN_OWNERS, localDateStr, markAccountPosted, ownerOf, ownerOrder,
 } from '@/lib/content-system';
 import { SectionTitle, Text } from '../ui/Text';
 import { PlatformTiles } from './PlatformTiles';
@@ -16,6 +16,8 @@ import { WeekStrip } from './WeekStrip';
 import { BrandCard } from './BrandCard';
 import { ChannelEditor } from './ChannelEditor';
 import { StatsModal } from './StatsModal';
+import { BulkStatsModal } from './BulkStatsModal';
+import { IdeasInbox } from './IdeasInbox';
 import { displayNumerals } from './fonts';
 
 const EMPTY_CHANNELS: BusinessChannel[] = [];
@@ -31,7 +33,21 @@ interface UndoState {
 /** Which brand sections are folded away. Kept on this device only (a viewing preference). */
 const COLLAPSE_KEY = 'content_system_collapsed';
 
+/** Accent per section so the headings are easy to tell apart. */
+interface Tone { num: string; accent: string; bar: string }
+const TONES: Record<string, Tone> = {
+  teal: { num: 'text-teal-600 dark:text-teal-400', accent: 'text-teal-600 dark:text-teal-400', bar: 'bg-teal-500' },
+  violet: { num: 'text-violet-600 dark:text-violet-400', accent: 'text-violet-600 dark:text-violet-400', bar: 'bg-violet-500' },
+  sky: { num: 'text-sky-600 dark:text-sky-400', accent: 'text-sky-600 dark:text-sky-400', bar: 'bg-sky-500' },
+  rose: { num: 'text-rose-600 dark:text-rose-400', accent: 'text-rose-600 dark:text-rose-400', bar: 'bg-rose-500' },
+  amber: { num: 'text-amber-600 dark:text-amber-400', accent: 'text-amber-600 dark:text-amber-400', bar: 'bg-amber-500' },
+  indigo: { num: 'text-indigo-600 dark:text-indigo-400', accent: 'text-indigo-600 dark:text-indigo-400', bar: 'bg-indigo-500' },
+};
+/** Saurabh teal, Neha violet, then anyone else. */
+const OWNER_TONES = ['teal', 'violet', 'sky', 'rose'];
+
 interface SectionHeadProps {
+  tone: Tone;
   count: number;
   title: string;
   owner?: string;
@@ -41,16 +57,17 @@ interface SectionHeadProps {
   action?: React.ReactNode;
 }
 
-function SectionHead({ count, title, owner, subtitle, open, onToggle, action }: SectionHeadProps) {
+function SectionHead({ tone, count, title, owner, subtitle, open, onToggle, action }: SectionHeadProps) {
   return (
-    <div className={`flex items-end justify-between gap-4 px-1 ${open ? 'mb-4' : ''}`}>
+    <div className={`flex flex-wrap items-end justify-between gap-x-4 gap-y-3 px-1 ${open ? 'mb-4' : ''}`}>
       <button type="button" onClick={onToggle} aria-expanded={open} className="group flex items-end gap-3 min-w-0 text-left">
-        <span className={`${displayNumerals.className} text-6xl leading-[0.8] tracking-tight tabular-nums transition-colors ${open ? 'text-zinc-900 dark:text-white' : 'text-zinc-300 dark:text-zinc-600'}`}>
+        <span className={`${displayNumerals.className} text-6xl leading-[0.8] tracking-tight tabular-nums transition-colors ${open ? tone.num : 'text-zinc-300 dark:text-zinc-600'}`}>
           {String(count).padStart(2, '0')}
         </span>
         <span className="pb-0.5 min-w-0">
-          <span className="flex items-center gap-2">
-            <SectionTitle>{title}{owner && <span className="text-zinc-400 font-medium"> — {owner}</span>}</SectionTitle>
+          <span className="flex items-center gap-2 whitespace-nowrap">
+            <span className={`w-1 h-5 rounded-full shrink-0 ${open ? tone.bar : 'bg-zinc-300 dark:bg-zinc-600'}`} aria-hidden />
+            <SectionTitle>{title}{owner && <span className={tone.accent}> — {owner}</span>}</SectionTitle>
             <ChevronDown size={18} className={`shrink-0 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200 transition-transform ${open ? '' : '-rotate-90'}`} />
           </span>
           <Text variant="label" className="mt-1 text-zinc-400">{subtitle}</Text>
@@ -71,6 +88,7 @@ export function ContentDashboard() {
   const channels = useStorageSubscription<BusinessChannel[]>(SYNC_KEYS.FINANCES_BUSINESS, EMPTY_CHANNELS);
   const ideas = useStorageSubscription<ContentIdea[]>(SYNC_KEYS.FINANCES_BUSINESS_IDEAS, EMPTY_IDEAS);
   const stats = useStorageSubscription<ChannelStat[]>(SYNC_KEYS.FINANCES_BUSINESS_STATS, EMPTY_STATS);
+  const [bulkStats, setBulkStats] = useState(false);
   const [statsFor, setStatsFor] = useState<{ brandKey: string; channel: BusinessChannel; key: number } | null>(null);
 
   const [filter, setFilter] = useState('All');
@@ -116,6 +134,13 @@ export function ContentDashboard() {
     }));
   }, [channels]);
 
+  // Start the "sitting for N days" clock for drafts and paused accounts saved before it existed.
+  useEffect(() => {
+    if (!channels.some(c => c.status !== 'Active' && !c.statusSince)) return;
+    const today = localDateStr();
+    saveChannels(channels.map(c => (c.status !== 'Active' && !c.statusSince ? { ...c, statusSince: today } : c)));
+  }, [channels]);
+
   useEffect(() => () => { if (undoTimer.current) clearTimeout(undoTimer.current); }, []);
 
   const brands = useMemo(() => groupBrands(channels), [channels]);
@@ -123,6 +148,22 @@ export function ContentDashboard() {
   const visibleDrafts = filter === 'All' ? draftBrands : draftBrands.filter(b => b.accounts.some(a => a.platform === filter));
   const draftAccounts = draftBrands.flatMap(b => b.accounts);
   const pausedAccounts = draftAccounts.filter(a => a.status === 'Paused').length;
+  /** Active accounts with no stats in the last 30 days (or none at all). */
+  const staleStats = channels.filter(c => {
+    if (c.status !== 'Active') return false;
+    const age = daysSinceStat(stats, c.id);
+    return isNaN(age) || age > STATS_STALE_DAYS;
+  });
+  const inboxIdeas = ideas.filter(i => i.status === 'Pending' && !channels.some(c => c.id === i.channelId)).sort(byIdeaOrder);
+  /** Scheduled accounts whose brand has nothing queued; flagged in This week. */
+  const noIdeas = useMemo(() => {
+    const out = new Set<string>();
+    for (const b of brands) {
+      if (brandIdeas(b.key, channels, ideas).length) continue;
+      for (const a of b.accounts) if (!a.trackOnly) out.add(a.id);
+    }
+    return out;
+  }, [brands, channels, ideas]);
   const visibleBrands = filter === 'All' ? brands : brands.filter(b => b.accounts.some(a => a.platform === filter));
   const weekChannels = filter === 'All' ? channels : channels.filter(c => c.platform === filter);
   const allBrandNames = useMemo(() => [...new Set(channels.map(brandName))].sort(), [channels]);
@@ -184,10 +225,38 @@ export function ContentDashboard() {
     setUndo(null);
   };
 
+  /** The account a brand's ideas hang off: its first active account, else any. */
+  const ideaHolder = (brandK: string) =>
+    channels.find(c => brandKey(c) === brandK && c.status === 'Active') || channels.find(c => brandKey(c) === brandK);
+
+  /** Renumbers a brand's queue so `ids` come first in that order; ideas not listed keep their relative order after. */
+  const withQueueOrder = (list: ContentIdea[], brandK: string, ids: string[]) => {
+    const queue = brandIdeas(brandK, channels, list);
+    const ordered = [...ids, ...queue.map(i => i.id).filter(id => !ids.includes(id))];
+    const pos = new Map(ordered.map((id, n) => [id, n]));
+    return list.map(i => (pos.has(i.id) ? { ...i, order: pos.get(i.id) } : i));
+  };
+
   const addIdea = (brandK: string, title: string) => {
-    const owner = channels.find(c => brandKey(c) === brandK && c.status === 'Active') || channels.find(c => brandKey(c) === brandK);
-    if (!owner) return;
-    saveIdeas([...ideas, { id: crypto.randomUUID(), channelId: owner.id, title, status: 'Pending', createdAt: new Date().toISOString() }]);
+    const holder = ideaHolder(brandK);
+    if (!holder) return;
+    const idea: ContentIdea = { id: crypto.randomUUID(), channelId: holder.id, title, status: 'Pending', createdAt: new Date().toISOString() };
+    const list = [...ideas, idea];
+    // Keep it at the end of the queue even when earlier ideas were reordered by hand.
+    saveIdeas(withQueueOrder(list, brandK, brandIdeas(brandK, channels, list).map(i => i.id).filter(id => id !== idea.id).concat(idea.id)));
+  };
+
+  const reorderIdeas = (brandK: string, ids: string[]) => saveIdeas(withQueueOrder(ideas, brandK, ids));
+
+  const addInboxIdea = (title: string) =>
+    saveIdeas([...ideas, { id: crypto.randomUUID(), channelId: INBOX_CHANNEL, title, status: 'Pending', createdAt: new Date().toISOString() }]);
+
+  const assignInboxIdea = (ideaId: string, brandK: string) => {
+    const holder = ideaHolder(brandK);
+    if (!holder) return;
+    const list = ideas.map(i => (i.id === ideaId ? { ...i, channelId: holder.id } : i));
+    const queue = brandIdeas(brandK, channels, list).map(i => i.id).filter(id => id !== ideaId);
+    saveIdeas(withQueueOrder(list, brandK, [...queue, ideaId]));
   };
 
   const activate = (channel: BusinessChannel) => {
@@ -195,12 +264,16 @@ export function ContentDashboard() {
     saveChannels(channels.map(c => c.id !== channel.id ? c : {
       ...c,
       status: 'Active' as const,
+      statusSince: today,
       schedules: (c.schedules || []).map(s => (daysFromToday(s.nextPostDueDate) < 0 ? { ...s, nextPostDueDate: today } : s)),
     }));
   };
 
   const saveChannel = (channel: BusinessChannel) => {
-    const exists = channels.some(c => c.id === channel.id);
+    const before = channels.find(c => c.id === channel.id);
+    // Restart the "sitting for N days" clock whenever the status changes.
+    if (!before || before.status !== channel.status) channel = { ...channel, statusSince: localDateStr() };
+    const exists = !!before;
     const next = exists ? channels.map(c => (c.id === channel.id ? channel : c)) : [channel, ...channels];
     // The owner belongs to the whole brand, so keep every account in it in step.
     const k = brandKey(channel);
@@ -222,10 +295,26 @@ export function ContentDashboard() {
       <section>
         <div className="flex items-end justify-between mb-4 px-1">
           <SectionTitle>This week</SectionTitle>
-          <Text variant="label" className="text-zinc-400">Late posts roll into today</Text>
+          <Text variant="label" className="text-zinc-400">Late posts roll into today{noIdeas.size > 0 && <span className="text-amber-600 dark:text-amber-400"> · amber outline = no idea queued</span>}</Text>
         </div>
-        <WeekStrip channels={weekChannels} />
+        <WeekStrip channels={weekChannels} noIdeas={noIdeas} />
       </section>
+
+      {staleStats.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-3">
+          <div className="flex items-center gap-2.5 min-w-0 text-sm text-amber-800 dark:text-amber-200">
+            <AlertCircle size={16} className="shrink-0" />
+            <span><b>{staleStats.length} {staleStats.length === 1 ? 'account needs' : 'accounts need'} stats</b> · nothing logged in {STATS_STALE_DAYS}+ days</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setBulkStats(true)}
+            className="shrink-0 text-xs font-bold px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white"
+          >
+            Log them now
+          </button>
+        </div>
+      )}
 
       {ownerGroups.map((g, gi) => {
         const id = `owner:${g.owner}`;
@@ -233,6 +322,7 @@ export function ContentDashboard() {
         return (
           <section key={g.owner}>
             <SectionHead
+              tone={TONES[OWNER_TONES[owners.indexOf(g.owner) % OWNER_TONES.length]] || TONES.teal}
               count={g.all.length}
               title="Active brands"
               owner={g.owner}
@@ -267,6 +357,7 @@ export function ContentDashboard() {
                     onPost={handlePost}
                     onAddIdea={title => addIdea(b.key, title)}
                     onDeleteIdea={id => saveIdeas(ideas.filter(i => i.id !== id))}
+                    onReorderIdeas={ids => reorderIdeas(b.key, ids)}
                     onEdit={c => openEditor(c)}
                     onAddAccount={name => openEditor(null, name)}
                   />
@@ -284,6 +375,7 @@ export function ContentDashboard() {
       {draftBrands.length > 0 && (
         <section>
           <SectionHead
+            tone={TONES.amber}
             count={draftBrands.length}
             title="Drafts and paused"
             subtitle={[plural(draftAccounts.length, 'account'), pausedAccounts && `${pausedAccounts} paused`, draftAccounts.length - pausedAccounts && plural(draftAccounts.length - pausedAccounts, 'draft')].filter(Boolean).join(' · ')}
@@ -306,6 +398,7 @@ export function ContentDashboard() {
                   onPost={handlePost}
                   onAddIdea={title => addIdea(b.key, title)}
                   onDeleteIdea={id => saveIdeas(ideas.filter(i => i.id !== id))}
+                  onReorderIdeas={ids => reorderIdeas(b.key, ids)}
                   onEdit={c => openEditor(c)}
                   onAddAccount={name => openEditor(null, name)}
                   inactive
@@ -320,6 +413,26 @@ export function ContentDashboard() {
           ))}
         </section>
       )}
+
+      <section>
+        <SectionHead
+          tone={TONES.indigo}
+          count={inboxIdeas.length}
+          title="Ideas inbox"
+          subtitle={inboxIdeas.length ? 'Not assigned to a brand yet' : 'Nothing waiting'}
+          open={!collapsed.inbox}
+          onToggle={() => toggleSection('inbox')}
+        />
+        {!collapsed.inbox && (
+          <IdeasInbox
+            ideas={inboxIdeas}
+            brands={[...brands, ...draftBrands]}
+            onAdd={addInboxIdea}
+            onAssign={assignInboxIdea}
+            onDelete={id => saveIdeas(ideas.filter(i => i.id !== id))}
+          />
+        )}
+      </section>
 
       {ownerGroups.length === 0 && (
         <section>
@@ -369,6 +482,15 @@ export function ContentDashboard() {
           />
         );
       })()}
+
+      {bulkStats && (
+        <BulkStatsModal
+          accounts={staleStats}
+          stats={stats}
+          onAdd={entries => saveStats([...stats, ...entries])}
+          onClose={() => setBulkStats(false)}
+        />
+      )}
 
       {notice && !undo && (
         <div className="fixed left-1/2 -translate-x-1/2 bottom-28 z-[90] w-[calc(100%-2rem)] max-w-md rounded-2xl bg-rose-600 text-white px-4 py-3 shadow-xl text-xs font-bold" role="alert">

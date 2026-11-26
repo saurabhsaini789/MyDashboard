@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { BarChart3, Camera, Check, ChevronDown, ChevronUp, ImageMinus, Lightbulb, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArrowUp, BarChart3, Camera, Check, ChevronDown, ChevronUp, ExternalLink, GripVertical, ImageMinus, Lightbulb, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
 import type { BusinessChannel, ChannelStat, ContentIdea } from '@/types/business';
-import { accountStatus, brandLogo, brandOwner, daysSinceStat, formatStat, headlineStat, initials, lastPostedLabel, statAgeLabel, STATS_STALE_DAYS, statusLabel, type Brand } from '@/lib/content-system';
+import { accountStatus, brandLogo, brandOwner, daysInStatus, daysSinceStat, formatStat, headlineStat, initials, lastPostedLabel, postingStreak, recentChange, statAgeLabel, statHistory, STATS_STALE_DAYS, statusLabel, TARGET_LABEL, targetProgress, type Brand, type TargetState } from '@/lib/content-system';
 import { PlatformLogo } from './PlatformLogo';
 import { displayNumerals } from './fonts';
 
@@ -20,11 +20,37 @@ interface Props {
   onPost: (channel: BusinessChannel) => void;
   onAddIdea: (text: string) => void;
   onDeleteIdea: (id: string) => void;
+  /** New queue order for this brand's ideas (all ids, first = up next). */
+  onReorderIdeas: (ids: string[]) => void;
   onEdit: (channel: BusinessChannel) => void;
   onAddAccount: (brandName: string) => void;
   /** Drafts and paused brand: shows each account's status and an Activate button instead of posting. */
   inactive?: boolean;
   onActivate?: (channel: BusinessChannel) => void;
+}
+
+const TARGET_TONE: Record<TargetState, { bar: string; text: string }> = {
+  reached: { bar: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
+  'on-pace': { bar: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
+  behind: { bar: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
+  missed: { bar: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400' },
+  'no-date': { bar: 'bg-zinc-400', text: 'text-zinc-400' },
+  'no-data': { bar: 'bg-zinc-300', text: 'text-zinc-400' },
+};
+
+/** Tiny trend line of the last entries for one metric. */
+function Sparkline({ values }: { values: number[] }) {
+  if (values.length < 2) return null;
+  const w = 40, h = 14;
+  const min = Math.min(...values), max = Math.max(...values);
+  const span = max - min || 1;
+  const pts = values.map((v, i) => `${((i / (values.length - 1)) * w).toFixed(1)},${(h - 1 - ((v - min) / span) * (h - 2)).toFixed(1)}`).join(' ');
+  const up = values[values.length - 1] >= values[0];
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden className="shrink-0">
+      <polyline points={pts} fill="none" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" className={up ? 'stroke-emerald-500' : 'stroke-rose-500'} />
+    </svg>
+  );
 }
 
 function statusClasses(next: number) {
@@ -34,11 +60,12 @@ function statusClasses(next: number) {
   return 'text-zinc-500 bg-transparent border-zinc-200 dark:text-zinc-400 dark:border-zinc-700';
 }
 
-export function BrandCard({ brand, index, ideas, stats, onOpenStats, onUploadLogo, onRemoveLogo, filter, onPost, onAddIdea, onDeleteIdea, onEdit, onAddAccount, inactive = false, onActivate }: Props) {
+export function BrandCard({ brand, index, ideas, stats, onOpenStats, onUploadLogo, onRemoveLogo, filter, onPost, onAddIdea, onDeleteIdea, onReorderIdeas, onEdit, onAddAccount, inactive = false, onActivate }: Props) {
   const [showIdeas, setShowIdeas] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
+  const [dragId, setDragId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const logo = brandLogo(brand);
@@ -61,9 +88,18 @@ export function BrandCard({ brand, index, ideas, stats, onOpenStats, onUploadLog
   const noRing = statsOnly || inactive;
   const pausedCount = brand.accounts.filter(a => a.status === 'Paused').length;
   const draftCount = brand.accounts.length - pausedCount;
+  const streak = inactive || statsOnly ? 0 : postingStreak(brand);
   const subtitle = inactive
     ? [brandOwner(brand), pausedCount && `${pausedCount} paused`, draftCount && `${draftCount} ${draftCount === 1 ? 'draft' : 'drafts'}`].filter(Boolean).join(' · ')
     : statsOnly ? 'Tracking stats only' : `${onTrack}% on track`;
+
+  /** Moves idea `id` to sit where `beforeId` is (or to the end). */
+  const moveIdea = (id: string, beforeId: string | null) => {
+    const ids = ideas.map(i => i.id).filter(x => x !== id);
+    const at = beforeId ? ids.indexOf(beforeId) : ids.length;
+    ids.splice(at < 0 ? ids.length : at, 0, id);
+    onReorderIdeas(ids);
+  };
 
   const submitIdea = () => {
     if (!draft.trim()) { setError('Type an idea first'); return; }
@@ -114,9 +150,12 @@ export function BrandCard({ brand, index, ideas, stats, onOpenStats, onUploadLog
         />
         <div className="flex-1 min-w-0">
           <div className="font-bold text-zinc-900 dark:text-zinc-100 truncate">{brand.name}</div>
-          <div className="text-[11px] font-bold text-zinc-400 truncate">{subtitle}</div>
+          <div className="text-[11px] font-bold text-zinc-400 truncate">
+            {subtitle}
+            {streak > 0 && <span className="text-emerald-600 dark:text-emerald-400" title="Weeks in a row with at least one post"> · {streak}-week streak</span>}
+          </div>
         </div>
-        <div className="flex -space-x-1">
+        <div className="hidden sm:flex -space-x-1">
           {platforms.map(p => <PlatformLogo key={p} platform={p} size={20} className="ring-2 ring-white dark:ring-zinc-900" />)}
         </div>
         <div className="relative" ref={menuRef}>
@@ -186,26 +225,48 @@ export function BrandCard({ brand, index, ideas, stats, onOpenStats, onUploadLog
           const dimmed = filter !== 'All' && a.platform !== filter;
           const showName = a.name.trim().toLowerCase() !== brand.name.toLowerCase();
           const head = headlineStat(stats, a);
+          const trend = head ? statHistory(stats, a.id, head.metric).slice(-12).map(h => h.value) : [];
+          const change = head ? recentChange(stats, a.id, head.metric) : null;
+          const delta = change ? change.delta : head?.delta ?? null;
+          const target = targetProgress(stats, a);
+          const sitting = daysInStatus(a);
           return (
             <div key={a.id} className={`flex items-center gap-3 py-3 border-t border-zinc-100 dark:border-zinc-800 ${dimmed ? 'opacity-40' : ''}`}>
               <PlatformLogo platform={a.platform} size={30} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="text-xs font-bold text-zinc-700 dark:text-zinc-200 truncate">
-                    {a.platform}{showName && <span className="text-zinc-400 font-medium"> · {a.name}</span>}
-                  </div>
+                  {a.url ? (
+                    <a
+                      href={a.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`Open ${a.platform} profile`}
+                      className="group/link min-w-0 flex items-center gap-1 text-xs font-bold text-zinc-700 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white"
+                    >
+                      <span className="truncate group-hover/link:underline underline-offset-2">
+                        {a.platform}{showName && <span className="text-zinc-400 font-medium"> · {a.name}</span>}
+                      </span>
+                      <ExternalLink size={11} className="shrink-0 text-zinc-400" />
+                    </a>
+                  ) : (
+                    <div className="text-xs font-bold text-zinc-700 dark:text-zinc-200 truncate">
+                      {a.platform}{showName && <span className="text-zinc-400 font-medium"> · {a.name}</span>}
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={() => onOpenStats(a)}
-                    title={head ? `${head.metric} — log a new value` : 'Log followers, views and more'}
+                    title={head ? `${head.metric}${change ? ` · ${change.delta >= 0 ? '+' : '−'}${Math.abs(change.delta).toLocaleString()} in the last ${change.days} days` : ''} — log a new value` : 'Log followers, views and more'}
                     className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 rounded-md px-1.5 py-0.5 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                   >
                     {head ? (
                       <>
+                        <Sparkline values={trend} />
                         {formatStat(head.value)} <span className="font-medium text-zinc-400">{head.metric.toLowerCase()}</span>
-                        {head.delta !== null && head.delta !== 0 && (
-                          <span className={head.delta > 0 ? 'text-emerald-500' : 'text-rose-500'}>
-                            {head.delta > 0 ? '↑' : '↓'}{formatStat(Math.abs(head.delta))}
+                        {delta !== null && delta !== 0 && (
+                          <span className={delta > 0 ? 'text-emerald-500' : 'text-rose-500'}>
+                            {delta > 0 ? '↑' : '↓'}{formatStat(Math.abs(delta))}
+                            {change && <span className="font-medium text-zinc-400"> {change.days}d</span>}
                           </span>
                         )}
                       </>
@@ -217,7 +278,10 @@ export function BrandCard({ brand, index, ideas, stats, onOpenStats, onUploadLog
                 {inactive ? (
                   <div className="mt-1 flex items-center gap-2 flex-wrap">
                     <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border border-dashed border-zinc-300 dark:border-zinc-600 text-zinc-500 dark:text-zinc-400">{a.status === 'Paused' ? 'Paused' : 'Draft'}</span>
-                    <span className="text-[11px] font-medium text-zinc-400">{a.trackOnly ? 'Stats only' : a.status === 'Paused' ? lastPostedLabel(st.sinceLast) : 'Not started'}</span>
+                    <span className="text-[11px] font-medium text-zinc-400">
+                      {isNaN(sitting) ? (a.trackOnly ? 'Stats only' : a.status === 'Paused' ? lastPostedLabel(st.sinceLast) : 'Not started')
+                        : sitting <= 0 ? 'Here since today' : `Sitting ${sitting} ${sitting === 1 ? 'day' : 'days'}`}
+                    </span>
                   </div>
                 ) : a.trackOnly ? (() => {
                   const age = daysSinceStat(stats, a.id);
@@ -232,6 +296,17 @@ export function BrandCard({ brand, index, ideas, stats, onOpenStats, onUploadLog
                   <div className="mt-1 flex items-center gap-2 flex-wrap">
                     <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${statusClasses(st.next)}`}>{statusLabel(st.next)}</span>
                     <span className="text-[11px] font-medium text-zinc-400">{lastPostedLabel(st.sinceLast)}</span>
+                  </div>
+                )}
+                {target && a.target && (
+                  <div className="mt-2" title={`Target: ${a.target.value.toLocaleString()} ${a.target.metric.toLowerCase()}${a.target.by ? ` by ${a.target.by}` : ''}`}>
+                    <div className="h-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                      <div className={`h-full rounded-full ${TARGET_TONE[target.state].bar}`} style={{ width: `${target.pct}%` }} />
+                    </div>
+                    <div className="mt-1 flex items-center justify-between gap-2 text-[10px] font-bold">
+                      <span className="text-zinc-400 truncate">{target.pct}% of {formatStat(a.target.value)} {a.target.metric.toLowerCase()}</span>
+                      <span className={`shrink-0 ${TARGET_TONE[target.state].text}`}>{TARGET_LABEL[target.state]}</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -285,9 +360,29 @@ export function BrandCard({ brand, index, ideas, stats, onOpenStats, onUploadLog
           <div className="mt-3">
             <div className="space-y-1 max-h-56 overflow-y-auto">
               {ideas.map((idea, i) => (
-                <div key={idea.id} className="group flex items-start gap-2 py-1.5 text-xs border-b border-zinc-50 dark:border-zinc-800/60">
+                <div
+                  key={idea.id}
+                  draggable
+                  onDragStart={e => { setDragId(idea.id); e.dataTransfer.effectAllowed = 'move'; }}
+                  onDragOver={e => { if (dragId && dragId !== idea.id) e.preventDefault(); }}
+                  onDrop={e => { e.preventDefault(); if (dragId && dragId !== idea.id) moveIdea(dragId, idea.id); setDragId(null); }}
+                  onDragEnd={() => setDragId(null)}
+                  className={`group flex items-start gap-2 py-1.5 text-xs border-b border-zinc-50 dark:border-zinc-800/60 ${dragId === idea.id ? 'opacity-40' : ''}`}
+                >
+                  <GripVertical size={12} className="mt-px shrink-0 text-zinc-300 cursor-grab hidden sm:block" aria-hidden />
                   <span className="text-zinc-400 font-bold w-4 shrink-0">{i + 1}.</span>
                   <span className="flex-1 font-medium text-zinc-700 dark:text-zinc-200">{idea.title}</span>
+                  {i > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => moveIdea(idea.id, ideas[i - 1].id)}
+                      aria-label={`Move ${idea.title} up`}
+                      title="Move up"
+                      className="text-zinc-300 hover:text-zinc-700 dark:hover:text-zinc-200 shrink-0"
+                    >
+                      <ArrowUp size={12} />
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => onDeleteIdea(idea.id)}

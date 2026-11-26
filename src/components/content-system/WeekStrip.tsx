@@ -7,7 +7,13 @@ import { PlatformLogo } from './PlatformLogo';
 
 const MAX_PER_DAY = 4;
 
-export function WeekStrip({ channels }: { channels: BusinessChannel[] }) {
+interface Props {
+  channels: BusinessChannel[];
+  /** Account ids whose brand has nothing in its ideas queue; their posts are outlined in amber. */
+  noIdeas?: Set<string>;
+}
+
+export function WeekStrip({ channels, noIdeas }: Props) {
   const today = new Date();
   const days = Array.from({ length: 7 }, (_, i) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + i));
   const active = channels.filter(c => c.status === 'Active');
@@ -36,18 +42,21 @@ export function WeekStrip({ channels }: { channels: BusinessChannel[] }) {
               </div>
               <div className="text-base font-bold text-zinc-900 dark:text-zinc-100">{d.getDate()}</div>
               <div className="mt-1.5 space-y-1">
-                {items.slice(0, MAX_PER_DAY).map(({ c, late }) => (
+                {items.slice(0, MAX_PER_DAY).map(({ c, late }) => {
+                  const empty = noIdeas?.has(c.id);
+                  return (
                   <div
                     key={c.id}
-                    title={`${brandName(c)} · ${c.platform}${late ? ' · late' : ''}`}
+                    title={`${brandName(c)} · ${c.platform}${late ? ' · late' : ''}${empty ? ' · no idea queued' : ''}`}
                     className={`flex items-center gap-1.5 rounded-lg px-1.5 py-1 text-[11px] font-bold ${
                       late ? 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400' : 'bg-zinc-50 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'
-                    }`}
+                    } ${empty ? 'ring-1 ring-inset ring-amber-400' : ''}`}
                   >
                     <PlatformLogo platform={c.platform} size={14} />
                     <span className="truncate">{initials(brandName(c))}</span>
                   </div>
-                ))}
+                  );
+                })}
                 {items.length > MAX_PER_DAY && (
                   <div className="text-[10px] font-bold text-zinc-400 px-1">+{items.length - MAX_PER_DAY} more</div>
                 )}

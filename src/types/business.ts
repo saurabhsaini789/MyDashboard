@@ -22,6 +22,23 @@ export interface BusinessChannel {
  owner?: string;
  /** Stats-only account: no posting schedule, only followers/views are tracked. */
  trackOnly?: boolean;
+ /** Profile link, opened from the account row. */
+ url?: string;
+ /** Growth goal for one metric, e.g. 20,000 followers by 2027-03-31. */
+ target?: ChannelTarget;
+ /** YYYY-MM-DD the status last changed: how long a draft or paused account has been sitting. */
+ statusSince?: string;
+ /** Dates (YYYY-MM-DD) the account was marked as posted, oldest first. Feeds the posting streak. */
+ postLog?: string[];
+}
+
+export interface ChannelTarget {
+ metric: string;
+ value: number;
+ /** Optional deadline (YYYY-MM-DD); without it there is no on-pace check. */
+ by?: string;
+ /** Day the target was set (YYYY-MM-DD); the pace is measured from the stat logged closest to it. */
+ setOn: string;
 }
 
 export interface ContentIdea {
@@ -31,7 +48,12 @@ export interface ContentIdea {
  notes?: string;
  status: 'Pending' | 'Completed';
  createdAt: string;
+ /** Position in its brand's queue (lower first). Missing = after ordered ideas, oldest first. */
+ order?: number;
 }
+
+/** Ideas with this channelId sit in the inbox until assigned to a brand. */
+export const INBOX_CHANNEL = '';
 
 /** One dated measurement for an account, e.g. 12,400 followers on 2026-11-25. */
 export interface ChannelStat {

@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState } from 'react';
-import { AlertCircle, BarChart3, Calendar, UserRound, X } from 'lucide-react';
+import { AlertCircle, BarChart3, Calendar, Link2, Target, UserRound, X } from 'lucide-react';
 import { Modal } from '../ui/Modal';
-import { DEFAULT_PLATFORMS, POST_TYPES, type BusinessChannel, type ContentTypeSchedule } from '@/types/business';
-import { brandName, DEFAULT_OWNER, localDateStr, ownerOf } from '@/lib/content-system';
+import { DEFAULT_PLATFORMS, POST_TYPES, STAT_METRICS, type BusinessChannel, type ChannelTarget, type ContentTypeSchedule } from '@/types/business';
+import { brandName, DEFAULT_OWNER, localDateStr, normalizeUrl, ownerOf } from '@/lib/content-system';
 
 interface Props {
   isOpen: boolean;
@@ -42,6 +42,11 @@ export function ChannelEditor({ isOpen, channel, presetBrand, brands, brandOwner
   const [addingOwner, setAddingOwner] = useState(false);
   const [newOwner, setNewOwner] = useState('');
   const [trackOnly, setTrackOnly] = useState(!!channel?.trackOnly);
+  const [url, setUrl] = useState(channel?.url || '');
+  const defaultMetric = (channel?.platform || platform).toLowerCase() === 'youtube' ? 'Subscribers' : 'Followers';
+  const [targetMetric, setTargetMetric] = useState(channel?.target?.metric || defaultMetric);
+  const [targetValue, setTargetValue] = useState(channel?.target ? String(channel.target.value) : '');
+  const [targetBy, setTargetBy] = useState(channel?.target?.by || '');
   const [schedules, setSchedules] = useState<ContentTypeSchedule[]>(channel?.schedules ? [...channel.schedules] : []);
   const [newType, setNewType] = useState('Post');
   const [customType, setCustomType] = useState('');
@@ -63,6 +68,18 @@ export function ChannelEditor({ isOpen, channel, presetBrand, brands, brandOwner
     if (!finalName) { setError('Enter a brand or account name'); return; }
     const finalPlatform = platform === 'Other' ? customPlatform.trim() || 'Other' : platform;
     const finalBrand = brand.trim();
+    const tNum = Number(targetValue.replace(/,/g, ''));
+    if (targetValue.trim() && (!isFinite(tNum) || tNum <= 0)) { setError('Enter the target as a number, like 20000'); return; }
+    const prev = channel?.target;
+    const target: ChannelTarget | undefined = targetValue.trim()
+      ? {
+          metric: targetMetric,
+          value: tNum,
+          by: targetBy || undefined,
+          // Keep the original start when only the deadline changes, so the pace stays comparable.
+          setOn: prev && prev.metric === targetMetric && prev.value === tNum ? prev.setOn : localDateStr(),
+        }
+      : undefined;
     onSave({
       ...(channel || {}),
       id: channel?.id || crypto.randomUUID(),
@@ -73,6 +90,8 @@ export function ChannelEditor({ isOpen, channel, presetBrand, brands, brandOwner
       about,
       owner,
       trackOnly: trackOnly || undefined,
+      url: normalizeUrl(url) || undefined,
+      target,
       schedules: trackOnly ? [] : schedules,
     } as BusinessChannel);
   };
@@ -101,6 +120,10 @@ export function ChannelEditor({ isOpen, channel, presetBrand, brands, brandOwner
             <input value={customPlatform} onChange={e => setCustomPlatform(e.target.value)} placeholder="Articulate Community" className={input} />
           </div>
         )}
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <span className={`${label} flex items-center gap-1`}><Link2 size={11} /> Profile link</span>
+          <input value={url} onChange={e => setUrl(e.target.value)} inputMode="url" placeholder="instagram.com/theleansystem" className={input} />
+        </div>
         <div className="flex flex-col gap-1.5 sm:col-span-2">
           <span className={label}>Description</span>
           <textarea value={about} onChange={e => setAbout(e.target.value)} rows={2} className={input} />
@@ -136,6 +159,18 @@ export function ChannelEditor({ isOpen, channel, presetBrand, brands, brandOwner
           )}
         </div>
         <p className="text-[11px] text-zinc-400 px-1">Applies to every account in this brand.</p>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <span className={`${label} flex items-center gap-1`}><Target size={11} /> Target <span className="normal-case font-medium">(optional)</span></span>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <select value={targetMetric} onChange={e => setTargetMetric(e.target.value)} className={input} aria-label="Target metric">
+            {STAT_METRICS.filter(m => m !== 'Other').map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+          <input inputMode="numeric" value={targetValue} onChange={e => { setTargetValue(e.target.value); setError(''); }} placeholder="20000" className={input} aria-label="Target value" />
+          <input type="date" value={targetBy} min={localDateStr()} onChange={e => setTargetBy(e.target.value)} className={input} aria-label="Target date" />
+        </div>
+        <p className="text-[11px] text-zinc-400 px-1">Add a date to see whether you&apos;re on pace. Leave the number empty for no target.</p>
       </div>
 
       <div className="pt-6 border-t border-zinc-100 dark:border-zinc-800">
