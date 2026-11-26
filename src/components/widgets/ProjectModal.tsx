@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
 export type Task = {
  id: string;
@@ -472,11 +472,10 @@ export function ProjectModal({ project, onClose, onUpdateProject, onDeleteProjec
  )}
 
  <div className="space-y-2">
- <input
- type="text"
+ <GrowingTextarea
  placeholder="New task..."
  value={newTaskTitle}
- onChange={(e) => setNewTaskTitle(e.target.value)}
+ onChange={setNewTaskTitle}
  onKeyDown={(e) => {
  if (e.key === 'Enter') {
  e.preventDefault();
@@ -522,27 +521,32 @@ function TaskRow({
       className="group flex items-center justify-between p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 gap-2 shadow-sm"
     >
       {isEditing ? (
-        <div className="flex-1 flex items-center gap-2">
-          <span className="text-zinc-400 font-medium text-sm">{index + 1}.</span>
-          <input
-            type="text"
+        <div className="flex-1 min-w-0 flex flex-col gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+          <span className="text-zinc-400 font-medium text-sm shrink-0">{index + 1}.</span>
+          <GrowingTextarea
             autoFocus
             value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
+            onChange={setEditTitle}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') onEditSave(task.id);
+              if (e.key === 'Enter') { e.preventDefault(); onEditSave(task.id); }
               if (e.key === 'Escape') onEditCancel();
             }}
-            className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="flex-1 min-w-0 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
           <DateField label="Start" value={editStartDate} onChange={setEditStartDate} compact />
           <DateField label="Due" value={editDueDate} onChange={setEditDueDate} compact />
+          <div className="ml-auto flex items-center gap-2">
           <button onClick={() => onEditSave(task.id)} className="text-teal-600 hover:text-teal-700 dark:text-teal-400 p-1.5 bg-teal-50 dark:bg-teal-500/10 rounded-md">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
           </button>
           <button onClick={onEditCancel} className="text-zinc-500 hover:text-zinc-700 p-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-md">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
           </button>
+          </div>
+          </div>
         </div>
       ) : (
         <>
@@ -607,6 +611,27 @@ function getStartBadge(startDate: string | undefined, isCompleted: boolean): str
   today.setHours(0, 0, 0, 0);
   if (start.getTime() <= today.getTime()) return null;
   return `Starts ${start.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`;
+}
+
+/** One-line text box that grows taller to show everything typed, instead of scrolling sideways. */
+function GrowingTextarea({ value, onChange, className, ...rest }: Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange' | 'value'> & { value: string; onChange: (v: string) => void }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight + 2}px`;
+  }, [value]);
+  return (
+    <textarea
+      ref={ref}
+      rows={1}
+      value={value}
+      onChange={(e) => onChange(e.target.value.replace(/\n/g, ' '))}
+      className={`resize-none overflow-hidden leading-snug ${className || ''}`}
+      {...rest}
+    />
+  );
 }
 
 function DateField({ label, value, onChange, compact }: { label: string; value: string; onChange: (v: string) => void; compact?: boolean }) {
