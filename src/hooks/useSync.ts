@@ -19,6 +19,8 @@ export function useSync() {
   const syncStartTime = useRef(0);
   const currentSyncId = useRef(0);
   const pendingPushes = useRef<Map<string, string>>(new Map());
+  /** Last value known to match Supabase for each key (JSON string), so identical re-saves are skipped. */
+  const lastSynced = useRef<Map<string, string>>(new Map());
   
   // Kill switch for rest sync rollout
   const IS_PUSH_DISABLED = process.env.NEXT_PUBLIC_DISABLE_REST_SYNC === 'true';
@@ -78,6 +80,10 @@ export function useSync() {
 
     const prefixedKey = getPrefixedKey(key);
 
+    // Nothing changed since the last sync: don't send the same data again.
+    const serialized = JSON.stringify(rawValue);
+    if (lastSynced.current.get(key) === serialized) return;
+
     const performPush = async (attempt = 0): Promise<boolean> => {
       try {
         setSyncStatus('syncing');
@@ -108,6 +114,7 @@ export function useSync() {
           return false;
         }
 
+        lastSynced.current.set(key, serialized);
         setSyncStatus('connected');
         setErrorMessage(null);
         setTimeout(() => setSyncStatus('idle'), 2000);
@@ -171,6 +178,7 @@ export function useSync() {
           const parts = row.key.split(':');
           const baseKey = parts[parts.length - 1];
           if (baseKey && ALL_SYNC_KEYS.includes(baseKey)) {
+            lastSynced.current.set(baseKey, JSON.stringify(row.value));
             // Wrap in tagged format before storing locally
             setSyncedItem(baseKey, JSON.stringify(row.value), session.user.id);
           }
@@ -248,14 +256,10 @@ export function useSync() {
 
   // --- 3. Listen for Local Storage Changes ---
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key && !isSyncingFromRemote.current) {
-        const baseKey = ALL_SYNC_KEYS.find(k => getPrefixedKey(k) === e.key);
-        if (baseKey) {
-          pushToSupabase(baseKey, e.newValue);
-        }
-      }
-    };
+    // Cross-tab 'storage' events are deliberately NOT pushed: the tab that made the
+    // change already pushed it. Re-pushing here made open tabs echo each other's
+    // writes through realtime in an endless loop (26 Nov 2026: ~3,700 upserts in
+    // 12 minutes, which timed out the database).
 
     const handleLocalUpdate = (e: CustomEvent | Event) => {
       const event = e as CustomEvent<{ key: string, value: string }>;
@@ -278,11 +282,9 @@ export function useSync() {
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
     window.addEventListener('local-storage-change', handleLocalUpdate);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('local-storage-change', handleLocalUpdate);
     };
   }, [pushToSupabase]);
@@ -315,6 +317,7 @@ export function useSync() {
             const baseKey = parts[parts.length - 1];
             
             if (baseKey && ALL_SYNC_KEYS.includes(baseKey)) {
+              lastSynced.current.set(baseKey, JSON.stringify(newRow.value));
               isSyncingFromRemote.current = true;
               setSyncedItem(baseKey, JSON.stringify(newRow.value), session.user.id);
               isSyncingFromRemote.current = false;
